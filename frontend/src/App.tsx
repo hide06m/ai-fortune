@@ -1,13 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 import './App.css'
-import { callFortuneAPI, submitFeedback, type FortuneRequest } from './api'
+import {
+  callFortuneAPI,
+  submitFeedback,
+  authenticateWithGoogle,
+  logout,
+  isAuthenticated,
+  type FortuneRequest
+} from './api'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 function App() {
-  const [screen, setScreen] = useState<'form' | 'result'>('form')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  // Authentication state
+  const [authenticated, setAuthenticated] = useState(isAuthenticated())
+  const [authLoading, setAuthLoading] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
+
+  // Screen state
+  const [screen, setScreen] = useState<'login' | 'form' | 'result'>('login')
+  const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
 
   // Form state
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthTime, setBirthTime] = useState('')
   const [birthPlace, setBirthPlace] = useState('')
@@ -18,6 +35,61 @@ function App() {
   const [feedback, setFeedback] = useState('')
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
 
+  // Check authentication status on mount
+  useEffect(() => {
+    const auth = isAuthenticated()
+    setAuthenticated(auth)
+  }, [])
+
+  // Google OAuth ハンドラ
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setAuthLoading(true)
+    setError('')
+
+    try {
+      const response = await authenticateWithGoogle(credentialResponse.credential)
+      if (response.success) {
+        setAuthenticated(true)
+        setUserEmail(response.user?.email || '')
+        setMode('authenticated')
+        setScreen('form')
+        console.log('✅ Logged in successfully')
+      } else {
+        setError(response.error || 'Authentication failed')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setError('Google authentication failed. Please try again.')
+  }
+
+  // ゲスト診断開始
+  const handleStartGuest = () => {
+    setMode('guest')
+    setScreen('form')
+    setError('')
+  }
+
+  // ログアウト
+  const handleLogout = async () => {
+    await logout()
+    setAuthenticated(false)
+    setUserEmail('')
+    setScreen('login')
+    setError('')
+    setBirthDate('')
+    setBirthTime('')
+    setBirthPlace('')
+    setConcern('')
+    setReading(null)
+  }
+
+  // 診断実行
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -46,6 +118,7 @@ function App() {
     }
   }
 
+  // 感想送信
   const handleSubmitFeedback = async () => {
     if (!feedback.trim()) {
       setError('Please enter your feedback')
@@ -65,6 +138,7 @@ function App() {
     }
   }
 
+  // 戻る
   const handleBack = () => {
     setScreen('form')
     setError('')
@@ -72,167 +146,212 @@ function App() {
     setFeedbackSubmitted(false)
   }
 
-  return (
-    <div className="container">
-      <h1>🔮 AI占い診断</h1>
-      <p className="subtitle">統計学的占術計算とAIによる統合診断</p>
+  // 新しい診断
+  const handleNewReading = () => {
+    setBirthDate('')
+    setBirthTime('')
+    setBirthPlace('')
+    setConcern('')
+    setReading(null)
+    setFeedback('')
+    setFeedbackSubmitted(false)
+    setScreen('form')
+  }
 
-      {error && <div className="error">{error}</div>}
+  // ========== ログイン画面 ==========
+  if (screen === 'login') {
+    return (
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <div className="container">
+          <h1>🔮 AI占い診断</h1>
+          <p className="subtitle">プロトタイプ版</p>
 
-      {screen === 'form' ? (
-        <form onSubmit={handleSubmit}>
+          <div className="login-screen">
+            <p>占いを試して、あなたの今の運勢を知ってみませんか？</p>
+
+            <div className="login-section">
+              <h2>Google でログイン</h2>
+              <p>診断履歴の保存や、複数回の診断が可能になります。</p>
+              <div className="google-login-button">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  text="signin_with"
+                  size="large"
+                />
+              </div>
+              {authLoading && <p className="loading">処理中...</p>}
+            </div>
+
+            <div className="divider">または</div>
+
+            <div className="guest-section">
+              <h2>ゲスト診断を試す</h2>
+              <p>1日1回まで無料で診断できます。登録不要です。</p>
+              <button onClick={handleStartGuest} className="primary-button">
+                ゲスト診断を始める
+              </button>
+            </div>
+
+            {error && <div className="error">{error}</div>}
+          </div>
+        </div>
+      </GoogleOAuthProvider>
+    )
+  }
+
+  // ========== フォーム画面 ==========
+  if (screen === 'form') {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🔮 AI占い診断</h1>
+          <div className="header-actions">
+            {authenticated && <span className="user-email">{userEmail}</span>}
+            <button onClick={mode === 'guest' ? () => setScreen('login') : handleLogout} className="logout-button">
+              {mode === 'guest' ? 'ログイン' : 'ログアウト'}
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
-            <label>生年月日 *</label>
+            <label htmlFor="birthDate">生年月日 *</label>
             <input
+              id="birthDate"
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
               required
             />
-            <p className="form-hint">YYYY-MM-DD形式</p>
           </div>
 
           <div className="form-group">
-            <label>出生時刻</label>
+            <label htmlFor="birthTime">出生時刻（任意）</label>
             <input
+              id="birthTime"
               type="time"
               value={birthTime}
               onChange={(e) => setBirthTime(e.target.value)}
             />
-            <p className="form-hint">分からない場合は空欄でOK</p>
           </div>
 
           <div className="form-group">
-            <label>出生地</label>
+            <label htmlFor="birthPlace">出生地（任意）</label>
             <input
+              id="birthPlace"
               type="text"
+              placeholder="例: 北海道札幌市"
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
-              placeholder="例: 北海道札幌市"
             />
           </div>
 
           <div className="form-group">
-            <label>現在の悩み・状況 *</label>
+            <label htmlFor="concern">悩み・状況 *</label>
             <textarea
+              id="concern"
+              placeholder="例: キャリアチェンジを考えています。今後の方向性について知りたいです。"
               value={concern}
               onChange={(e) => setConcern(e.target.value)}
-              placeholder="進路の悩み、人間関係、仕事について等、現在の状況を教えてください"
               required
+              rows={4}
             />
-            <p className="form-hint">占術計算と組み合わせて、より正確な診断を生成します</p>
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? '診断中...' : '診断を受ける'}
+          {error && <div className="error">{error}</div>}
+
+          <button type="submit" disabled={loading} className="primary-button">
+            {loading ? '診断中...' : '診断を実行'}
           </button>
 
-          {loading && (
-            <div className="loading">
-              <div className="spinner"></div>
-              <p>占術計算とAI診断を処理中...</p>
-            </div>
+          {mode === 'guest' && (
+            <p className="guest-notice">
+              ゲストモードでは1日1回までの診断が可能です。複数回試したい場合はログインしてください。
+            </p>
           )}
         </form>
-      ) : reading ? (
-        <div>
-          <h2>占い診断結果</h2>
+      </div>
+    )
+  }
 
-          <div className="result-card">
-            <h3>四柱推命 - 命式</h3>
-            <div className="result-row">
-              <span className="result-label">年柱:</span>
-              <span className="result-value">
-                {reading.baZi.yearPillar.stem}
-                {reading.baZi.yearPillar.branch} ({reading.baZi.yearPillar.element})
-              </span>
-            </div>
-            <div className="result-row">
-              <span className="result-label">月柱:</span>
-              <span className="result-value">
-                {reading.baZi.monthPillar.stem}
-                {reading.baZi.monthPillar.branch} ({reading.baZi.monthPillar.element})
-              </span>
-            </div>
-            <div className="result-row">
-              <span className="result-label">日柱:</span>
-              <span className="result-value">
-                {reading.baZi.dayPillar.stem}
-                {reading.baZi.dayPillar.branch} ({reading.baZi.dayPillar.element})
-              </span>
-            </div>
-            <div className="result-row">
-              <span className="result-label">時柱:</span>
-              <span className="result-value">
-                {reading.baZi.timePillar.stem}
-                {reading.baZi.timePillar.branch} ({reading.baZi.timePillar.element})
-              </span>
-            </div>
-            <div className="result-row">
-              <span className="result-label">日干(性質):</span>
-              <span className="result-value">{reading.baZi.dayStem}</span>
+  // ========== 結果画面 ==========
+  if (screen === 'result' && reading) {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🔮 診断結果</h1>
+          <button onClick={mode === 'guest' ? () => setScreen('login') : handleLogout} className="logout-button">
+            {mode === 'guest' ? 'ログイン' : 'ログアウト'}
+          </button>
+        </div>
+
+        <div className="result">
+          <div className="result-section">
+            <h2>【四柱推命 - 命式】</h2>
+            <div className="bazi-result">
+              <div>年柱: {reading.baZi.yearPillar.stem}{reading.baZi.yearPillar.branch}</div>
+              <div>月柱: {reading.baZi.monthPillar.stem}{reading.baZi.monthPillar.branch}</div>
+              <div>日柱: {reading.baZi.dayPillar.stem}{reading.baZi.dayPillar.branch}</div>
+              <div>時柱: {reading.baZi.timePillar.stem}{reading.baZi.timePillar.branch}</div>
+              <div className="day-stem">日干: {reading.baZi.dayStem}</div>
             </div>
           </div>
 
-          <div className="result-card">
-            <h3>数秘術</h3>
-            <div className="result-row">
-              <span className="result-label">ライフパスナンバー:</span>
-              <span className="result-value">
-                {reading.numerology.lifePathNumber}
-                {reading.numerology.isMasterNumber && ' (マスターナンバー)'}
-              </span>
+          <div className="result-section">
+            <h2>【数秘術】</h2>
+            <div>
+              ライフパスナンバー: <strong>{reading.numerology.lifePathNumber}</strong>
+              {reading.numerology.isMasterNumber && ' (マスターナンバー)'}
             </div>
           </div>
 
-          <div className="result-card">
-            <h3>九星気学</h3>
-            <div className="result-row">
-              <span className="result-label">本命星:</span>
-              <span className="result-value">{reading.kyuseiSeisun}</span>
-            </div>
+          <div className="result-section">
+            <h2>【九星気学】</h2>
+            <div>本命星: <strong>{reading.kyuseiSeisun}</strong></div>
           </div>
 
-          <div className="result-card">
-            <h3>統合診断文</h3>
-            <div className="analysis-text">{reading.analysis}</div>
-            {reading.cached && <p className="text-muted mt-20">* キャッシュから取得</p>}
-            {reading.tokensUsed && (
-              <p className="text-muted mt-20">* AI処理トークン: {reading.tokensUsed}</p>
+          <div className="result-section">
+            <h2>【AI統合診断】</h2>
+            <div className="analysis">{reading.analysis}</div>
+            {reading.cached && <small className="cache-notice">※ キャッシュから取得</small>}
+          </div>
+
+          <div className="result-section feedback-section">
+            <h2>この診断の感想を教えてください</h2>
+            {feedbackSubmitted ? (
+              <p className="success">感想をありがとうございました！</p>
+            ) : (
+              <>
+                <textarea
+                  placeholder="感想をお聞きします..."
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={3}
+                />
+                <button onClick={handleSubmitFeedback} className="secondary-button">
+                  感想を送信
+                </button>
+              </>
             )}
           </div>
 
-          <div className="form-group mt-20">
-            <label>診断についてのご感想</label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="この診断が参考になりましたか?改善提案などお聞かせください"
-              disabled={feedbackSubmitted}
-            />
-          </div>
+          {error && <div className="error">{error}</div>}
 
-          {feedbackSubmitted ? (
-            <div className="success">ご感想ありがとうございました！</div>
-          ) : (
-            <button type="button" onClick={handleSubmitFeedback}>
-              感想を送信
+          <div className="result-actions">
+            <button onClick={handleNewReading} className="primary-button">
+              新しい診断
             </button>
-          )}
-
-          <div className="button-group">
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={handleBack}
-            >
+            <button onClick={handleBack} className="secondary-button">
               戻る
             </button>
           </div>
         </div>
-      ) : null}
-    </div>
-  )
+      </div>
+    )
+  }
+
+  return null
 }
 
 export default App

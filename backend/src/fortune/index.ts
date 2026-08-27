@@ -2,6 +2,10 @@
  * 占術計算ロジックの統合エクスポート
  */
 
+import { calculateBaZi, type BaZiChart, type Sexagenary, type HeavenlyStem, type EarthlyBranch, type Element } from './shichuSuimei.js'
+import { calculateLifePathNumber, type NumerologyResult } from './numerology.js'
+import { calculateKyuseiSeisun, type KyuseiSeisun } from './kyuseiKigaku.js'
+
 export { calculateBaZi, type BaZiChart, type Sexagenary, type HeavenlyStem, type EarthlyBranch, type Element } from './shichuSuimei.js'
 export { calculateLifePathNumber, type NumerologyResult } from './numerology.js'
 export { calculateKyuseiSeisun, type KyuseiSeisun } from './kyuseiKigaku.js'
