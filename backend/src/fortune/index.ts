@@ -16,8 +16,6 @@ export function calculateFullReading(
   birthPlace?: string,
   concern?: string
 ) {
-  const { calculateBaZi, calculateLifePathNumber, calculateKyuseiSeisun } = await import('./index.js')
-
   return {
     baZi: calculateBaZi(birthDate, birthTime),
     numerology: calculateLifePathNumber(birthDate),
