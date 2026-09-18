@@ -99,7 +99,6 @@ function AppContent() {
         // auth-code flow では code（認可コード）が返る
         const { code } = codeResponse
         console.log('🔐 authorization code:', code)
-        // ✅ GCP スコープも取得済み（scope パラメータで指定）
 
         // code をバックエンドに送信して、id_token に交換
         const response = await authenticateWithGoogle(code)
@@ -145,8 +144,7 @@ function AppContent() {
       setError('Google authentication failed. Please try again.')
     },
     flow: 'auth-code',
-    // ✅ GCP スコープを追加（Billing Quota 設定用）
-    scope: 'openid email profile https://www.googleapis.com/auth/cloud-platform'
+    scope: 'openid email profile'
   })
 
   // ゲスト診断開始

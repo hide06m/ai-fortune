@@ -1,29 +1,27 @@
 /**
  * レート制限ミドルウェア
- * IP単位で「1日3回まで」の制限を実装
+ * ゲスト: IP単位で1日1回まで。ログイン済み: ユーザー単位で1日3回まで。
+ * （ログイン済みを無制限にすると、LLM呼び出し＝運営側の課金が青天井になってしまうため、
+ *   ログイン済みユーザーにも上限を設ける）
  */
 
 import rateLimit from 'express-rate-limit'
 
-// IP単位でのレート制限(1日1回) - ゲストユーザーのみ
+const GUEST_DAILY_LIMIT = 1
+const AUTHENTICATED_DAILY_LIMIT = 3
+
 export const dailyLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 1, // 1 request per window
-  keyGenerator: (req) => {
+  max: (req: any) => (req.user?.userId ? AUTHENTICATED_DAILY_LIMIT : GUEST_DAILY_LIMIT),
+  keyGenerator: (req: any) => {
+    // ログイン済みはユーザー単位、未ログインはIP単位でカウント
+    if (req.user?.userId) return `user:${req.user.userId}`
     // X-Forwarded-Forヘッダー優先(Render環境でのプロキシ対応)
-    return (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'
+    return `ip:${(req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`
   },
-  message: 'Too many fortune readings from this IP. Please try again tomorrow.',
+  message: 'Too many fortune readings today. Please try again tomorrow.',
   statusCode: 429,
-  skip: (req: any) => {
-    // ✅ ログイン済みユーザーはレート制限をスキップ
-    if (req.user && req.user.userId) {
-      console.log(`✅ [RATE LIMIT SKIP] Authenticated user: ${req.user.userId}`)
-      return true
-    }
-    // ヘルスチェックエンドポイントもスキップ
-    return req.path === '/health'
-  }
+  skip: (req: any) => req.path === '/health'
 })
 
 // 開発環境用: 制限なし

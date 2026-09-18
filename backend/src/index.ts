@@ -18,8 +18,6 @@ import { authMiddleware, requireAuth } from './middleware/auth.js'
 import { verifyGoogleToken } from './auth/googleAuth.js'
 import { generateToken, generateUserId } from './auth/jwt.js'
 import { getUserByGoogleId, createUser, initializeDatabase, testConnection } from './db/client.js'
-import { setBillingQuotaToZero } from './gcp/billing.js'
-import { getOrCreateGeminiApiKey } from './gcp/apiKey.js'
 import characterRoutes from './routes/character.js'
 import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCharacter } from './db/character.js'
 import { INTIMACY_UNLOCKS, CharacterId } from './types/character.js'
@@ -110,10 +108,9 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
         return res.status(401).json({ error: 'Failed to exchange authorization code', details: errorText })
       }
 
-      const tokenData = await tokenResponse.json()
+      const tokenData = (await tokenResponse.json()) as Record<string, unknown>
       console.log('[AUTH] Token response data:', Object.keys(tokenData))
-      const exchangedIdToken = tokenData.id_token
-      const accessToken = tokenData.access_token  // ✅ アクセストークンを取得
+      const exchangedIdToken = tokenData.id_token as string | undefined
 
       if (!exchangedIdToken) {
         console.error('[AUTH] No id_token in response. Response keys:', Object.keys(tokenData))
@@ -123,28 +120,6 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       // id_token を検証
       googleUser = await verifyGoogleToken(exchangedIdToken)
       console.log(`[AUTH] Google user verified (code exchange): ${googleUser.email}`)
-
-      // ✅ ユーザーの GCP Billing Quota を自動設定（無料枠のみを使用）
-      let userGeminiApiKey: string | null = null
-      if (accessToken) {
-        try {
-          console.log(`[AUTH] Setting up GCP resources for user: ${googleUser.email}`)
-
-          // 1. Billing Quota を $0 に設定（自動課金防止）
-          await setBillingQuotaToZero(accessToken, googleUser.email)
-
-          // 2. Gemini API キーを取得または生成
-          userGeminiApiKey = await getOrCreateGeminiApiKey(accessToken, googleUser.email)
-
-          if (userGeminiApiKey) {
-            console.log(`[AUTH] Gemini API key set for user: ${googleUser.email}`)
-            // TODO: API キーをデータベースに保存する
-          }
-        } catch (error) {
-          console.warn('[AUTH] Failed to set up GCP resources:', error)
-          // GCP 設定失敗でも、ユーザー認証は続行（backend キーで診断可能）
-        }
-      }
     } else if (jwtToken) {
       // idToken（JWT）から検証
       googleUser = await verifyGoogleToken(jwtToken)
