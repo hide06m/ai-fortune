@@ -37,8 +37,14 @@ process.on('uncaughtException', (error) => {
 })
 
 // Middleware
+// CORS_ORIGINS（カンマ区切り）が設定されていればそれを使用、未設定時は開発用のlocalhostのみ許可。
+// 本番デプロイ時は環境変数に本番フロントエンドのURLを設定すること。
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://127.0.0.1:5173']
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  origin: corsOrigins,
   credentials: true
 }))
 app.use(express.json({ limit: '10mb' }))

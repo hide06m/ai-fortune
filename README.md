@@ -2,17 +2,20 @@
 
 占いを「統計学の一種」と捉え、決定論的な占術計算(四柱推命・数秘術・九星気学)とLLMによる自然文生成を分離したAI占い診断アプリ。
 
-## Phase 1 - Prototype (訓練校内配布)
-
-### 機能概要
+## 機能概要
 
 - **入力フォーム**: 生年月日・出生時刻(任意)・出生地・現在の悩み/状況(自由記述)
-- **占術計算**: 
+- **占術計算**:
   - 四柱推命(干支・五行の算出)
   - 数秘術(ライフパスナンバー)
   - 九星気学(本命星)
-- **LLM統合**: Claude APIで計算結果をもとに統合診断文を生成
-- **感想収集**: 診断結果ページの感想フォーム(ログ出力)
+- **LLM統合**: Gemini APIで計算結果をもとに統合診断文を生成
+- **Googleログイン**: ログインするとゲスト制限(1日1回)なく何度でも診断可能
+- **キャラクター占い師システム**: 5体のキャラクター(ムスビ・ナツメ・ツキ・コクウ・クリ)から選んで診断。
+  診断のたびに親密度が上がり、一定レベルで新しいキャラクターが解放される
+- **キャラクターボイス**: VOICEVOXによる音声読み上げ(挨拶・診断結果)
+- **ローディングアニメーション**: ハムスターが滑車を走る独自アニメーション
+- **感想収集**: 診断結果ページの感想フォーム(現状ログ出力のみ、DB保存は未実装)
 
 ### アーキテクチャ
 
@@ -21,10 +24,15 @@ ai-fortune/
 ├── frontend/          # React + Vite + TypeScript
 ├── backend/           # Node.js + Express + TypeScript
 │   └── src/
-│       ├── fortune/   # 占術計算ロジック
-│       ├── llm/       # Claude API統合
-│       └── middleware/# レート制限等
-└── .env.example       # 環境変数テンプレート
+│       ├── fortune/     # 占術計算ロジック
+│       ├── llm/         # Gemini API統合
+│       ├── auth/        # Google OAuth / JWT
+│       ├── db/          # PostgreSQL（ユーザー・親密度）
+│       ├── routes/      # キャラクター・TTS API
+│       ├── services/    # TTS（VOICEVOX連携）
+│       └── middleware/  # レート制限・認証等
+├── backend/.env.example    # バックエンド環境変数テンプレート
+└── frontend/.env.example   # フロントエンド環境変数テンプレート
 ```
 
 ### セットアップ
@@ -39,6 +47,19 @@ cd ../frontend
 npm install
 ```
 
+### 環境変数設定
+
+`backend/.env.example` と `frontend/.env.example` を参考に、それぞれ `backend/.env` / `frontend/.env`（または `.env.local`）を作成する。
+最低限必要なもの:
+
+- `backend/.env`: `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`
+- `frontend/.env`: `VITE_GOOGLE_CLIENT_ID`
+
+`GEMINI_API_KEY`が未設定の場合、占術計算結果は返されますがLLM統合分析は生成されません（テスト/開発用として利用可能）。
+
+音声読み上げを使う場合は、事前に VOICEVOX Engine を起動しておく必要がある(`backend/start-voicevox.sh` 参照)。
+未起動でもアプリ自体は問題なく動作する(音声が鳴らないだけ)。
+
 ### 開発環境での実行
 
 ```bash
@@ -49,6 +70,10 @@ npm run dev
 # 別のターミナルでFrontend開発サーバー起動 (ポート5173)
 cd frontend
 npm run dev
+
+# 音声読み上げを使うなら別のターミナルでVOICEVOXも起動
+cd backend
+bash start-voicevox.sh
 ```
 
 ### テスト
@@ -59,24 +84,10 @@ npm test          # 占術計算ロジックのユニットテスト
 npm run test:ui   # テストUIで実行確認
 ```
 
-### 環境変数設定
-
-`.env`ファイルを作成(`.env.example`を参考に):
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-CLAUDE_MODEL=claude-3-5-haiku-20241022
-NODE_ENV=development
-PORT=3000
-```
-
-### LLMなしでの動作
-
-`ANTHROPIC_API_KEY`が設定されていない場合、占術計算結果は返されますがLLM統合分析は生成されません。テスト/開発用として利用可能です。
-
 ### レート制限
 
-- IP単位で「1日3回まで」の診断リクエスト制限
+- ゲスト（未ログイン）はIP単位で「1日1回まで」の診断リクエスト制限
+- ログイン済みユーザーは制限なし
 - ヘルスチェックエンドポイント(`/health`)は制限対象外
 
 ### キャッシング
@@ -86,24 +97,24 @@ PORT=3000
 
 ### 本番デプロイ
 
-**Render Blueprint**対応:
-- Web Service(バックエンド): Node.js
-- Static Site(フロントエンド): Vite build
-- PostgreSQL(将来用)
+未着手。想定していた Render Blueprint（Web Service + Static Site + PostgreSQL）構成のデプロイ設定
+（`render.yaml`等）はまだ存在しない。デプロイ時は以下も要対応:
 
-環境変数を設定してデプロイボタンでワンクリック展開可能。
+- `CORS_ORIGINS`環境変数に本番フロントエンドURLを設定（未設定時はlocalhostのみ許可）
+- `JWT_SECRET`を必ず設定（未設定だと本番モードでは起動時にエラーで落ちる仕様）
+- Google Cloud ConsoleのOAuth同意画面を「テスト」から「本番」へ切り替え（多数のユーザーに公開する場合）
+- VOICEVOX Engineをデプロイ先でどう動かすか（別サーバー/Dockerでの同梱など）の検討
 
 ## コスト管理
 
 - 計算とAI生成を分離し、LLM呼び出しを最小化
-- Haiku系モデル使用でコスト削減
 - キャッシング・レート制限で無駄なAPI呼び出しを削減
+- 音声合成はVOICEVOX（無料・ローカル実行）を使用し、クラウドTTSの課金を回避
 
-## Phase 2・3 への拡張
+## 今後の拡張候補
 
-現在のモノレポ構成・技術スタックは以下に対応:
-- **Phase 2**: ユーザーアカウント、診断履歴保存、UI/UX磨き込み
-- **Phase 3**: Capacitor でReactをネイティブアプリ化、スマホアプリストア公開
+- 感想フォームのDB永続化
+- Capacitorなどを使ったネイティブアプリ化
 
 ## 参考
 
@@ -112,5 +123,5 @@ PORT=3000
 
 ---
 
-**開発者**: hide06m@gmail.com  
+**開発者**: hide06m@gmail.com
 **ライセンス**: MIT

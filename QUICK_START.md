@@ -29,21 +29,24 @@ cd ..
 
 ### ステップ 2: 環境変数設定 (1分)
 
-**backend/.env ファイルを作成:**
+**backend/.env ファイルを作成**（`backend/.env.example` をコピーして値を埋める）:
 
 ```bash
 NODE_ENV=development
 PORT=3000
-ANTHROPIC_API_KEY=sk-ant-xxxxx  # (オプション)
-CLAUDE_MODEL=claude-3-5-haiku-20241022
+GEMINI_API_KEY=xxxxx  # (オプション)
+JWT_SECRET=xxxxx      # Googleログインを使うなら必須
+GOOGLE_CLIENT_ID=xxxxx
+GOOGLE_CLIENT_SECRET=xxxxx
 ```
 
-> **注意**: `ANTHROPIC_API_KEY` がない場合、占術計算は動作しますがLLM分析は生成されません。テスト用途には十分です。
+> **注意**: `GEMINI_API_KEY` がない場合、占術計算は動作しますがLLM分析は生成されません。テスト用途には十分です。
 
-**frontend/.env ファイルを作成:**
+**frontend/.env ファイルを作成**（`frontend/.env.example` をコピーして値を埋める）:
 
 ```bash
 VITE_API_URL=http://localhost:3000
+VITE_GOOGLE_CLIENT_ID=xxxxx  # Googleログインを使うなら必須
 ```
 
 ### ステップ 3: テスト実行 (1分)
@@ -185,9 +188,8 @@ C:\Users\hide0\Projects\ai-fortune\
 ## 🔗 次のステップ
 
 1. **GitHub へのプッシュ**: `GITHUB_SETUP.md` を参照
-2. **LLM API キーの設定**: `.env` に `ANTHROPIC_API_KEY` を追加
-3. **Render へのデプロイ**: README.md の「本番デプロイ」セクション参照
-4. **Phase 2 計画**: ユーザーアカウント・診断履歴保存機能の実装
+2. **LLM API キーの設定**: `backend/.env` に `GEMINI_API_KEY` を追加
+3. **本番デプロイ**: README.md の「本番デプロイ」セクション参照（未着手）
 
 ## 💡 開発ヒント
 
