@@ -28,9 +28,7 @@ import ttsRoutes from './routes/tts.js'
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// ✅ 1つのルート（例: TTSのGoogle Cloud認証エラー）でサーバー全体が落ちないようにする
-// google-cloud/text-to-speech は認証情報が無い環境だと、await/try-catch の外側で
-// rejectする内部プロミスを生成することがあり、そのままだとプロセスごと落ちる。
+// ✅ 1つのルート（例: TTSでVOICEVOX Engineが未起動の場合など）でサーバー全体が落ちないようにする
 process.on('unhandledRejection', (reason) => {
   console.error('[UNHANDLED REJECTION]', reason)
 })

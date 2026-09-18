@@ -18,7 +18,6 @@
     "@anthropic-ai/sdk": "^0.121.0",
     "@google-cloud/billing": "^6.0.0",
     "@google-cloud/resource-manager": "^7.0.0",
-    "@google-cloud/text-to-speech": "^7.1.0",
     "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

@@ -131,13 +131,50 @@ dev サーバーは現在バックグラウンドで起動中（backend:3000, fr
 - 感想送信（`POST /api/feedback`）は意図的なPhase1実装で、DBには保存せずログ出力のみ
   （[backend/src/index.ts:343](backend/src/index.ts:343)にコメントあり、`readingId`もダミー値。バグではなく仕様）
 
-## 残タスク（任意・優先度低、ユーザー側の作業が必要）
-- TTSを実際に鳴らすには、本番/dev環境にGCPのText-to-Speech用認証情報（`GOOGLE_APPLICATION_CREDENTIALS`）を
-  設定する必要がある（機能自体は実装済み・配線済み、認証情報待ちなだけ。Claude側では設定不可）
-- **2セッション分の変更がすべて未コミット。** `git status`で確認可能（backend/frontendの主要機能一式、
-  PROGRESS.mdも含む）。ユーザーの指示があればコミットする（指示なしに自動コミットしない方針のため保留中）
+## ✅ TTSをGoogle Cloud→VOICEVOXに切り替え・実機確認済み（2026-09-18）
 
-## 注意点（ゴミファイル）
-`git status` に文字化けした不正なファイル名の未追跡ファイルが2つある
-（過去の壊れたコマンド実行の残骸、`frontend/public/assets／ && cp G：...` のような内容）。
-実害はないが気になるなら `git status` で確認して手動削除してよい。
+Google Cloud TTSはAPI有効化の途中で課金設定（カード登録）が必要になり、ユーザーとの相談の結果、
+**完全無料・カード登録不要のVOICEVOX**に切り替えることにした。
+
+**やったこと：**
+- VOICEVOX Engine（CPU版、v0.25.2、約1.9GB）を公式GitHubリリースからダウンロードし、
+  `G:\マイドライブ\AI-project\ai-fortune\voicevox_engine\extracted\` に展開
+  （容量が大きいためGドライブに配置。gitリポジトリ外＝コミット対象外）
+- `backend/src/services/textToSpeech.ts` を全面書き換え：Google Cloud SDK → VOICEVOX Engineの
+  ローカルHTTP API（`POST /audio_query` → `POST /synthesis`、port 50021）を直接呼ぶ実装に変更
+- `backend/src/routes/tts.ts`：リクエストパラメータを `voiceId/languageCode/pitch/speakingRate`（Google形式）
+  から `speakerId/speed`（VOICEVOX形式）に変更。レスポンスも `audio/mpeg`→`audio/wav`に変更
+- `frontend/src/services/textToSpeech.ts`：`getCharacterVoiceId()`→`getCharacterSpeakerId()`に変更、
+  5キャラクターにVOICEVOX話者を割り当て（下記）
+- `backend/src/types/character.ts` / `frontend/src/types/character.ts`：`voiceId`フィールドを
+  `string`(Google voice名)→`number`(VOICEVOX speaker id)に変更
+- `backend/.env`に`VOICEVOX_ENGINE_URL=http://localhost:50021`を追記
+- 不要になった`@google-cloud/text-to-speech`をbackendから`npm uninstall`
+- `backend/start-voicevox.sh`を追加（次回以降、エンジン起動を簡単にするための起動スクリプト）
+
+**キャラクター→VOICEVOX話者の割り当て：**
+| キャラ | 話者ID | 話者名 |
+|---|---|---|
+| ムスビ(0) | 11 | 玄野武宏・ノーマル |
+| ナツメ(1) | 2 | 四国めたん・ノーマル |
+| ツキ(2) | 9 | 波音リツ・ノーマル |
+| コクウ(3) | 13 | 青山龍星・ノーマル |
+| クリ(4) | 12 | 白上虎太郎・ふつう |
+
+（好みに合わなければ`GET http://localhost:50021/speakers`で全話者一覧が見られるので、
+上記2ファイルの`voiceId`とfrontend `getCharacterSpeakerId()`の数値を差し替えるだけで変更可能）
+
+**実ブラウザで確認済み：** キャラ選択画面の挨拶読み上げ、結果画面の読み上げ、両方とも
+`POST /api/tts/speak → 200 OK`となり、実際に音声（WAV, 24kHz）が再生されることを確認した。
+
+**⚠️ 次回セッションで引き継ぐ注意点：**
+VOICEVOX Engineは`npm run dev`では自動起動しない。**TTSを使う前に手動起動が必要：**
+```bash
+cd backend && bash start-voicevox.sh
+# または直接: "/g/マイドライブ/AI-project/ai-fortune/voicevox_engine/extracted/run.exe" &
+```
+起動確認: `curl http://localhost:50021/version`（初回は音声モデル読み込みで数秒〜十数秒かかる）
+
+## 残タスク
+特になし。ローディングアニメーション・ハムスターキャラ選択・親密度システム・TTS（VOICEVOX）まで
+一通り実装・実機確認・コミット・push済み。

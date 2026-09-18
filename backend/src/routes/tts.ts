@@ -14,7 +14,7 @@ const router = Router();
  */
 router.post('/speak', async (req: Request, res: Response) => {
   try {
-    const { text, voiceId = 'ja-JP-Neural2-B', languageCode = 'ja-JP', pitch = 0, speakingRate = 1.0 } = req.body;
+    const { text, speakerId = 2, speed = 1.0 } = req.body;
 
     // バリデーション
     if (!text || text.trim().length === 0) {
@@ -31,14 +31,14 @@ router.post('/speak', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`[TTS] Synthesizing: "${text.substring(0, 50)}..." with voice: ${voiceId}`);
+    console.log(`[TTS] Synthesizing: "${text.substring(0, 50)}..." with speakerId: ${speakerId}`);
 
-    // 音声合成
-    const audioBuffer = await synthesizeSpeech(text, voiceId, languageCode, pitch, speakingRate);
+    // 音声合成（VOICEVOX）
+    const audioBuffer = await synthesizeSpeech(text, speakerId, speed);
 
-    // MP3 としてレスポンス
-    res.set('Content-Type', 'audio/mpeg');
-    res.set('Content-Length', audioBuffer.length);
+    // WAV としてレスポンス
+    res.set('Content-Type', 'audio/wav');
+    res.set('Content-Length', String(audioBuffer.length));
     res.send(audioBuffer);
   } catch (error) {
     console.error('[TTS API] Error:', error);

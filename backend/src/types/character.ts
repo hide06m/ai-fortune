@@ -21,7 +21,7 @@ export interface Character {
   gender: 'male' | 'female';
   role: string;
   personality: string;
-  voiceId: string; // Google TTS voice ID
+  voiceId: number; // VOICEVOX speaker ID
   imageFile: string; // ham0XX, ham1XX など
 }
 
@@ -64,7 +64,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     gender: 'male',
     role: '出迎え役・メインキャラ',
     personality: '温かみのある長男肌、優しい',
-    voiceId: 'ja-JP-Neural2-C', // 男性・低音・温かみ
+    voiceId: 11, // 玄野武宏・男性
     imageFile: 'ham0',
   },
   1: {
@@ -73,7 +73,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     gender: 'female',
     role: '初期占い師・自然派',
     personality: 'ふんわり癒しタイプ、親しみやすい、躊躇がない',
-    voiceId: 'ja-JP-Neural2-B', // 女性・優しい
+    voiceId: 2, // 四国めたん ノーマル・女性
     imageFile: 'ham1',
   },
   2: {
@@ -82,7 +82,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     gender: 'female',
     role: '星占い系占い師',
     personality: '神秘的、落ち着いた雰囲気、知識豊富',
-    voiceId: 'ja-JP-Neural2-D', // 女性・落ち着き
+    voiceId: 9, // 波音リツ・女性
     imageFile: 'ham2',
   },
   3: {
@@ -91,7 +91,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     gender: 'male',
     role: '伝統占術師',
     personality: '経験豊富な長老タイプ、厳格だが優しい',
-    voiceId: 'ja-JP-Neural2-A', // 男性・渋い
+    voiceId: 13, // 青山龍星・男性、低め
     imageFile: 'ham3',
   },
   4: {
@@ -100,7 +100,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     gender: 'male',
     role: '親切系占い師',
     personality: '親切で親しみやすい、ユーザーの話をよく聞く',
-    voiceId: 'ja-JP-Neural2-E', // 男性・優しい
+    voiceId: 12, // 白上虎太郎 ふつう・男性
     imageFile: 'ham4',
   },
 };

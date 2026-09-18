@@ -16,6 +16,11 @@ frontend/dist/
 .env.local
 .env.*.local
 
+# GCPサービスアカウント鍵（TTSなど。絶対にコミットしない）
+*-key.json
+gcp-*.json
+backend/gcp-tts-key.json
+
 # Logs
 logs
 *.log

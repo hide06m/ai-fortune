@@ -1,28 +1,29 @@
 /**
  * テキストツースピーチ（TTS）サービス
- * Google Cloud Text-to-Speech API を使用
+ * VOICEVOX Engine（backend経由）を使用
  */
 
 import { type CharacterId, CHARACTER_MASTER_DATA } from '../types/character';
 import { API_URL } from '../api';
 
 /**
- * Google TTS API エンドポイント（backend 経由で呼ぶ）
+ * TTS API エンドポイント（backend 経由で VOICEVOX Engine を呼ぶ）
  */
 const TTS_ENDPOINT = `${API_URL}/api/tts/speak`;
 
 /**
- * キャラクター ID から Google TTS voice ID を取得
+ * キャラクター ID から VOICEVOX の話者ID（speaker id）を取得
+ * VOICEVOXにインストール済みの話者一覧は GET {engineURL}/speakers で確認できる
  */
-function getCharacterVoiceId(characterId: CharacterId): string {
-  const voices: Record<CharacterId, string> = {
-    0: 'ja-JP-Neural2-C', // ムスビ（男性・低音・温かみ）
-    1: 'ja-JP-Neural2-B', // ナツメ（女性・優しい）
-    2: 'ja-JP-Neural2-D', // ツキ（女性・落ち着き）
-    3: 'ja-JP-Neural2-A', // コクウ（男性・渋い）
-    4: 'ja-JP-Neural2-E', // クリ（男性・優しい）
+function getCharacterSpeakerId(characterId: CharacterId): number {
+  const speakers: Record<CharacterId, number> = {
+    0: 11, // ムスビ（玄野武宏・男性）
+    1: 2,  // ナツメ（四国めたん ノーマル・女性）
+    2: 9,  // ツキ（波音リツ・女性）
+    3: 13, // コクウ（青山龍星・男性、低め）
+    4: 12, // クリ（白上虎太郎 ふつう・男性）
   };
-  return voices[characterId];
+  return speakers[characterId];
 }
 
 /**
@@ -37,7 +38,7 @@ export async function speak(
   speed: number = 1.0
 ): Promise<void> {
   try {
-    const voiceId = getCharacterVoiceId(characterId);
+    const speakerId = getCharacterSpeakerId(characterId);
     const character = CHARACTER_MASTER_DATA[characterId];
 
     console.log(`🎤 [${character.name}] Speaking: "${text}"`);
@@ -50,10 +51,8 @@ export async function speak(
       },
       body: JSON.stringify({
         text,
-        voiceId,
-        languageCode: 'ja-JP',
-        pitch: 0.0,
-        speakingRate: speed,
+        speakerId,
+        speed,
       }),
     });
 
@@ -62,7 +61,7 @@ export async function speak(
     }
 
     const audioData = await response.arrayBuffer();
-    const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
+    const audioBlob = new Blob([audioData], { type: 'audio/wav' });
     const audioUrl = URL.createObjectURL(audioBlob);
 
     // 音声再生
