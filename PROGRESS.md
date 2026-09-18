@@ -175,6 +175,44 @@ cd backend && bash start-voicevox.sh
 ```
 起動確認: `curl http://localhost:50021/version`（初回は音声モデル読み込みで数秒〜十数秒かかる）
 
-## 残タスク
-特になし。ローディングアニメーション・ハムスターキャラ選択・親密度システム・TTS（VOICEVOX）まで
-一通り実装・実機確認・コミット・push済み。
+## ✅ リリース準備セッション（2026-09-18）
+
+ユーザーから「リリースまで何が残っているか」と聞かれ、コードとREADMEを精査。以下を実施・コミット済み：
+
+1. **セキュリティ強化**：`JWT_SECRET`未設定時に固定値へフォールバックしていたのを、本番(`NODE_ENV=production`)では
+   起動を拒否するように変更。CORSを`CORS_ORIGINS`環境変数で本番ドメインを指定できるように変更（従来はlocalhost決め打ち）
+2. **`.env.example`整備**：backend/frontend両方に作成・不足していた変数（`VITE_GOOGLE_CLIENT_ID`等）を追記
+3. **README/QUICK_START.md更新**：Claude API(Anthropic)という古い記述をGemini APIに修正、レート制限の記述を実態に合わせた
+4. **🚨重大バグ発見・削除：Googleログイン時の危険なGCP自動操作**
+   ログインのたびに、ユーザー本人のOAuthアクセストークン（`cloud-platform`という非常に強力なスコープ）を使って
+   [backend/src/gcp/billing.ts](backend/src/gcp/billing.ts)（削除済み）が**ユーザー本人のGCP請求quotaを勝手に$0に設定**し、
+   [backend/src/gcp/apiKey.ts](backend/src/gcp/apiKey.ts)（削除済み）が**ユーザー本人のGCPプロジェクトにAPIキーを自動生成**していた。
+   しかも生成したキーはどこにも保存されず実際の診断には一切使われていなかった（`// TODO: DBに保存する`のまま放置された未完成機能）。
+   公開リリースするとGoogleの厳格な審査が必須になる上、一般ユーザーのほとんどはGCPプロジェクトを持っていないため
+   恩恵もない、実害だけがある機能だった。`frontend/src/App.tsx`のOAuthスコープも`openid email profile`のみに削減。
+5. **ログイン済みユーザーにも利用上限を追加**：以前は認証済みユーザーはレート制限を完全スキップしており、
+   コスト青天井になっていた。[backend/src/middleware/rateLimit.ts](backend/src/middleware/rateLimit.ts)を変更し、
+   ゲスト1日1回（IP単位）／ログイン済み1日3回（ユーザー単位）に統一。
+
+**LLMプロバイダの検討経緯（重要・変更しないこと）：**
+一時的にOpenAI(ChatGPT)への切り替えを試みたが、ユーザーが用意した職業訓練校提供のAPIキーは
+「ChatGPT契約とは別会計のAPIクレジットが$0」で使えないことが判明（ChatGPT契約とOpenAI API利用は別物）。
+訓練校側にAPI用組織が無いことも確認済み。**最終的にGeminiに戻すことで確定**（ユーザー了承済み）。
+今後もし別プロバイダへの切り替えを検討する場合は、事前に「そのAPIキーで実際にクレジットが使えるか」を
+真っ先に確認すること（契約と実際のAPI課金は別ということが多くのユーザーにとって分かりにくい落とし穴）。
+
+## 残タスク（リリースに向けて）
+
+ユーザーは「誰でもアクセス可能な公開リリース」かつ「デプロイ先はRender」を希望。VOICEVOXは本番でも
+動かす方法を検討する方針。次回以降、以下が未着手：
+
+1. **`render.yaml`（Render Blueprint）の作成** — backend(Web Service) / frontend(Static Site) / PostgreSQLの構成。
+   まだ1行も書かれていない
+2. **VOICEVOXの本番運用方法の設計** — 現状はこのPCのGドライブに置いた1.9GBのエンジンを手動起動する構成で、
+   本番サーバーではそのままでは動かない。VOICEVOX公式のDockerイメージ（`voicevox/voicevox_engine`）を
+   Render上で別Web Serviceとして動かし、backendから内部URLで呼ぶ方式が有力候補（未着手・未検証）
+3. **Google OAuth同意画面を「テスト」から「本番」へ切り替え** — ユーザー自身がGoogle Cloud Consoleで行う必要がある
+   （Claude側では代行不可。スコープを`openid email profile`のみに絞ったので、審査は不要か軽微で済むはず）
+4. **本番用の環境変数を実際に設定** — `JWT_SECRET`（ランダム生成必要）、本番の`GOOGLE_CLIENT_ID/SECRET`の
+   リダイレクトURI追加、`CORS_ORIGINS`、`DATABASE_URL`（Render PostgreSQL）等
+5. （任意）感想フォームのDB永続化、プライバシーポリシー等の法的ページ
