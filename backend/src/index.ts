@@ -18,9 +18,25 @@ import { authMiddleware, requireAuth } from './middleware/auth.js'
 import { verifyGoogleToken } from './auth/googleAuth.js'
 import { generateToken, generateUserId } from './auth/jwt.js'
 import { getUserByGoogleId, createUser, initializeDatabase, testConnection } from './db/client.js'
+import { setBillingQuotaToZero } from './gcp/billing.js'
+import { getOrCreateGeminiApiKey } from './gcp/apiKey.js'
+import characterRoutes from './routes/character.js'
+import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCharacter } from './db/character.js'
+import { INTIMACY_UNLOCKS, CharacterId } from './types/character.js'
+import ttsRoutes from './routes/tts.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
+
+// ✅ 1つのルート（例: TTSのGoogle Cloud認証エラー）でサーバー全体が落ちないようにする
+// google-cloud/text-to-speech は認証情報が無い環境だと、await/try-catch の外側で
+// rejectする内部プロミスを生成することがあり、そのままだとプロセスごと落ちる。
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason)
+})
+process.on('uncaughtException', (error) => {
+  console.error('[UNCAUGHT EXCEPTION]', error)
+})
 
 // Middleware
 app.use(cors({
@@ -50,19 +66,88 @@ app.get('/health', (req: Request, res: Response) => {
 /**
  * Google OAuth ログイン
  * POST /api/auth/google
- * Body: { idToken: string }
+ * Body: { code: string } or { idToken: string }
  */
 app.post('/api/auth/google', async (req: Request, res: Response) => {
   try {
-    const { idToken } = req.body
+    console.log('[AUTH] Request body received:', req.body)
+    const { code, idToken } = req.body
+    console.log('[AUTH] code:', code, '| idToken:', idToken)
+    let googleUser: any
 
-    if (!idToken) {
-      return res.status(400).json({ error: 'idToken is required' })
+    // idToken が authorization code の場合も処理（フロントエンド側の authenticateWithGoogle で送信）
+    const authCode = code || (idToken && idToken.startsWith('4/') ? idToken : null)
+    const jwtToken = idToken && !idToken.startsWith('4/') ? idToken : null
+
+    if (authCode) {
+      // authorization_code から id_token に交換
+      console.log('[AUTH] Exchanging authorization code for tokens...')
+      console.log('[AUTH] authCode:', authCode)
+      console.log('[AUTH] client_id:', process.env.GOOGLE_CLIENT_ID ? '✓ set' : '✗ NOT SET')
+      console.log('[AUTH] client_secret:', process.env.GOOGLE_CLIENT_SECRET ? '✓ set' : '✗ NOT SET')
+
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code: authCode,
+          client_id: process.env.GOOGLE_CLIENT_ID || '',
+          client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+          redirect_uri: 'http://localhost:5173',
+          grant_type: 'authorization_code'
+        }).toString()
+      })
+
+      console.log('[AUTH] Token response status:', tokenResponse.status)
+
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text()
+        console.error('[AUTH] Failed to exchange code for token:', errorText)
+        return res.status(401).json({ error: 'Failed to exchange authorization code', details: errorText })
+      }
+
+      const tokenData = await tokenResponse.json()
+      console.log('[AUTH] Token response data:', Object.keys(tokenData))
+      const exchangedIdToken = tokenData.id_token
+      const accessToken = tokenData.access_token  // ✅ アクセストークンを取得
+
+      if (!exchangedIdToken) {
+        console.error('[AUTH] No id_token in response. Response keys:', Object.keys(tokenData))
+        return res.status(401).json({ error: 'No id_token in response' })
+      }
+
+      // id_token を検証
+      googleUser = await verifyGoogleToken(exchangedIdToken)
+      console.log(`[AUTH] Google user verified (code exchange): ${googleUser.email}`)
+
+      // ✅ ユーザーの GCP Billing Quota を自動設定（無料枠のみを使用）
+      let userGeminiApiKey: string | null = null
+      if (accessToken) {
+        try {
+          console.log(`[AUTH] Setting up GCP resources for user: ${googleUser.email}`)
+
+          // 1. Billing Quota を $0 に設定（自動課金防止）
+          await setBillingQuotaToZero(accessToken, googleUser.email)
+
+          // 2. Gemini API キーを取得または生成
+          userGeminiApiKey = await getOrCreateGeminiApiKey(accessToken, googleUser.email)
+
+          if (userGeminiApiKey) {
+            console.log(`[AUTH] Gemini API key set for user: ${googleUser.email}`)
+            // TODO: API キーをデータベースに保存する
+          }
+        } catch (error) {
+          console.warn('[AUTH] Failed to set up GCP resources:', error)
+          // GCP 設定失敗でも、ユーザー認証は続行（backend キーで診断可能）
+        }
+      }
+    } else if (jwtToken) {
+      // idToken（JWT）から検証
+      googleUser = await verifyGoogleToken(jwtToken)
+      console.log(`[AUTH] Google user verified (idToken): ${googleUser.email}`)
+    } else {
+      return res.status(400).json({ error: 'authorization code or valid idToken is required' })
     }
-
-    // Google トークンを検証
-    const googleUser = await verifyGoogleToken(idToken)
-    console.log(`[AUTH] Google user verified: ${googleUser.email}`)
 
     // ユーザーが存在するか確認
     let user = await getUserByGoogleId(googleUser.googleId)
@@ -78,6 +163,15 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
         googleUser.picture
       )
       console.log(`[AUTH] New user created: ${googleUser.email}`)
+
+      // ✅ 新規ユーザーのキャラクター親密度を初期化
+      try {
+        await initializeUserCharacterIntimacies(user.id)
+        console.log(`[AUTH] Initialized character intimacies for user: ${googleUser.email}`)
+      } catch (error) {
+        console.warn('[AUTH] Failed to initialize character intimacies:', error)
+        // 初期化失敗でも認証は続行
+      }
     }
 
     // JWT トークンを生成
@@ -134,7 +228,7 @@ app.get('/api/auth/me', requireAuth, (req: Request, res: Response) => {
  */
 app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
   try {
-    const { birthDate, birthTime, birthPlace, concern } = req.body
+    const { birthDate, birthTime, birthPlace, concern, characterId } = req.body
 
     // バリデーション
     if (!birthDate) {
@@ -142,6 +236,31 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
     }
     if (!concern) {
       return res.status(400).json({ error: 'concern is required' })
+    }
+
+    // 親密度更新（ログインユーザーがキャラクターを指定した場合のみ）
+    // ゲストや未指定時はスキップ。キャラ選択画面の解放条件（INTIMACY_UNLOCKS）に達したら自動解放する。
+    let intimacyResult: { characterId: CharacterId; intimacyLevel: number; justUnlocked: CharacterId | null } | null = null
+    if (req.isAuthenticated && req.user && Number.isInteger(characterId) && characterId >= 0 && characterId <= 4) {
+      try {
+        const userId = req.user.userId
+        const charId = characterId as CharacterId
+        const intimacy = await incrementCharacterIntimacy(userId, charId)
+
+        let justUnlocked: CharacterId | null = null
+        const unlock = INTIMACY_UNLOCKS.find(
+          (u) => u.characterId !== undefined && u.level === intimacy.intimacyLevel
+        )
+        if (unlock?.characterId !== undefined) {
+          await unlockCharacter(userId, unlock.characterId)
+          justUnlocked = unlock.characterId
+        }
+
+        intimacyResult = { characterId: charId, intimacyLevel: intimacy.intimacyLevel, justUnlocked }
+      } catch (error) {
+        // 親密度更新に失敗しても診断結果は返す
+        console.error('Failed to update character intimacy:', error)
+      }
     }
 
     // 占術計算
@@ -163,7 +282,8 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
           kyuseiSeisun,
           analysis: cachedResult,
           cached: true
-        }
+        },
+        intimacy: intimacyResult
       })
     }
 
@@ -171,7 +291,7 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
     let analysis = 'LLM API が未設定です。占術計算結果は以下の通りです。'
     let tokensUsed = 0
 
-    if (process.env.ANTHROPIC_API_KEY) {
+    if (process.env.GEMINI_API_KEY) {
       const prompt = buildLLMPrompt(baZi, numerology, kyuseiSeisun, concern)
       try {
         const llmResult = await generateFortuneAnalysis(prompt, concern)
@@ -196,7 +316,8 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
         analysis,
         tokensUsed,
         cached: false
-      }
+      },
+      intimacy: intimacyResult
     })
   } catch (error) {
     console.error('Fortune API error:', error)
@@ -234,6 +355,12 @@ app.post('/api/feedback', (req: Request, res: Response) => {
     })
   }
 })
+
+// ========== Character Routes ==========
+app.use('/api/character', characterRoutes)
+
+// ========== Text-to-Speech Routes ==========
+app.use('/api/tts', ttsRoutes)
 
 /**
  * キャッシュ統計
@@ -278,8 +405,8 @@ async function startServer() {
     console.log(`   Auth: POST http://localhost:${PORT}/api/auth/google`)
     console.log(`   API: POST http://localhost:${PORT}/api/fortune`)
     console.log(`   Env: ${process.env.NODE_ENV || 'development'}`)
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn('⚠️  ANTHROPIC_API_KEY not set. LLM features will be disabled.')
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn('⚠️  GEMINI_API_KEY not set. LLM features will be disabled.')
     }
     if (!process.env.GOOGLE_CLIENT_ID) {
       console.warn('⚠️  GOOGLE_CLIENT_ID not set. Google OAuth will be disabled.')

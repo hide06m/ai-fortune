@@ -7,6 +7,7 @@ export interface FortuneRequest {
   birthTime?: string
   birthPlace?: string
   concern: string
+  characterId?: number
 }
 
 export interface BaZiPillar {
@@ -37,13 +38,20 @@ export interface FortuneReading {
   cached?: boolean
 }
 
+export interface IntimacyResult {
+  characterId: number
+  intimacyLevel: number
+  justUnlocked: number | null
+}
+
 export interface FortuneResponse {
   success: boolean
   reading?: FortuneReading
+  intimacy?: IntimacyResult | null
   error?: string
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 // トークン管理
 export function getToken(): string | null {
@@ -56,6 +64,19 @@ export function setToken(token: string): void {
 
 export function clearToken(): void {
   localStorage.removeItem('authToken')
+}
+
+// ユーザーメール管理
+export function getUserEmail(): string | null {
+  return localStorage.getItem('userEmail')
+}
+
+export function setUserEmail(email: string): void {
+  localStorage.setItem('userEmail', email)
+}
+
+export function clearUserEmail(): void {
+  localStorage.removeItem('userEmail')
 }
 
 export function isAuthenticated(): boolean {
@@ -106,6 +127,10 @@ export async function authenticateWithGoogle(idToken: string): Promise<GoogleAut
   const data = await response.json()
   if (data.success && data.token) {
     setToken(data.token)
+    // ✅ ユーザーメールアドレスも保存
+    if (data.user?.email) {
+      setUserEmail(data.user.email)
+    }
   }
   return data
 }
@@ -121,6 +146,7 @@ export async function logout(): Promise<{ success: boolean }> {
     console.error('Logout error:', error)
   }
   clearToken()
+  clearUserEmail()  // ✅ ユーザーメールもクリア
   return { success: true }
 }
 
@@ -132,10 +158,27 @@ export async function callFortuneAPI(request: FortuneRequest): Promise<FortuneRe
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    return {
-      success: false,
-      error: error.error || 'Failed to call fortune API'
+    // 429: レート制限エラー
+    if (response.status === 429) {
+      return {
+        success: false,
+        error: '本日の診断回数上限に達しました。明日もう一度お試しください。'
+      }
+    }
+
+    // その他のエラー
+    try {
+      const error = await response.json()
+      return {
+        success: false,
+        error: error.error || 'Failed to call fortune API'
+      }
+    } catch (e) {
+      // JSON パースに失敗した場合
+      return {
+        success: false,
+        error: `エラーが発生しました (${response.status})`
+      }
     }
   }
 

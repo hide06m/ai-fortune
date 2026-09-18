@@ -1,12 +1,23 @@
 /**
- * Claude API 呼び出しラッパー
+ * Google Gemini API ラッパー
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import dotenv from 'dotenv'
+dotenv.config()
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || ''
-})
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const apiKey = process.env.GEMINI_API_KEY
+
+console.log('🔑 GEMINI_API_KEY loaded:', !!apiKey)
+console.log('🔑 API key length:', apiKey?.length || 'undefined')
+
+if (!apiKey) {
+  console.error('❌ ERROR: GEMINI_API_KEY is not set!')
+  process.exit(1)
+}
+
+const genAI = new GoogleGenerativeAI(apiKey)
 
 export interface FortuneAnalysisResult {
   analysis: string
@@ -14,37 +25,26 @@ export interface FortuneAnalysisResult {
 }
 
 /**
- * 占術計算結果をLLMで統合診断文に変換
+ * 占術計算結果を Gemini で統合診断文に変換
  */
 export async function generateFortuneAnalysis(
-  fortundescript: string,
+  fortuneDescription: string,
   concernText: string
 ): Promise<FortuneAnalysisResult> {
   try {
-    const response = await client.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-3-5-haiku-20241022',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `${fortundescript}\n\nユーザーの悩み・現在の状況:\n${concernText}\n\nこの情報から統合された占い診断文を生成してください。`
-        }
-      ]
-    })
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
 
-    const analysis = response.content
-      .filter((block) => block.type === 'text')
-      .map((block) => (block.type === 'text' ? block.text : ''))
-      .join('')
+    const prompt = `${fortuneDescription}\n\nユーザーの悩み・現在の状況:\n${concernText}\n\nこの情報から統合された診断文を生成してください。親切で前向きなメッセージにしてください。`
 
-    const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
+    const result = await model.generateContent(prompt)
+    const analysis = result.response.text()
 
     return {
       analysis,
-      tokensUsed
+      tokensUsed: 0 // Gemini は token count がないため 0
     }
   } catch (error) {
-    console.error('Error calling Claude API:', error)
+    console.error('Error calling Gemini API:', error)
     throw error
   }
 }

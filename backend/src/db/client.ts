@@ -6,7 +6,16 @@ const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+  // Render のような外部 PostgreSQL は SSL が必須
+  ssl: process.env.DATABASE_URL?.includes('render.com') ? { rejectUnauthorized: false } : false,
 });
+
+/**
+ * DB クエリ実行（wrapper）
+ */
+export function query(sql: string, values?: any[]) {
+  return pool.query(sql, values);
+}
 
 /**
  * DB 接続の初期化・テーブル作成
@@ -60,6 +69,48 @@ export async function initializeDatabase() {
         comment TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // character_intimacy テーブル（新規）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS character_intimacy (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        character_id INT NOT NULL CHECK (character_id BETWEEN 0 AND 4),
+        intimacy_level INT NOT NULL DEFAULT 0 CHECK (intimacy_level BETWEEN 0 AND 10),
+        total_diagnoses INT NOT NULL DEFAULT 0,
+        last_diagnosis_date TIMESTAMP,
+        unlocked_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, character_id)
+      )
+    `);
+
+    // character_intimacy インデックス
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_character_intimacy_user_id ON character_intimacy(user_id);
+      CREATE INDEX IF NOT EXISTS idx_character_intimacy_character_id ON character_intimacy(character_id);
+      CREATE INDEX IF NOT EXISTS idx_character_intimacy_user_char ON character_intimacy(user_id, character_id);
+    `);
+
+    // updated_at トリガー
+    await client.query(`
+      CREATE OR REPLACE FUNCTION update_character_intimacy_timestamp()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS trigger_character_intimacy_updated_at ON character_intimacy;
+      CREATE TRIGGER trigger_character_intimacy_updated_at
+      BEFORE UPDATE ON character_intimacy
+      FOR EACH ROW
+      EXECUTE FUNCTION update_character_intimacy_timestamp();
     `);
 
     console.log('✅ Database initialized successfully');

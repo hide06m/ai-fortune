@@ -1,0 +1,156 @@
+/**
+ * ハムスター走りアニメーション（ローディング画面）
+ * 速度調整版：1秒に 2 回転
+ * 参照：assets/run/loading-animation-spec.md
+ */
+
+.hamster-loading-container {
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+/* ハムスター走りアニメーション */
+.hamster-loader {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 車輪 */
+.hamster-loader .wheel {
+  position: absolute;
+  inset: 0;
+  background: url('/assets/run/wheel_centered_alpha.webp') center / contain no-repeat;
+  animation: wheel-spin 0.5s linear infinite;
+  /* 0.5秒で1回転 = 1秒に2回転 */
+}
+
+@keyframes wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ハムスター（コマごとの個別画像を <img> で切り替え。JSはHamsterLoading.tsx参照）
+   登録点計算（車輪キャンバス1580基準、ハブ790,790・走行面半径630 — loading-animation-spec.md §2/§5）:
+   フレームの実サイズ（キャラのソース画素をそのまま切り出した実寸）= 886x578
+   （※ 画像ファイル自体は表示用に縮小しているが、CSS上の表示サイズは
+      画像ファイルの解像度ではなく、この「車輪空間での実寸」を基準にする）
+   targetNoseX=870 / targetFootY=556（フレーム内でのローカル登録点）
+   wheel_x0 = NOSE_DST(1190) - targetNoseX(870) = 320  → 320/1580  = 20.25%
+   wheel_y0 = FOOT_DST(1420) - targetFootY(556) = 864  → 864/1580  = 54.68%
+   width  = 886/1580 = 56.08%
+   height = 578/1580 = 36.58%
+
+   注: 以前はこれを1枚のスプライトシート＋background-positionで実装していたが、
+   ブラウザが画像全体を大きく縮小表示する際に隣接コマが滲んで混ざる（ブリード）問題が
+   発生したため、コマごとの個別画像を<img>で直接切り替える方式に変更した。 */
+.hamster-loader .hamster {
+  position: absolute;
+  left: 20.25%;
+  top: 54.68%;
+  width: 56.08%;
+  height: 36.58%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* 影 */
+.hamster-loader .loader-shadow {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  box-shadow: 6px 8px 18px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+/* ローディングメッセージ */
+.loading-message {
+  text-align: center;
+  color: white;
+  font-family: 'Arial', sans-serif;
+}
+
+.loading-message .main-message {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: 1px;
+}
+
+.loading-message .estimate {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  margin: 0 0 1rem 0;
+}
+
+/* ローディングドット */
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0.6;
+  animation: dots-pulse 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dots-pulse {
+  0%,
+  60%,
+  100% {
+    opacity: 0.6;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+  .hamster-loader {
+    width: 200px;
+    height: 200px;
+  }
+
+  .loading-message .main-message {
+    font-size: 1.2rem;
+  }
+
+  .loading-message .estimate {
+    font-size: 0.85rem;
+  }
+}
+
+/* ダークモード対応（将来用） */
+@media (prefers-color-scheme: dark) {
+  .hamster-loading-container {
+    background: linear-gradient(135deg, #1e1e2e 0%, #2d1b69 100%);
+  }
+}

@@ -5,18 +5,23 @@
 
 import rateLimit from 'express-rate-limit'
 
-// IP単位でのレート制限(1日3回)
+// IP単位でのレート制限(1日1回) - ゲストユーザーのみ
 export const dailyLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 3, // 3 requests per window
+  max: 1, // 1 request per window
   keyGenerator: (req) => {
     // X-Forwarded-Forヘッダー優先(Render環境でのプロキシ対応)
     return (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'
   },
   message: 'Too many fortune readings from this IP. Please try again tomorrow.',
   statusCode: 429,
-  skip: (req) => {
-    // ヘルスチェックエンドポイントはスキップ
+  skip: (req: any) => {
+    // ✅ ログイン済みユーザーはレート制限をスキップ
+    if (req.user && req.user.userId) {
+      console.log(`✅ [RATE LIMIT SKIP] Authenticated user: ${req.user.userId}`)
+      return true
+    }
+    // ヘルスチェックエンドポイントもスキップ
     return req.path === '/health'
   }
 })
