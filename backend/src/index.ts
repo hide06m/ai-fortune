@@ -24,6 +24,8 @@ import { INTIMACY_UNLOCKS, CharacterId } from './types/character.js'
 import ttsRoutes from './routes/tts.js'
 import stonesRoutes from './routes/stones.js'
 import { grantSignupBonus, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
+import readingsRoutes from './routes/readings.js'
+import { saveReading } from './db/readings.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -263,6 +265,22 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
     const cachedResult = fortuneCache.get(baziKey, concern)
     if (cachedResult) {
       console.log('[CACHE HIT]', baziKey)
+
+      // ログイン済みなら診断履歴に保存（失敗しても診断結果は返す）
+      if (req.isAuthenticated && req.user) {
+        try {
+          await saveReading({
+            userId: req.user.userId,
+            birthDate, birthTime, birthPlace, concern,
+            baZi, numerology, kyuseiSeisun,
+            analysis: cachedResult,
+            characterId: Number.isInteger(characterId) ? characterId : null,
+          })
+        } catch (error) {
+          console.error('Failed to save reading (cache hit):', error)
+        }
+      }
+
       return res.json({
         success: true,
         reading: {
@@ -298,6 +316,7 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
     // LLMで診断文生成
     let analysis = 'LLM API が未設定です。占術計算結果は以下の通りです。'
     let tokensUsed = 0
+    let llmSucceeded = false
 
     if (process.env.GEMINI_API_KEY) {
       const prompt = buildLLMPrompt(baZi, numerology, kyuseiSeisun, concern)
@@ -305,6 +324,7 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
         const llmResult = await generateFortuneAnalysis(prompt, concern)
         analysis = llmResult.analysis
         tokensUsed = llmResult.tokensUsed
+        llmSucceeded = true
       } catch (error) {
         console.error('LLM generation error:', error)
         // LLM失敗時も計算結果は返す。消費した石は払い戻す。
@@ -321,6 +341,21 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
 
     // キャッシュに保存
     fortuneCache.set(baziKey, concern, analysis)
+
+    // ログイン済み・LLM生成成功時のみ診断履歴に保存（失敗しても診断結果は返す）
+    if (llmSucceeded && req.isAuthenticated && req.user) {
+      try {
+        await saveReading({
+          userId: req.user.userId,
+          birthDate, birthTime, birthPlace, concern,
+          baZi, numerology, kyuseiSeisun,
+          analysis,
+          characterId: Number.isInteger(characterId) ? characterId : null,
+        })
+      } catch (error) {
+        console.error('Failed to save reading:', error)
+      }
+    }
 
     res.json({
       success: true,
@@ -380,6 +415,9 @@ app.use('/api/tts', ttsRoutes)
 
 // ========== Stone (石) Routes ==========
 app.use('/api/stones', stonesRoutes)
+
+// ========== Reading History Routes ==========
+app.use('/api/readings', readingsRoutes)
 
 /**
  * キャッシュ統計

@@ -15,6 +15,7 @@ import {
 import { speakResult, isVoiceEnabled } from './services/textToSpeech'
 import { CHARACTER_MASTER_DATA, type CharacterId } from './types/character'
 import { getStoneBalance, claimDailyBonus, watchAdForStone } from './api/stones'
+import { getReadingHistory, getReadingDetail, type ReadingSummary } from './api/readings'
 import {
   initAudio,
   startAmbientLoop,
@@ -35,7 +36,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'character-selection' | 'form' | 'result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'character-selection' | 'form' | 'result' | 'history'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -47,6 +48,11 @@ function AppContent() {
   const [stoneBalance, setStoneBalance] = useState<number | null>(null)
   const [stoneBonusMessage, setStoneBonusMessage] = useState('')
   const [watchingAd, setWatchingAd] = useState(false)
+
+  // 診断履歴
+  const [readingHistory, setReadingHistory] = useState<ReadingSummary[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [viewingHistoryReading, setViewingHistoryReading] = useState(false)
 
   // Form state
   const [loading, setLoading] = useState(false)
@@ -134,6 +140,42 @@ function AppContent() {
       setError('広告視聴ボーナスの取得に失敗しました。')
     } finally {
       setWatchingAd(false)
+    }
+  }
+
+  // 診断履歴一覧を開く
+  const openHistory = async () => {
+    setError('')
+    setHistoryLoading(true)
+    setScreen('history')
+    try {
+      const result = await getReadingHistory()
+      setReadingHistory(result.readings)
+    } catch (err) {
+      setError('診断履歴の取得に失敗しました。')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  // 診断履歴の1件を結果画面で表示
+  const viewHistoryItem = async (id: string) => {
+    setError('')
+    try {
+      const result = await getReadingDetail(id)
+      const r = result.reading
+      setReading({
+        baZi: r.baZi,
+        numerology: r.numerology,
+        kyuseiSeisun: r.kyuseiSeisun,
+        analysis: r.analysis,
+        cached: true
+      })
+      setJustUnlockedCharacter(null)
+      setViewingHistoryReading(true)
+      setScreen('result')
+    } catch (err) {
+      setError('診断履歴の取得に失敗しました。')
     }
   }
 
@@ -265,6 +307,7 @@ function AppContent() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setViewingHistoryReading(false)
 
     try {
       const request: FortuneRequest = {
@@ -326,11 +369,12 @@ function AppContent() {
 
   // 戻る
   const handleBack = () => {
-    setScreen('form')
+    setScreen(viewingHistoryReading ? 'history' : 'form')
     setError('')
     setFeedback('')
     setFeedbackSubmitted(false)
     setJustUnlockedCharacter(null)
+    setViewingHistoryReading(false)
   }
 
   // 新しい診断
@@ -347,6 +391,7 @@ function AppContent() {
     setFeedback('')
     setFeedbackSubmitted(false)
     setJustUnlockedCharacter(null)
+    setViewingHistoryReading(false)
 
     // ⚠️ localStorage は削除しない！
     // 「新しい診断」をクリック後、form 画面で前回の入力を復元するため
@@ -427,6 +472,11 @@ function AppContent() {
               {/* ログイン状態表示・ログアウト */}
               <div className="landing-header-actions">
                 {authenticated && <span className="landing-user-email">{userEmail}</span>}
+                {authenticated && (
+                  <button onClick={openHistory} className="landing-history-button">
+                    📜 診断履歴
+                  </button>
+                )}
                 {authenticated && (
                   <button onClick={handleLogout} className="landing-logout-button">
                     ログアウト
@@ -679,6 +729,48 @@ function AppContent() {
             </button>
           </div>
         </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ========== 診断履歴画面 ==========
+  if (screen === 'history') {
+    return (
+      <div className="form-container" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
+        <div className="form-overlay">
+          <div className="form-header">
+            <h1>診断履歴</h1>
+            <button onClick={() => setScreen('landing')} className="logout-button">
+              戻る
+            </button>
+          </div>
+
+          {error && <div className="error">{error}</div>}
+
+          {historyLoading ? (
+            <p className="guest-notice">読み込み中...</p>
+          ) : readingHistory.length === 0 ? (
+            <p className="guest-notice">まだ診断履歴がありません。診断を実行すると、ここに記録されます。</p>
+          ) : (
+            <ul className="history-list">
+              {readingHistory.map((r) => {
+                const character = r.characterId !== null ? CHARACTER_MASTER_DATA[r.characterId as CharacterId] : null
+                const date = new Date(r.createdAt).toLocaleDateString('ja-JP', {
+                  year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                })
+                return (
+                  <li key={r.id} className="history-item" onClick={() => viewHistoryItem(r.id)}>
+                    <div className="history-item-header">
+                      <span className="history-date">{date}</span>
+                      {character && <span className="history-character">{character.name}</span>}
+                    </div>
+                    <p className="history-concern">{r.concern}</p>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </div>
     )

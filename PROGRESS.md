@@ -257,3 +257,27 @@ cd backend && bash start-voicevox.sh
 専用アイコン（銀河模様の黒い石、透過PNG）を軽量化して配置：
 `frontend/public/assets/stone.webp`（160x160、5KB。元データは
 `G:\マイドライブ\AI-project\ai-fortune\assets\stone.png`、2048x2048）。石残高表示の`.stone-icon`で使用中。
+
+## ✅ 診断履歴（マイページ）機能実装（2026-09-19）
+
+アカウント機能充実の第一弾として、ずっと未使用だった`readings`テーブルへの保存処理を実装した。
+
+**実装内容：**
+- DB: `readings`テーブルに`character_id`カラムを追加（どのキャラで占ったか記録するため）、
+  `(user_id, created_at DESC)`のインデックスを追加
+- [backend/src/db/readings.ts](backend/src/db/readings.ts)：`saveReading()`, `getUserReadings()`,
+  `getReadingById()`（本人の履歴のみ取得できるようuser_idで絞り込み）
+- [backend/src/routes/readings.ts](backend/src/routes/readings.ts)：`GET /api/readings`（一覧、新しい順最大30件）、
+  `GET /api/readings/:id`（詳細）
+- `/api/fortune`：ログイン済み・LLM生成成功時（またはキャッシュヒット時）のみ診断履歴に自動保存。
+  LLM失敗時は保存しない（エラーメッセージが履歴に残ってしまうのを防ぐため）
+- フロントエンド：ランディング画面に「📜 診断履歴」ボタン追加（ログイン時のみ表示）。
+  一覧画面（[frontend/src/App.tsx](frontend/src/App.tsx)の`screen === 'history'`）→
+  クリックで結果画面（既存の`result`画面をそのまま再利用、`reading`stateに詰め替えるだけ）→
+  「戻る」で履歴一覧に戻る（`viewingHistoryReading`フラグで通常のフォームと履歴経由を区別）
+
+**実ブラウザで確認済み：** 一覧表示→詳細クリック→結果画面表示→「戻る」で一覧に戻る、の一連の流れを
+実際のDB保存データで確認。バックエンドAPI（`/api/readings`, `/api/readings/:id`）も直接叩いて確認済み。
+型チェックも問題なし。
+
+**次の候補（未着手）：** SNSシェア機能、アバターメイキング、相性診断（前回提案した機能リストの続き）

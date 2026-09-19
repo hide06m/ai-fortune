@@ -62,8 +62,18 @@ export async function initializeDatabase() {
         numerology_result JSONB,
         kyusei_result JSONB,
         llm_analysis TEXT,
+        character_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 既存DB向け: character_id カラムが無ければ追加（診断履歴にどのキャラで占ったか残すため）
+    await client.query(`
+      ALTER TABLE readings ADD COLUMN IF NOT EXISTS character_id INT;
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_readings_user_id_created_at ON readings(user_id, created_at DESC);
     `);
 
     // feedback テーブル（既存）
