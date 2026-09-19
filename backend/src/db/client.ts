@@ -32,9 +32,15 @@ export async function initializeDatabase() {
         google_id VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255),
         picture TEXT,
+        stone_balance INT NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 既存ユーザー向け: stone_balance カラムが無ければ追加
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS stone_balance INT NOT NULL DEFAULT 0;
     `);
 
     // インデックス作成
@@ -111,6 +117,24 @@ export async function initializeDatabase() {
       BEFORE UPDATE ON character_intimacy
       FOR EACH ROW
       EXECUTE FUNCTION update_character_intimacy_timestamp();
+    `);
+
+    // stone_transactions テーブル（石の獲得・消費履歴。残高は users.stone_balance に集約するが、
+    // 「今日もうログインボーナスを受け取ったか」等の判定や不正調査のため履歴を残す）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS stone_transactions (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount INT NOT NULL,
+        reason VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_stone_transactions_user_id ON stone_transactions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_stone_transactions_user_reason_date
+        ON stone_transactions(user_id, reason, created_at);
     `);
 
     console.log('✅ Database initialized successfully');

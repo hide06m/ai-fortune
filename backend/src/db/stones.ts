@@ -1,0 +1,146 @@
+/**
+ * 「ルーンストーン」（診断に使う無料の仮想通貨）関連のデータベース操作
+ *
+ * 通貨名の設計メモ:
+ * - ルーンストーン: 無料通貨。ログインボーナス・広告視聴などで貯まる（本ファイル）
+ * - アイリスクォーツ: 課金通貨（未実装）。実装時は本ファイルと同じ設計
+ *   （users側にカラム追加 + 専用の取引履歴テーブル）を踏襲すること
+ *
+ * コード上の変数名・テーブル名・エンドポイント名は汎用的に stone のままにしている
+ * （呼び名の変更だけでDB移行やAPI互換性を壊さないため）。ユーザーに見せる文言だけ
+ * 「ルーンストーン」を使うこと。
+ */
+
+import { v4 as uuidv4 } from 'uuid'
+import { query, getPool } from './client.js'
+
+export type StoneReason = 'login_bonus' | 'ad_watch' | 'diagnosis' | 'diagnosis_refund' | 'signup_bonus'
+
+const AD_WATCH_DAILY_LIMIT = 5
+
+/**
+ * 現在の石残高を取得
+ */
+export async function getStoneBalance(userId: string): Promise<number> {
+  const result = await query('SELECT stone_balance FROM users WHERE id = $1', [userId])
+  if (result.rows.length === 0) {
+    throw new Error(`User not found: ${userId}`)
+  }
+  return result.rows[0].stone_balance
+}
+
+/**
+ * 今日、指定した理由の取引が既に記録されているか（同日判定はサーバーのローカル日付基準）
+ */
+async function hasTransactionToday(userId: string, reason: StoneReason): Promise<boolean> {
+  const result = await query(
+    `SELECT 1 FROM stone_transactions
+     WHERE user_id = $1 AND reason = $2 AND created_at >= date_trunc('day', NOW())
+     LIMIT 1`,
+    [userId, reason]
+  )
+  return result.rows.length > 0
+}
+
+/**
+ * 今日、指定した理由の取引が何回記録されているか
+ */
+async function countTransactionsToday(userId: string, reason: StoneReason): Promise<number> {
+  const result = await query(
+    `SELECT COUNT(*)::int AS count FROM stone_transactions
+     WHERE user_id = $1 AND reason = $2 AND created_at >= date_trunc('day', NOW())`,
+    [userId, reason]
+  )
+  return result.rows[0].count
+}
+
+/**
+ * 石の残高を増減させ、取引履歴を記録する（呼び出し元は amount の正負を指定する）
+ */
+async function applyStoneChange(userId: string, amount: number, reason: StoneReason): Promise<number> {
+  const pool = getPool()
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const updateResult = await client.query(
+      `UPDATE users SET stone_balance = stone_balance + $1, updated_at = NOW()
+       WHERE id = $2 AND stone_balance + $1 >= 0
+       RETURNING stone_balance`,
+      [amount, userId]
+    )
+
+    if (updateResult.rows.length === 0) {
+      // 残高不足（マイナスになる更新）または該当ユーザーなし
+      await client.query('ROLLBACK')
+      throw new Error('INSUFFICIENT_STONES')
+    }
+
+    await client.query(
+      `INSERT INTO stone_transactions (id, user_id, amount, reason) VALUES ($1, $2, $3, $4)`,
+      [uuidv4(), userId, amount, reason]
+    )
+
+    await client.query('COMMIT')
+    return updateResult.rows[0].stone_balance
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+/**
+ * ログインボーナス（1日1回、+1石）を付与
+ */
+export async function claimDailyLoginBonus(
+  userId: string
+): Promise<{ granted: boolean; balance: number }> {
+  const alreadyClaimed = await hasTransactionToday(userId, 'login_bonus')
+  if (alreadyClaimed) {
+    return { granted: false, balance: await getStoneBalance(userId) }
+  }
+  const balance = await applyStoneChange(userId, 1, 'login_bonus')
+  return { granted: true, balance }
+}
+
+/**
+ * 広告視聴ボーナス（1日 AD_WATCH_DAILY_LIMIT 回まで、+1石）
+ *
+ * ⚠️ 現時点では広告ネットワーク（AdMob等）と未接続のプレースホルダー実装。
+ * フロントから叩けば誰でも成功してしまうため、1日の回数上限で被害を限定しているが、
+ * 実際の広告SDKを接続する際は、広告ネットワークのサーバーサイド検証（SSV）を
+ * 必ず組み込むこと（でなければ広告を見ずに連打で石を稼げてしまう）。
+ */
+export async function claimAdWatchBonus(
+  userId: string
+): Promise<{ granted: boolean; balance: number; reason?: string }> {
+  const countToday = await countTransactionsToday(userId, 'ad_watch')
+  if (countToday >= AD_WATCH_DAILY_LIMIT) {
+    return { granted: false, balance: await getStoneBalance(userId), reason: 'DAILY_LIMIT_REACHED' }
+  }
+  const balance = await applyStoneChange(userId, 1, 'ad_watch')
+  return { granted: true, balance }
+}
+
+/**
+ * 診断1回分の石（1個）を消費する。残高不足なら例外 INSUFFICIENT_STONES を投げる。
+ */
+export async function spendStoneForDiagnosis(userId: string): Promise<number> {
+  return applyStoneChange(userId, -1, 'diagnosis')
+}
+
+/**
+ * 診断が失敗した場合、消費した石を払い戻す
+ */
+export async function refundStoneForDiagnosis(userId: string): Promise<number> {
+  return applyStoneChange(userId, 1, 'diagnosis_refund')
+}
+
+/**
+ * 新規登録ボーナス（初回のみ、+3石。初回診断のハードルを下げる）
+ */
+export async function grantSignupBonus(userId: string): Promise<number> {
+  return applyStoneChange(userId, 3, 'signup_bonus')
+}

@@ -216,3 +216,44 @@ cd backend && bash start-voicevox.sh
 4. **本番用の環境変数を実際に設定** — `JWT_SECRET`（ランダム生成必要）、本番の`GOOGLE_CLIENT_ID/SECRET`の
    リダイレクトURI追加、`CORS_ORIGINS`、`DATABASE_URL`（Render PostgreSQL）等
 5. （任意）感想フォームのDB永続化、プライバシーポリシー等の法的ページ
+
+## ✅ 石（ルーンストーン）経済システム実装（2026-09-18）
+
+ユーザー自身のAPIキーを使う設計（OAuth `cloud-platform`スコープ経由）を諦めた代わりに、
+「無料通貨を配って、それを使い切ったらLLM呼び出しをブロックする」方式でコストを制御する仕組みを実装した。
+
+**通貨名の設計（重要・今後この呼び名で統一すること）：**
+- **ルーンストーン** = 無料通貨。ログインボーナス・広告視聴などで貯まる。今回実装したのはこれ
+- **アイリスクォーツ** = 課金通貨。**まだ未実装**（今回のスコープには含めていない）。将来追加する際は
+  `backend/src/db/stones.ts`冒頭のコメントに設計メモを書いてあるので参照すること
+- コード上のテーブル名・関数名・エンドポイント名（`stone_balance`, `/api/stones/*`等）はあえて
+  汎用的な"stone"のままにしてある。呼び名（ルーンストーン）が変わってもDB移行やAPI互換性を壊さないため。
+  ユーザーに見せる文言（フロントのUI文字列）だけ「ルーンストーン」にしてある
+
+**実装内容：**
+- DB: `users.stone_balance`カラム + `stone_transactions`（獲得・消費履歴）テーブルを追加
+  （[backend/src/db/client.ts](backend/src/db/client.ts)の`initializeDatabase()`内。既存ユーザーには
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`で追従するので、次回サーバー起動時に自動適用される）
+- [backend/src/db/stones.ts](backend/src/db/stones.ts)：残高取得・ログインボーナス（1日1回+1）・
+  広告視聴ボーナス（1日5回まで+1、⚠️広告SDK未接続のプレースホルダー）・消費・払い戻し・新規登録ボーナス（+3）
+- [backend/src/routes/stones.ts](backend/src/routes/stones.ts)：`GET /api/stones/balance`,
+  `POST /api/stones/claim-daily-bonus`, `POST /api/stones/watch-ad`
+- `/api/fortune`（[backend/src/index.ts](backend/src/index.ts)）：ログイン済みユーザーがLLMを実際に呼ぶ
+  場合のみ1個消費。キャッシュヒット時・ゲスト・LLM未設定時は消費しない。生成失敗時は自動で払い戻す
+  （実際にGemini APIが503を返した場面で、払い戻しが正しく機能することを実ブラウザで確認済み）
+- ログイン済みユーザーの1日20回レート制限は「安全網」として残してある（実際の上限はルーンストーン残高）
+- フロントエンド：残高表示・広告視聴ボタン・ログインボーナス自動受け取り（トースト通知）・
+  残高0時の送信ボタン無効化を実装（[frontend/src/App.tsx](frontend/src/App.tsx)）
+
+**実ブラウザで確認済み：** 残高表示、広告視聴での+1、診断成功時の-1消費、LLM失敗時の自動払い戻し
+（2回連続で実際のGemini 503エラー発生時に検証）、残高0時のエラー表示。型チェックも問題なし。
+
+**未着手（任意・優先度低）：**
+- 広告SDK（AdMob等）との実接続（アカウント登録はユーザー側の作業）
+- アイリスクォーツ（課金通貨）の実装
+- 石関連のUI文言・演出をもう少し作り込む（現状は最小限）
+
+**通貨名を「ルーンストーン」に変更（2026-09-19）：** UI文言をすべて更新。ユーザーが作成した
+専用アイコン（銀河模様の黒い石、透過PNG）を軽量化して配置：
+`frontend/public/assets/stone.webp`（160x160、5KB。元データは
+`G:\マイドライブ\AI-project\ai-fortune\assets\stone.png`、2048x2048）。石残高表示の`.stone-icon`で使用中。

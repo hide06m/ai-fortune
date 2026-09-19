@@ -1,14 +1,15 @@
 /**
  * レート制限ミドルウェア
- * ゲスト: IP単位で1日1回まで。ログイン済み: ユーザー単位で1日3回まで。
- * （ログイン済みを無制限にすると、LLM呼び出し＝運営側の課金が青天井になってしまうため、
- *   ログイン済みユーザーにも上限を設ける）
+ * ゲスト: IP単位で1日1回まで。
+ * ログイン済み: ユーザー単位で1日20回までの「安全網」。実際の利用回数は石の残高
+ *   （db/stones.ts、1診断=石1個）で制御されるため、こちらは石システムが万一
+ *   悪用された場合の保険として緩めに設定している。
  */
 
 import rateLimit from 'express-rate-limit'
 
 const GUEST_DAILY_LIMIT = 1
-const AUTHENTICATED_DAILY_LIMIT = 3
+const AUTHENTICATED_DAILY_LIMIT = 20
 
 export const dailyLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours

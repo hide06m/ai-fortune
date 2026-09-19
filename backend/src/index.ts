@@ -22,6 +22,8 @@ import characterRoutes from './routes/character.js'
 import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCharacter } from './db/character.js'
 import { INTIMACY_UNLOCKS, CharacterId } from './types/character.js'
 import ttsRoutes from './routes/tts.js'
+import stonesRoutes from './routes/stones.js'
+import { grantSignupBonus, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -151,6 +153,14 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
         console.warn('[AUTH] Failed to initialize character intimacies:', error)
         // 初期化失敗でも認証は続行
       }
+
+      // ✅ 新規登録ボーナス（+3石）
+      try {
+        await grantSignupBonus(user.id)
+        console.log(`[AUTH] Granted signup bonus for user: ${googleUser.email}`)
+      } catch (error) {
+        console.warn('[AUTH] Failed to grant signup bonus:', error)
+      }
     }
 
     // JWT トークンを生成
@@ -266,6 +276,25 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
       })
     }
 
+    // 石の消費（ログイン済みユーザーがLLMを実際に呼ぶ場合のみ。キャッシュヒット時・ゲスト・
+    // LLM未設定時は消費しない。ゲストは引き続きIP単位の1日1回制限のみで保護する）
+    const shouldChargeStone = !!(req.isAuthenticated && req.user && process.env.GEMINI_API_KEY)
+    let stoneBalance: number | null = null
+    if (shouldChargeStone) {
+      try {
+        stoneBalance = await spendStoneForDiagnosis(req.user!.userId)
+      } catch (error) {
+        if (error instanceof Error && error.message === 'INSUFFICIENT_STONES') {
+          return res.status(402).json({
+            success: false,
+            error: 'INSUFFICIENT_STONES',
+            message: 'ルーンストーンが足りません。ログインボーナスや広告視聴で増やしてください。'
+          })
+        }
+        throw error
+      }
+    }
+
     // LLMで診断文生成
     let analysis = 'LLM API が未設定です。占術計算結果は以下の通りです。'
     let tokensUsed = 0
@@ -278,8 +307,15 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
         tokensUsed = llmResult.tokensUsed
       } catch (error) {
         console.error('LLM generation error:', error)
-        // LLM失敗時も計算結果は返す
+        // LLM失敗時も計算結果は返す。消費した石は払い戻す。
         analysis = `LLM生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+        if (shouldChargeStone) {
+          try {
+            stoneBalance = await refundStoneForDiagnosis(req.user!.userId)
+          } catch (refundError) {
+            console.error('Failed to refund stone after LLM failure:', refundError)
+          }
+        }
       }
     }
 
@@ -296,7 +332,8 @@ app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
         tokensUsed,
         cached: false
       },
-      intimacy: intimacyResult
+      intimacy: intimacyResult,
+      stoneBalance
     })
   } catch (error) {
     console.error('Fortune API error:', error)
@@ -340,6 +377,9 @@ app.use('/api/character', characterRoutes)
 
 // ========== Text-to-Speech Routes ==========
 app.use('/api/tts', ttsRoutes)
+
+// ========== Stone (石) Routes ==========
+app.use('/api/stones', stonesRoutes)
 
 /**
  * キャッシュ統計

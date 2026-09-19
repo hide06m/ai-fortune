@@ -14,6 +14,7 @@ import {
 } from './api'
 import { speakResult, isVoiceEnabled } from './services/textToSpeech'
 import { CHARACTER_MASTER_DATA, type CharacterId } from './types/character'
+import { getStoneBalance, claimDailyBonus, watchAdForStone } from './api/stones'
 import {
   initAudio,
   startAmbientLoop,
@@ -41,6 +42,11 @@ function AppContent() {
 
   // Character state
   const [selectedCharacterId, setSelectedCharacterId] = useState<number>(1) // デフォルト：ナツメ
+
+  // 石（診断に使う仮想通貨）
+  const [stoneBalance, setStoneBalance] = useState<number | null>(null)
+  const [stoneBonusMessage, setStoneBonusMessage] = useState('')
+  const [watchingAd, setWatchingAd] = useState(false)
 
   // Form state
   const [loading, setLoading] = useState(false)
@@ -81,6 +87,55 @@ function AppContent() {
       setScreen('landing')
     }
   }, [])
+
+  // ログイン済みなら石残高を取得し、今日のログインボーナスを受け取る
+  useEffect(() => {
+    if (!authenticated) {
+      setStoneBalance(null)
+      return
+    }
+    (async () => {
+      try {
+        const bonus = await claimDailyBonus()
+        setStoneBalance(bonus.balance)
+        if (bonus.granted) {
+          setStoneBonusMessage('🎁 ログインボーナス：ルーンストーン+1')
+          setTimeout(() => setStoneBonusMessage(''), 4000)
+        }
+      } catch (err) {
+        console.error('Failed to claim daily bonus:', err)
+        // ボーナス取得に失敗しても残高だけは取得しておく
+        try {
+          const balanceResult = await getStoneBalance()
+          setStoneBalance(balanceResult.balance)
+        } catch (balanceErr) {
+          console.error('Failed to fetch stone balance:', balanceErr)
+        }
+      }
+    })()
+  }, [authenticated])
+
+  // 広告視聴で石を増やす（⚠️ 現状は広告ネットワーク未接続のプレースホルダー。
+  // 実際の広告SDKが繋がるまでは、視聴完了を模したダミーの待機時間のみ）
+  const handleWatchAd = async () => {
+    setWatchingAd(true)
+    setError('')
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000)) // 広告視聴を模した待機
+      const result = await watchAdForStone()
+      setStoneBalance(result.balance)
+      if (result.granted) {
+        setStoneBonusMessage('📺 広告視聴ボーナス：ルーンストーン+1')
+        setTimeout(() => setStoneBonusMessage(''), 4000)
+      } else if (result.reason === 'DAILY_LIMIT_REACHED') {
+        setError('本日の広告視聴ボーナスは上限に達しました。')
+      }
+    } catch (err) {
+      setError('広告視聴ボーナスの取得に失敗しました。')
+    } finally {
+      setWatchingAd(false)
+    }
+  }
 
   // ランディングページで背景音を開始
   useEffect(() => {
@@ -221,6 +276,10 @@ function AppContent() {
       }
 
       const response = await callFortuneAPI(request)
+
+      if (typeof response.stoneBalance === 'number') {
+        setStoneBalance(response.stoneBalance)
+      }
 
       if (!response.success) {
         setError(response.error || 'Failed to get reading')
@@ -436,6 +495,24 @@ function AppContent() {
             </div>
           </div>
 
+          {authenticated && (
+            <div className="stone-panel">
+              <span className="stone-balance">
+                <img src="/assets/stone.webp" alt="" className="stone-icon" />
+                ルーンストーン: {stoneBalance ?? '…'}個
+              </span>
+              <button
+                type="button"
+                className="stone-ad-button"
+                onClick={handleWatchAd}
+                disabled={watchingAd}
+              >
+                {watchingAd ? '広告再生中...' : '📺 広告でルーンストーン+1'}
+              </button>
+              {stoneBonusMessage && <span className="stone-bonus-message">{stoneBonusMessage}</span>}
+            </div>
+          )}
+
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
             <label htmlFor="birthDate">生年月日 *</label>
@@ -483,13 +560,22 @@ function AppContent() {
 
           {error && <div className="error">{error}</div>}
 
-          <button type="submit" disabled={loading} className="primary-button">
+          <button
+            type="submit"
+            disabled={loading || (authenticated && stoneBalance === 0)}
+            className="primary-button"
+          >
             {loading ? '診断中...' : '診断を実行'}
           </button>
 
           {mode === 'guest' && (
             <p className="guest-notice">
               ゲストモードでは1日1回までの診断が可能です。複数回試したい場合はログインしてください。
+            </p>
+          )}
+          {authenticated && stoneBalance === 0 && (
+            <p className="guest-notice">
+              ルーンストーンが足りません。広告を見るか、また明日ログインボーナスを受け取ってください。
             </p>
           )}
         </form>

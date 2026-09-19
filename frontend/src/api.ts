@@ -48,6 +48,7 @@ export interface FortuneResponse {
   success: boolean
   reading?: FortuneReading
   intimacy?: IntimacyResult | null
+  stoneBalance?: number | null
   error?: string
 }
 
@@ -171,7 +172,7 @@ export async function callFortuneAPI(request: FortuneRequest): Promise<FortuneRe
       const error = await response.json()
       return {
         success: false,
-        error: error.error || 'Failed to call fortune API'
+        error: error.message || error.error || 'Failed to call fortune API'
       }
     } catch (e) {
       // JSON パースに失敗した場合
