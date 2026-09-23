@@ -863,6 +863,38 @@ body {
   flex: 1;
 }
 
+.share-section {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.share-section button {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: opacity 0.15s ease;
+}
+
+.share-section button:hover {
+  opacity: 0.85;
+}
+
+.share-x-button {
+  background: #000;
+  color: #fff;
+}
+
+.share-copy-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
 .unlock-notice {
   margin: 16px 0;
   padding: 14px 16px;

@@ -53,6 +53,7 @@ function AppContent() {
   const [readingHistory, setReadingHistory] = useState<ReadingSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [viewingHistoryReading, setViewingHistoryReading] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
   // Form state
   const [loading, setLoading] = useState(false)
@@ -368,6 +369,48 @@ function AppContent() {
   }
 
   // 戻る
+  // SNSシェア用のテキストを組み立てる（Markdown記法を除去し、短く要約）
+  const buildShareText = () => {
+    if (!reading) return ''
+    const characterName = CHARACTER_MASTER_DATA[selectedCharacterId as CharacterId]?.name ?? ''
+    const plain = reading.analysis
+      .replace(/[#*_`>\-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const excerpt = plain.length > 60 ? `${plain.slice(0, 60)}…` : plain
+    const characterLine = characterName ? `${characterName}に占ってもらいました。\n` : ''
+    return `${characterLine}「${excerpt}」\n#占いの森`
+  }
+
+  const handleShareToX = () => {
+    const text = buildShareText()
+    const url = window.location.origin
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+    window.open(intentUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleCopyShareText = async () => {
+    const text = `${buildShareText()}\n${window.location.origin}`
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      setError('コピーに失敗しました')
+    }
+  }
+
   const handleBack = () => {
     setScreen(viewingHistoryReading ? 'history' : 'form')
     setError('')
@@ -719,6 +762,15 @@ function AppContent() {
           </div>
 
           {error && <div className="error">{error}</div>}
+
+          <div className="share-section">
+            <button onClick={handleShareToX} className="share-x-button">
+              𝕏でシェア
+            </button>
+            <button onClick={handleCopyShareText} className="share-copy-button">
+              {shareCopied ? 'コピーしました！' : 'テキストをコピー'}
+            </button>
+          </div>
 
           <div className="result-actions">
             <button onClick={handleNewReading} className="primary-button">
