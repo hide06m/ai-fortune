@@ -1,0 +1,60 @@
+databases:
+  - name: ai-fortune-db
+    plan: free
+    region: oregon
+
+services:
+  # バックエンド（Express API）
+  - type: web
+    name: ai-fortune-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # JWT署名鍵。Renderが安全なランダム値を自動生成する
+      - key: JWT_SECRET
+        generateValue: true
+      # 以下はRenderダッシュボードで手動入力が必要（sync: falseのためBlueprint作成時にプロンプトされる）
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # DBはBlueprint内のai-fortune-dbから自動接続
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-fortune-db
+          property: connectionString
+      # フロントエンドの本番URL（下のai-fortune-frontendのデフォルトURL。カスタムドメインを使う場合は要変更）
+      - key: CORS_ORIGINS
+        value: https://ai-fortune-frontend.onrender.com
+      # VOICEVOX（音声合成）は現状ローカル専用。本番では未設定のままでよく、
+      # TTS呼び出しは失敗しても診断結果自体には影響しない（gracefulに無視される）
+      # - key: VOICEVOX_ENGINE_URL
+      #   sync: false
+
+  # フロントエンド（Vite静的サイト）
+  - type: web
+    name: ai-fortune-frontend
+    runtime: static
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # バックエンドの本番URL（上のai-fortune-backendのデフォルトURL）
+      - key: VITE_API_URL
+        value: https://ai-fortune-backend.onrender.com
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+    routes:
+      # SPAのため、手相診断のQR連携先（/palm-capture/:token）等どのパスでもindex.htmlを返す
+      - type: rewrite
+        source: /*
+        destination: /index.html

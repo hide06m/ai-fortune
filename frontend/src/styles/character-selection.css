@@ -84,12 +84,11 @@
   z-index: 10;
 }
 
-/* キャラクター画像 */
+/* キャラクター画像（背景透過ビジュアル） */
 .character-image {
   width: 100%;
   height: 220px;
-  object-fit: cover;
-  border-radius: 12px;
+  object-fit: contain;
   margin-bottom: 1rem;
 }
 
@@ -105,11 +104,39 @@
   font-weight: bold;
 }
 
-.character-info .intimacy {
-  font-size: 0.9rem;
-  color: #e91e63;
+/* 親密度ハート（牧場物語風。色とサイズでレベルの段階を表現） */
+.intimacy-heart-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.intimacy-heart {
+  font-size: 1.6rem;
+  line-height: 1;
+  display: inline-block;
+  transition: color 0.4s ease, transform 0.4s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.intimacy-heart-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.intimacy-heart-level {
+  font-size: 0.9rem;
   font-weight: bold;
+  color: #333;
+}
+
+.intimacy-heart-percent {
+  font-size: 0.75rem;
+  color: #888;
 }
 
 /* 選択パネル */
@@ -148,41 +175,40 @@
   margin: 1rem 0 1.5rem 0;
 }
 
-/* 親密度バー */
-.intimacy-bar {
-  width: 100%;
-  height: 24px;
-  background: #e0e0e0;
-  border-radius: 12px;
-  margin: 1rem 0;
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+.character-greeting {
+  font-size: 0.85rem;
+  color: #764ba2;
+  font-style: italic;
+  line-height: 1.5;
+  margin: -0.5rem 0 1rem 0;
 }
 
-.intimacy-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #ff69b4, #ff1493);
-  border-radius: 12px;
-  transition: width 0.4s ease;
+/* 石の所持数ヒント */
+.stone-cost-hint {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.75rem 0;
 }
 
-.intimacy-text {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-weight: bold;
-  color: #333;
-  font-size: 0.9rem;
+.stone-cost-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.gift-message {
+  font-size: 0.85rem;
+  color: #e91e63;
+  margin-top: 0.75rem;
 }
 
 /* アクションボタン */
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   justify-content: center;
   margin-top: 2rem;
@@ -220,6 +246,24 @@
   color: #666;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #764ba2;
+  border: 2px solid #764ba2;
+  box-shadow: none;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #764ba2;
+  color: white;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none !important;
 }
 
 /* ナビゲーションヒント */

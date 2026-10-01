@@ -404,6 +404,202 @@ body {
   display: none;
 }
 
+/* ノベルゲーム風 会話シーン（案内役の挨拶・ゲスト体験フロー共通） */
+.vn-scene {
+  width: 100%;
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.vn-character-bust-wrap {
+  width: min(352px, 68vw);
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.vn-character-bust {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-top: 100px; /* 全身表示化に伴い、頭の位置が上に上がった分（頭一つ分目安）を下げて元の見え方に近づける */
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+  animation: fadeIn 0.6s ease-in;
+}
+
+.vn-dialogue-box {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  min-height: 150px;
+  margin: -70px 24px 24px;
+  padding: 46px 44px 30px 40px;
+  cursor: pointer;
+  background-color: rgba(15, 8, 30, 0.72);
+  border: 2px solid rgba(201, 162, 75, 0.55);
+  border-radius: 6px;
+  animation: fadeIn 0.5s ease-in;
+  /* 四隅の装飾（flameCorner）は伸縮させず原寸のまま重ねる。土台の枠線はプレーンなCSS borderなので、
+     ボックスの幅・高さが変わっても歪まない（歪みの原因だった border-image の伸縮をやめた） */
+  background-image:
+    url('/assets/ui/flame-corner-tl.webp'),
+    url('/assets/ui/flame-corner-tr.webp'),
+    url('/assets/ui/flame-corner-bl.webp'),
+    url('/assets/ui/flame-corner-br.webp');
+  background-repeat: no-repeat;
+  background-size: 60px 62px, 60px 62px, 60px 62px, 60px 62px;
+  background-position: top left, top right, bottom left, bottom right;
+}
+
+.vn-speaker-name {
+  position: absolute;
+  top: 12px;
+  left: 22px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffd166;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+.vn-dialogue-text {
+  text-align: left;
+  color: #fff;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.vn-continue-hint {
+  position: absolute;
+  right: 26px;
+  bottom: 10px;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+  animation: vnBounce 1.4s ease-in-out infinite;
+}
+
+@keyframes vnBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* チュートリアル：ナレーション（キャラなし・中央揃え） */
+.vn-scene-narration {
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.vn-narration-box {
+  position: relative;
+  max-width: 600px;
+  padding: 20px 32px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+}
+
+.vn-narration-text {
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 2;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.vn-continue-hint-narration {
+  position: static;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* チュートリアル：アイテム表示演出（ルーンストーン等） */
+.item-reveal-scene {
+  position: relative;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.item-reveal-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.item-reveal-frame-wrap {
+  position: relative;
+  z-index: 1;
+  width: min(360px, 70vw);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.item-reveal-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.item-reveal-item {
+  position: relative;
+  width: 45%;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(255, 220, 130, 0.7));
+}
+
+/* ゲスト体験フロー：フェードアウト＋お礼メッセージ */
+.farewell-container {
+  position: fixed;
+  inset: 0;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.farewell-white-overlay {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  animation: farewellFadeToWhite 1.6s ease-in forwards;
+}
+
+.farewell-message {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  text-align: center;
+  padding: 0 24px;
+  font-size: 1.2rem;
+  line-height: 1.9;
+  color: #3a2f1a;
+  opacity: 0;
+  animation: fadeIn 1.2s ease-in 1.4s forwards;
+}
+
+@keyframes farewellFadeToWhite {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Form Container */
 .form-container {
   width: 100%;
@@ -640,6 +836,67 @@ body {
   color: var(--text-secondary);
 }
 
+.birthdate-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.birthdate-input-group input {
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(100, 100, 100, 0.3);
+  border-radius: 6px;
+  color: #333;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.birthdate-input-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.birthdate-year {
+  width: 4.5em;
+}
+
+.birthdate-month,
+.birthdate-day {
+  width: 3.2em;
+}
+
+.birthdate-sep {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.birthdate-calendar-button {
+  padding: 10px 12px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(100, 100, 100, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.birthdate-calendar-button:hover {
+  border-color: var(--accent);
+}
+
+.birthdate-native-picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ✅ date input のカレンダー機能（黒色） */
 .form-group input[type="date"] {
   cursor: pointer;
@@ -863,6 +1120,20 @@ body {
   flex: 1;
 }
 
+.compatibility-person {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.compatibility-person h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
 .share-section {
   display: flex;
   gap: 10px;
@@ -1014,6 +1285,29 @@ body {
   font-size: 14px;
 }
 
+.duplicate-notice {
+  padding: 16px;
+  background-color: rgba(255, 209, 102, 0.1);
+  border: 1px solid #ffd166;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.duplicate-notice p {
+  margin: 0;
+  color: #ffd166;
+  font-weight: 600;
+}
+
+.duplicate-notice-hint {
+  color: var(--text-secondary) !important;
+  font-weight: 400 !important;
+  font-size: 13px;
+}
+
 .success {
   padding: 12px 16px;
   background-color: rgba(16, 185, 129, 0.1);
@@ -1080,4 +1374,62 @@ h1 {
   .guest-section {
     padding: 20px;
   }
+}
+
+/* 画面端の設定ボタン（BGM/SE切り替え） */
+.settings-widget {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
+.settings-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.settings-panel {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  background: rgba(15, 8, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.settings-toggle-row:hover {
+  background: rgba(255, 255, 255, 0.1);
 }

@@ -14,7 +14,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import { query, getPool } from './client.js'
 
-export type StoneReason = 'login_bonus' | 'ad_watch' | 'diagnosis' | 'diagnosis_refund' | 'signup_bonus'
+export type StoneReason =
+  | 'login_bonus'
+  | 'ad_watch'
+  | 'diagnosis'
+  | 'diagnosis_refund'
+  | 'signup_bonus'
+  | 'character_gift'
 
 const AD_WATCH_DAILY_LIMIT = 5
 
@@ -125,17 +131,26 @@ export async function claimAdWatchBonus(
 }
 
 /**
- * 診断1回分の石（1個）を消費する。残高不足なら例外 INSUFFICIENT_STONES を投げる。
+ * 診断1回分の石を消費する（キャラごとに必要数が異なるため amount を呼び出し元が指定する。
+ * 未指定時は1個＝従来のナツメ相当・相性診断など特定キャラを持たない診断のデフォルト）。
+ * 残高不足なら例外 INSUFFICIENT_STONES を投げる。
  */
-export async function spendStoneForDiagnosis(userId: string): Promise<number> {
-  return applyStoneChange(userId, -1, 'diagnosis')
+export async function spendStoneForDiagnosis(userId: string, amount: number = 1): Promise<number> {
+  return applyStoneChange(userId, -amount, 'diagnosis')
 }
 
 /**
- * 診断が失敗した場合、消費した石を払い戻す
+ * 診断が失敗した場合、消費した石を払い戻す（spendStoneForDiagnosisに渡したamountと同じ値を渡すこと）
  */
-export async function refundStoneForDiagnosis(userId: string): Promise<number> {
-  return applyStoneChange(userId, 1, 'diagnosis_refund')
+export async function refundStoneForDiagnosis(userId: string, amount: number = 1): Promise<number> {
+  return applyStoneChange(userId, amount, 'diagnosis_refund')
+}
+
+/**
+ * 「ちょっとした挨拶（ミニ贈り物）」用に石を1個消費する。残高不足なら例外 INSUFFICIENT_STONES を投げる。
+ */
+export async function spendStoneForGift(userId: string): Promise<number> {
+  return applyStoneChange(userId, -1, 'character_gift')
 }
 
 /**

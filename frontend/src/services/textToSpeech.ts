@@ -93,22 +93,6 @@ export async function speakGreeting(characterId: CharacterId): Promise<void> {
 }
 
 /**
- * 診断結果の概要を音声で読み上げ
- */
-export async function speakResult(characterId: CharacterId, summary: string): Promise<void> {
-  const prefix: Record<CharacterId, string> = {
-    0: 'さあ、結果が出ました。',
-    1: 'はい、どうかな？',
-    2: '星の声が聞こえたわ。',
-    3: '命式より見えてきたぞ。',
-    4: 'できました。聞いてくださいな。',
-  };
-
-  const text = `${prefix[characterId]}${summary.substring(0, 200)}`; // 最初の200文字のみ
-  await speak(text, characterId, 0.95);
-}
-
-/**
  * 音声設定を取得（localStorage）
  */
 export function getVoiceSettings(): {

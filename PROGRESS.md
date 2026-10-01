@@ -206,8 +206,13 @@ cd backend && bash start-voicevox.sh
 ユーザーは「誰でもアクセス可能な公開リリース」かつ「デプロイ先はRender」を希望。VOICEVOXは本番でも
 動かす方法を検討する方針。次回以降、以下が未着手：
 
-1. **`render.yaml`（Render Blueprint）の作成** — backend(Web Service) / frontend(Static Site) / PostgreSQLの構成。
-   まだ1行も書かれていない
+1. ✅ **`render.yaml`（Render Blueprint）の作成 完了（2026-09-30）** — backend(Web Service) / frontend(Static Site) /
+   PostgreSQLの構成。`JWT_SECRET`は`generateValue: true`で自動生成、`GOOGLE_CLIENT_ID/SECRET`・`GEMINI_API_KEY`・
+   `VITE_GOOGLE_CLIENT_ID`は`sync: false`にしてあるので、Renderダッシュボードで「New +」→「Blueprint」から
+   このリポジトリを選ぶと、Blueprint作成画面でこれらの値の入力を求められる。フロント/バックエンドのURLは
+   サービス名（`ai-fortune-backend`/`ai-fortune-frontend`）から予測される`.onrender.com`のデフォルトURLを
+   `CORS_ORIGINS`・`VITE_API_URL`に直接書き込んである（カスタムドメインを使う場合は要修正）。
+   手相診断のQR連携先（`/palm-capture/:token`）に対応するSPAリライトルールも設定済み
 2. **VOICEVOXの本番運用方法の設計** — 現状はこのPCのGドライブに置いた1.9GBのエンジンを手動起動する構成で、
    本番サーバーではそのままでは動かない。VOICEVOX公式のDockerイメージ（`voicevox/voicevox_engine`）を
    Render上で別Web Serviceとして動かし、backendから内部URLで呼ぶ方式が有力候補（未着手・未検証）

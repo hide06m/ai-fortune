@@ -9,6 +9,7 @@ import { calculateKyuseiSeisun, type KyuseiSeisun } from './kyuseiKigaku.js'
 export { calculateBaZi, type BaZiChart, type Sexagenary, type HeavenlyStem, type EarthlyBranch, type Element } from './shichuSuimei.js'
 export { calculateLifePathNumber, type NumerologyResult } from './numerology.js'
 export { calculateKyuseiSeisun, type KyuseiSeisun } from './kyuseiKigaku.js'
+export { calculateWesternZodiac, type WesternZodiac, type ZodiacSign, type ZodiacElement, type ZodiacModality } from './westernAstrology.js'
 export type { FortuneReading } from './types.js'
 
 /**

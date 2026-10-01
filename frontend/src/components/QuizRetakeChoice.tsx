@@ -1,0 +1,69 @@
+/**
+ * 2回目以降のクイズ系診断（MBTI・ラブタイプ診断64）向け：
+ * 「前回の結果のまま悩みだけ入力し直す」か「最初からやり直す」かを選ぶ画面
+ */
+
+import React from 'react';
+
+interface QuizRetakeChoiceProps {
+  quizName: string; // 例: "性格診断（16タイプ）"
+  resultLabel: string; // 例: "前回の結果：ENTJ-T"
+  concern: string;
+  onConcernChange: (value: string) => void;
+  onSubmitConcernOnly: () => void;
+  onStartOver: () => void;
+  onCancel: () => void;
+  submitting: boolean;
+  error: string;
+}
+
+export function QuizRetakeChoice({
+  quizName,
+  resultLabel,
+  concern,
+  onConcernChange,
+  onSubmitConcernOnly,
+  onStartOver,
+  onCancel,
+  submitting,
+  error,
+}: QuizRetakeChoiceProps) {
+  return (
+    <div className="mbti-quiz">
+      <h2>{quizName}</h2>
+      <p className="quiz-retake-result">{resultLabel}</p>
+      <p className="quiz-retake-hint">前回の診断結果はそのままに、今の悩み・状況だけ入力し直して占ってもらうこともできます。</p>
+
+      <div className="form-group">
+        <label htmlFor="retake-concern">悩み・状況（任意）</label>
+        <textarea
+          id="retake-concern"
+          placeholder="例: 転職を考えています。今の自分に向いている仕事を知りたいです。"
+          value={concern}
+          onChange={(e) => onConcernChange(e.target.value)}
+          rows={4}
+        />
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="mbti-nav">
+        <button type="button" className="secondary-button" onClick={onCancel} disabled={submitting}>
+          戻る
+        </button>
+        <button type="button" className="primary-button" onClick={onSubmitConcernOnly} disabled={submitting}>
+          {submitting ? '診断中...' : 'この内容で占ってもらう'}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        className="secondary-button quiz-retake-startover"
+        onClick={onStartOver}
+        disabled={submitting}
+      >
+        最初から{quizName}をやり直す
+      </button>
+    </div>
+  );
+}

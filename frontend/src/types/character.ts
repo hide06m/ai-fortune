@@ -18,13 +18,32 @@ export interface CharacterIntimacy {
   id?: number;
   userId?: number;
   characterId: CharacterId;
-  intimacyLevel: number;
+  intimacyLevel: number; // 0-10（ハート数）
+  intimacyPoints: number; // 0-1000（ハート内の細かい進捗。%表示に使う）
   totalDiagnoses: number;
   lastDiagnosisDate?: string | null;
   unlockedAt?: string | null;
+  metAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
+
+export const INTIMACY_POINTS_PER_LEVEL = 100;
+
+/** 診断1回に必要なルーンストーン数（キャラごとに異なる。解放の遅いキャラほど高価） */
+export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
+  0: 0,
+  1: 1,
+  2: 5,
+  3: 10,
+  4: 3,
+};
+
+/** 「ちょっとした挨拶（ミニ贈り物）」に必要なルーンストーン数（固定） */
+export const GIFT_STONE_COST = 1;
+
+/** 「ちょっとした挨拶」が使えるキャラ（診断コストが高いキャラのみ） */
+export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [2, 3, 4];
 
 export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
   0: {

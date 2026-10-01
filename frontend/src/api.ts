@@ -29,10 +29,45 @@ export interface NumerologyResult {
   isMasterNumber: boolean
 }
 
+export interface WesternZodiac {
+  sign: string
+  element: string
+  modality: string
+  rulingPlanet: string
+}
+
+export interface MBTIDimensionResult {
+  traitA: string
+  traitB: string
+  percentageA: number
+  percentageB: number
+  winner: string
+}
+
+export interface MBTIQuizResult {
+  personalityType: string
+  dimensions: Record<'EI' | 'SN' | 'TF' | 'JP' | 'AT', MBTIDimensionResult>
+}
+
+export interface LoveType64Result {
+  type1: string
+  type2: string
+  fullType: string
+  scores: Record<'LF' | 'CA' | 'PR' | 'OE' | 'VN' | 'DI', number>
+  characterName: string
+  characterDesc: string
+  subTypeName: string
+  subTypeTagline: string
+  subTypeTraits: string[]
+}
+
 export interface FortuneReading {
-  baZi: BaZiChart
-  numerology: NumerologyResult
-  kyuseiSeisun: string
+  baZi?: BaZiChart | null
+  numerology?: NumerologyResult | null
+  kyuseiSeisun?: string | null
+  westernZodiac?: WesternZodiac | null
+  mbtiResult?: MBTIQuizResult | null
+  loveTypeResult?: LoveType64Result | null
   analysis: string
   tokensUsed?: number
   cached?: boolean
@@ -50,6 +85,9 @@ export interface FortuneResponse {
   intimacy?: IntimacyResult | null
   stoneBalance?: number | null
   error?: string
+  duplicate?: boolean
+  existingReadingId?: string
+  message?: string
 }
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -100,6 +138,7 @@ function getAuthHeaders() {
 export interface GoogleAuthResponse {
   success: boolean
   token?: string
+  isNewUser?: boolean
   user?: {
     userId: string
     email: string

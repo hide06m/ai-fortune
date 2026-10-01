@@ -3,7 +3,7 @@
  */
 
 import { getToken, API_URL } from '../api';
-import type { BaZiChart, NumerologyResult } from '../api';
+import type { BaZiChart, NumerologyResult, WesternZodiac, MBTIQuizResult, LoveType64Result } from '../api';
 
 export interface ReadingSummary {
   id: string;
@@ -13,12 +13,15 @@ export interface ReadingSummary {
 }
 
 export interface ReadingDetail extends ReadingSummary {
-  birthDate: string;
+  birthDate: string | null;
   birthTime: string | null;
   birthPlace: string | null;
-  baZi: BaZiChart;
-  numerology: NumerologyResult;
-  kyuseiSeisun: string;
+  baZi: BaZiChart | null;
+  numerology: NumerologyResult | null;
+  kyuseiSeisun: string | null;
+  westernZodiac?: WesternZodiac | null;
+  mbtiResult?: MBTIQuizResult | null;
+  loveTypeResult?: LoveType64Result | null;
   analysis: string;
 }
 

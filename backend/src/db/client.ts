@@ -72,8 +72,42 @@ export async function initializeDatabase() {
       ALTER TABLE readings ADD COLUMN IF NOT EXISTS character_id INT;
     `);
 
+    // 既存DB向け: bazi_key カラム（同一命式・悩みなしの重複診断を検出するため）
+    await client.query(`
+      ALTER TABLE readings ADD COLUMN IF NOT EXISTS bazi_key VARCHAR(50);
+    `);
+
+    // 既存DB向け: western_zodiac_result カラム（ツキ＝西洋占星術専用。他キャラの診断ではNULLのまま）
+    await client.query(`
+      ALTER TABLE readings ADD COLUMN IF NOT EXISTS western_zodiac_result JSONB;
+    `);
+
+    // 既存DB向け: mbti_result カラム（クリ＝16タイプ診断専用。生年月日を使わないため他の列はNULLになる）
+    await client.query(`
+      ALTER TABLE readings ADD COLUMN IF NOT EXISTS mbti_result JSONB;
+    `);
+
+    // 既存DB向け: love_type_result カラム（クリ＝ラブタイプ診断64専用）
+    await client.query(`
+      ALTER TABLE readings ADD COLUMN IF NOT EXISTS love_type_result JSONB;
+    `);
+
+    // 既存DB向け: met_at カラム（解放後、初対面イベントを再生済みかどうか。unlocked_atとは別で管理する）
+    await client.query(`
+      ALTER TABLE character_intimacy ADD COLUMN IF NOT EXISTS met_at TIMESTAMP;
+    `);
+    // 既存ユーザーのナツメ（チュートリアルで既に出会っている）は初対面イベント対象から除外する
+    await client.query(`
+      UPDATE character_intimacy SET met_at = unlocked_at
+      WHERE character_id = 1 AND met_at IS NULL AND unlocked_at IS NOT NULL;
+    `);
+
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_readings_user_id_created_at ON readings(user_id, created_at DESC);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_readings_user_id_bazi_key ON readings(user_id, bazi_key);
     `);
 
     // feedback テーブル（既存）
@@ -101,6 +135,16 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         UNIQUE(user_id, character_id)
       )
+    `);
+
+    // intimacy_points（ハート内の細かい進捗、0-1000）を追加。既存行は intimacy_level*100 で初期値を補完
+    await client.query(`
+      ALTER TABLE character_intimacy ADD COLUMN IF NOT EXISTS intimacy_points INT NOT NULL DEFAULT 0
+        CHECK (intimacy_points BETWEEN 0 AND 1000);
+    `);
+    await client.query(`
+      UPDATE character_intimacy SET intimacy_points = intimacy_level * 100
+      WHERE intimacy_points = 0 AND intimacy_level > 0;
     `);
 
     // character_intimacy インデックス

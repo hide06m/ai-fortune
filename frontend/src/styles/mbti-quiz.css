@@ -1,0 +1,244 @@
+/**
+ * 性格診断（16タイプ診断）クイズ画面スタイル
+ */
+
+.mbti-quiz {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.mbti-quiz-header {
+  margin-bottom: 2rem;
+}
+
+.mbti-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mbti-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.mbti-progress-text {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.4rem;
+}
+
+.mbti-entry-title {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.mbti-entry-desc {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.mbti-entry-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mbti-entry-cancel {
+  background: none;
+  border: none;
+  color: #888;
+  text-decoration: underline;
+  cursor: pointer;
+  margin: 0 auto;
+  padding: 0.5rem;
+}
+
+.mbti-direct-input,
+.love-direct-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mbti-direct-select-group,
+.love-direct-select-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mbti-direct-select-group select,
+.love-direct-select-group select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.mbti-direct-hyphen,
+.love-direct-hyphen {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.mbti-direct-preview,
+.love-direct-preview {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.love-subtype-tagline {
+  font-style: italic;
+  color: #888;
+  margin-top: 0.3rem;
+}
+
+.mbti-questions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mbti-question {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.mbti-statement {
+  font-size: 1rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.mbti-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
+}
+
+.mbti-scale-dot {
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+/* val=-3〜-1（そう思う側・緑）、0（中立・グレー）、val=1〜3（そう思わない側・紫） */
+.mbti-scale-dot--3 { width: 28px; height: 28px; border-color: #2e7d32; }
+.mbti-scale-dot--2 { width: 24px; height: 24px; border-color: #43a047; }
+.mbti-scale-dot--1 { width: 20px; height: 20px; border-color: #66bb6a; }
+.mbti-scale-dot-0 { width: 16px; height: 16px; border-color: #bbb; }
+.mbti-scale-dot-1 { width: 20px; height: 20px; border-color: #ab47bc; }
+.mbti-scale-dot-2 { width: 24px; height: 24px; border-color: #8e24aa; }
+.mbti-scale-dot-3 { width: 28px; height: 28px; border-color: #6a1b9a; }
+
+.mbti-scale-dot.selected {
+  transform: scale(1.15);
+}
+.mbti-scale-dot--3.selected, .mbti-scale-dot--2.selected, .mbti-scale-dot--1.selected {
+  background: #43a047;
+  border-color: #43a047;
+}
+.mbti-scale-dot-0.selected {
+  background: #999;
+  border-color: #999;
+}
+.mbti-scale-dot-1.selected, .mbti-scale-dot-2.selected, .mbti-scale-dot-3.selected {
+  background: #8e24aa;
+  border-color: #8e24aa;
+}
+
+.mbti-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.mbti-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+}
+
+.mbti-nav .primary-button,
+.mbti-nav .secondary-button {
+  flex: 1;
+}
+
+.quiz-retake-result {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #667eea;
+  margin: 0.5rem 0;
+}
+
+.quiz-retake-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.quiz-retake-startover {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+/* ラブタイプ診断のハート4段階（ピンク=左側／グリーン=右側）。border円ではなく♥グリフそのものを着色する */
+.mbti-scale.love-heart-scale {
+  align-items: center;
+}
+.love-scale-heart-0, .love-scale-heart-1, .love-scale-heart-4, .love-scale-heart-5 {
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.love-scale-heart-0 { width: 32px; height: 32px; font-size: 1.7rem; color: #f8bbd0; }
+.love-scale-heart-1 { width: 26px; height: 26px; font-size: 1.3rem; color: #f8bbd0; }
+.love-scale-heart-4 { width: 26px; height: 26px; font-size: 1.3rem; color: #a5d6a7; }
+.love-scale-heart-5 { width: 32px; height: 32px; font-size: 1.7rem; color: #a5d6a7; }
+
+.love-scale-heart-0.selected, .love-scale-heart-1.selected {
+  color: #d81b60;
+  transform: scale(1.15);
+}
+.love-scale-heart-4.selected, .love-scale-heart-5.selected {
+  color: #2e7d32;
+  transform: scale(1.15);
+}

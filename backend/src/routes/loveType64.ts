@@ -1,0 +1,224 @@
+/**
+ * ラブタイプ診断64エンドポイント
+ * GET  /api/fortune/love-type64/latest - 直近の診断結果があるか確認（再診断の選択肢を出すため）
+ * POST /api/fortune/love-type64        - 診断を実行
+ * クリ（キャラID4）専用の占術その2。生年月日ではなく18問の回答を使う。
+ * MBTIと同様、2回目以降は「前回の結果のまま悩みだけ入力し直す」再診断も選べる
+ * （body に answers の代わりに reuseLatest: true を渡す）
+ */
+
+import { Router, Request, Response } from 'express'
+import crypto from 'crypto'
+import {
+  calculateLoveType64,
+  buildLoveType64ResultFromType,
+  isValidLoveType64Code,
+  type LoveAnswer,
+  type LoveType64Result,
+} from '../fortune/loveType64.js'
+import { buildLoveType64Prompt } from '../llm/loveType64Prompt.js'
+import { generateFromPrompt } from '../llm/client.js'
+import { fortuneCache } from '../llm/cache.js'
+import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
+import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
+import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../types/character.js'
+import { saveReading, getLatestLoveType64Result } from '../db/readings.js'
+import { requireAuth } from '../middleware/auth.js'
+import { dailyLimiter } from '../middleware/rateLimit.js'
+
+const router = Router()
+const KURI_CHARACTER_ID: CharacterId = 4
+
+function isValidAnswers(value: unknown): value is LoveAnswer[] {
+  return (
+    Array.isArray(value) &&
+    value.length === 18 &&
+    value.every(
+      (a) =>
+        a &&
+        typeof a.id === 'number' && a.id >= 1 && a.id <= 18 &&
+        typeof a.val === 'number' && a.val >= 0 && a.val <= 5
+    )
+  )
+}
+
+/**
+ * GET /api/fortune/love-type64/latest
+ * 直近のラブタイプ診断結果があるかどうかを返す
+ */
+router.get('/latest', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any).userId
+    const result = await getLatestLoveType64Result(userId)
+    res.json({ success: true, result })
+  } catch (error) {
+    console.error('[API] Failed to get latest love type result:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get latest love type result',
+    })
+  }
+})
+
+router.post('/', dailyLimiter, async (req: Request, res: Response) => {
+  try {
+    const { answers, concern, reuseLatest, directType } = req.body
+    const concernText = typeof concern === 'string' ? concern : ''
+
+    let quizResult: LoveType64Result
+    let diagnosisKey: string
+
+    if (reuseLatest === true) {
+      if (!req.isAuthenticated || !req.user) {
+        return res.status(401).json({ success: false, error: 'ログインが必要です' })
+      }
+      const latest = await getLatestLoveType64Result(req.user.userId)
+      if (!latest) {
+        return res.status(404).json({ success: false, error: '前回の診断結果が見つかりません。最初から診断してください' })
+      }
+      quizResult = latest
+      diagnosisKey = `love64:${crypto.createHash('sha256').update(`reuse:${quizResult.fullType}`).digest('hex').slice(0, 32)}`
+    } else if (typeof directType === 'string' && directType) {
+      if (!isValidLoveType64Code(directType)) {
+        return res.status(400).json({ success: false, error: 'タイプの形式が正しくありません（例: LCPO-VI）' })
+      }
+      quizResult = buildLoveType64ResultFromType(directType)
+      diagnosisKey = `love64:${crypto.createHash('sha256').update(`direct:${quizResult.fullType}`).digest('hex').slice(0, 32)}`
+    } else {
+      if (!isValidAnswers(answers)) {
+        return res.status(400).json({ success: false, error: '18問すべての回答（id, val）が必要です' })
+      }
+      quizResult = calculateLoveType64(answers)
+      const answersKeyRaw = JSON.stringify(answers)
+      // bazi_key カラムは VARCHAR(50) のため、回答全体のJSONではなく短いハッシュを使う
+      diagnosisKey = `love64:${crypto.createHash('sha256').update(answersKeyRaw).digest('hex').slice(0, 38)}`
+    }
+    const cacheKey = `${diagnosisKey}:${concernText}`
+
+    // 親密度更新はクリ（キャラID4）固定
+    let intimacyResult: { characterId: CharacterId; intimacyLevel: number; justUnlocked: CharacterId | null } | null = null
+    const applyIntimacy = async () => {
+      if (!req.isAuthenticated || !req.user) return
+      try {
+        const userId = req.user.userId
+        const intimacy = await incrementCharacterIntimacy(userId, KURI_CHARACTER_ID)
+        let justUnlocked: CharacterId | null = null
+        const unlock = INTIMACY_UNLOCKS.find((u) => u.characterId !== undefined && u.level === intimacy.intimacyLevel)
+        if (unlock?.characterId !== undefined) {
+          const { wasNewlyUnlocked } = await unlockCharacter(userId, unlock.characterId)
+          if (wasNewlyUnlocked) justUnlocked = unlock.characterId
+        }
+        intimacyResult = { characterId: KURI_CHARACTER_ID, intimacyLevel: intimacy.intimacyLevel, justUnlocked }
+      } catch (error) {
+        console.error('Failed to update character intimacy (love-type64):', error)
+      }
+    }
+
+    // キャッシュ確認（石を使わずに結果を返せるケース）
+    const cachedResult = fortuneCache.get(cacheKey, concernText)
+    if (cachedResult) {
+      await applyIntimacy()
+
+      if (req.isAuthenticated && req.user) {
+        try {
+          await saveReading({
+            userId: req.user.userId,
+            concern: concernText,
+            loveTypeResult: quizResult,
+            analysis: cachedResult,
+            characterId: KURI_CHARACTER_ID,
+            baziKey: diagnosisKey,
+          })
+        } catch (error) {
+          console.error('Failed to save reading (love-type64 cache hit):', error)
+        }
+      }
+
+      return res.json({
+        success: true,
+        result: quizResult,
+        analysis: cachedResult,
+        cached: true,
+        intimacy: intimacyResult,
+      })
+    }
+
+    // 石の消費（ログイン済みユーザーがLLMを実際に呼ぶ場合のみ）
+    const shouldChargeStone = !!(req.isAuthenticated && req.user && process.env.GEMINI_API_KEY)
+    const stoneCost = DIAGNOSIS_STONE_COST[KURI_CHARACTER_ID]
+    let stoneBalance: number | null = null
+    if (shouldChargeStone) {
+      try {
+        stoneBalance = await spendStoneForDiagnosis(req.user!.userId, stoneCost)
+      } catch (error) {
+        if (error instanceof Error && error.message === 'INSUFFICIENT_STONES') {
+          return res.status(402).json({
+            success: false,
+            error: 'INSUFFICIENT_STONES',
+            message: 'ルーンストーンが足りません。ログインボーナスや広告視聴で増やしてください。',
+          })
+        }
+        throw error
+      }
+    }
+
+    await applyIntimacy()
+
+    let analysis = 'LLM API が未設定です。診断結果は以下の通りです。'
+    let llmSucceeded = false
+
+    if (process.env.GEMINI_API_KEY) {
+      const prompt = buildLoveType64Prompt(quizResult, concernText)
+      try {
+        const llmResult = await generateFromPrompt(prompt)
+        analysis = llmResult.analysis
+        llmSucceeded = true
+      } catch (error) {
+        console.error('Love-type64 LLM generation error:', error)
+        analysis = `LLM生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+        if (shouldChargeStone) {
+          try {
+            stoneBalance = await refundStoneForDiagnosis(req.user!.userId, stoneCost)
+          } catch (refundError) {
+            console.error('Failed to refund stone after LLM failure (love-type64):', refundError)
+          }
+        }
+      }
+    }
+
+    if (llmSucceeded) {
+      fortuneCache.set(cacheKey, concernText, analysis)
+    }
+
+    if (llmSucceeded && req.isAuthenticated && req.user) {
+      try {
+        await saveReading({
+          userId: req.user.userId,
+          concern: concernText,
+          loveTypeResult: quizResult,
+          analysis,
+          characterId: KURI_CHARACTER_ID,
+          baziKey: diagnosisKey,
+        })
+      } catch (error) {
+        console.error('Failed to save reading (love-type64):', error)
+      }
+    }
+
+    res.json({
+      success: true,
+      result: quizResult,
+      analysis,
+      intimacy: intimacyResult,
+      stoneBalance,
+    })
+  } catch (error) {
+    console.error('Love-type64 diagnosis API error:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+export default router
