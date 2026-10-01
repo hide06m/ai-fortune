@@ -222,6 +222,11 @@ cd backend && bash start-voicevox.sh
    リダイレクトURI追加、`CORS_ORIGINS`、`DATABASE_URL`（Render PostgreSQL）等
 5. （任意）感想フォームのDB永続化、プライバシーポリシー等の法的ページ
 
+> ⚠️ **デプロイ時の注意（2026-10-01）**: デプロイ時は `render.yaml` のBlueprintをそのまま適用すること。
+> 開発用の既存`DATABASE_URL`（ローカルの`backend/.env`が指しているRender上のPostgres）を、
+> 本番の環境変数に手動設定しないこと（開発データと本番データを分離するため）。
+> 本番DBはBlueprintが作る`ai-fortune-db`から自動接続させる。
+
 ## ✅ 石（ルーンストーン）経済システム実装（2026-09-18）
 
 ユーザー自身のAPIキーを使う設計（OAuth `cloud-platform`スコープ経由）を諦めた代わりに、
