@@ -33,6 +33,7 @@ import {
 } from './audio'
 import { CharacterSelectionPage } from './pages/CharacterSelectionPage'
 import { MBTIQuizPage } from './pages/MBTIQuizPage'
+import { MBTIResultCard } from './components/MBTIResultCard'
 import { LoveType64QuizPage } from './pages/LoveType64QuizPage'
 import { PalmCapturePage } from './pages/PalmCapturePage'
 import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
@@ -1480,18 +1481,7 @@ function AppContent() {
           ) : reading.mbtiResult ? (
             <div className="result-section">
               <h2>【性格診断（16タイプ）】</h2>
-              <div className="bazi-result">
-                <div>タイプ: <strong>{reading.mbtiResult.personalityType}</strong></div>
-                {(Object.keys(reading.mbtiResult.dimensions) as Array<keyof typeof reading.mbtiResult.dimensions>).map((dim) => {
-                  const d = reading.mbtiResult!.dimensions[dim]
-                  const winnerPct = d.winner === d.traitA ? d.percentageA : d.percentageB
-                  return (
-                    <div key={dim}>
-                      {d.traitA}/{d.traitB}: <strong>{d.winner}</strong>優勢（{winnerPct}%）
-                    </div>
-                  )
-                })}
-              </div>
+              <MBTIResultCard result={reading.mbtiResult} />
             </div>
           ) : reading.loveTypeResult ? (
             <div className="result-section">

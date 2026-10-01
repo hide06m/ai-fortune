@@ -1,0 +1,97 @@
+.mbti-result-card {
+  --mbti-color: #888888;
+  margin-top: 8px;
+}
+
+.mbti-result-header {
+  text-align: center;
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mbti-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mbti-color) 45%, transparent);
+}
+
+.mbti-result-role {
+  color: var(--mbti-color);
+  font-weight: bold;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+
+.mbti-result-emblem {
+  width: 84px;
+  height: 84px;
+  margin: 12px auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--mbti-color);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--mbti-color) 60%, transparent);
+}
+
+.mbti-result-name {
+  margin: 4px 0;
+  font-size: 1.4rem;
+}
+
+.mbti-result-code {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.mbti-result-identity {
+  display: inline-block;
+  margin: 4px 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--mbti-color);
+  border: 1px solid var(--mbti-color);
+}
+
+.mbti-result-tagline {
+  margin: 8px auto 0;
+  max-width: 460px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.mbti-result-bars {
+  margin-top: 20px;
+}
+
+.mbti-result-bar-row {
+  margin-bottom: 14px;
+}
+
+.mbti-result-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  opacity: 0.75;
+}
+
+.mbti-result-bar-labels .is-winner {
+  font-weight: bold;
+  opacity: 1;
+  color: var(--mbti-color);
+}
+
+.mbti-result-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.3);
+  overflow: hidden;
+}
+
+.mbti-result-bar-fill {
+  height: 100%;
+  background: var(--mbti-color);
+  transition: width 0.5s ease-in-out;
+}
