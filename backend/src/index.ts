@@ -82,9 +82,7 @@ app.get('/health', (req: Request, res: Response) => {
  */
 app.post('/api/auth/google', async (req: Request, res: Response) => {
   try {
-    console.log('[AUTH] Request body received:', req.body)
     const { code, idToken } = req.body
-    console.log('[AUTH] code:', code, '| idToken:', idToken)
     let googleUser: any
 
     // idToken が authorization code の場合も処理（フロントエンド側の authenticateWithGoogle で送信）
@@ -94,7 +92,6 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
     if (authCode) {
       // authorization_code から id_token に交換
       console.log('[AUTH] Exchanging authorization code for tokens...')
-      console.log('[AUTH] authCode:', authCode)
       console.log('[AUTH] client_id:', process.env.GOOGLE_CLIENT_ID ? '✓ set' : '✗ NOT SET')
       console.log('[AUTH] client_secret:', process.env.GOOGLE_CLIENT_SECRET ? '✓ set' : '✗ NOT SET')
 
@@ -115,7 +112,7 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text()
         console.error('[AUTH] Failed to exchange code for token:', errorText)
-        return res.status(401).json({ error: 'Failed to exchange authorization code', details: errorText })
+        return res.status(401).json({ error: 'Failed to exchange authorization code' })
       }
 
       const tokenData = (await tokenResponse.json()) as Record<string, unknown>
