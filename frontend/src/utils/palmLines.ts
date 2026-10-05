@@ -1,0 +1,322 @@
+/**
+ * 手のひらの写真から「実際のしわ（線）」を検出してたどる画像処理（外部ライブラリ不要）
+ *
+ * 流れ：グレースケール → 照明ムラの除去 → 多重スケールのHessian（暗い線状構造の強調）
+ *       → 始点付近〜終点付近を結ぶ「最も線らしい道筋」をDijkstraで探索
+ *
+ * 始点・終点・探索してよい範囲（回廊）は、手の骨格（指の付け根・手首の位置）から呼び出し側が決める。
+ * ここでは「線が見つかったか」を強さ（strength）と被覆率（coverage）で正直に返し、
+ * 弱ければ null を返す（嘘の線を描かないため）。
+ */
+
+export interface Pt {
+  x: number;
+  y: number;
+}
+
+export interface GrayImage {
+  width: number;
+  height: number;
+  /** 0〜1 */
+  data: Float32Array;
+}
+
+export function toGray(img: { data: ArrayLike<number>; width: number; height: number }): GrayImage {
+  const { width, height } = img;
+  const out = new Float32Array(width * height);
+  for (let i = 0; i < width * height; i++) {
+    const r = img.data[i * 4];
+    const g = img.data[i * 4 + 1];
+    const b = img.data[i * 4 + 2];
+    out[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  }
+  return { width, height, data: out };
+}
+
+function gaussianKernel(sigma: number): Float32Array {
+  const radius = Math.max(1, Math.ceil(sigma * 3));
+  const k = new Float32Array(radius * 2 + 1);
+  let sum = 0;
+  for (let i = -radius; i <= radius; i++) {
+    const v = Math.exp(-(i * i) / (2 * sigma * sigma));
+    k[i + radius] = v;
+    sum += v;
+  }
+  for (let i = 0; i < k.length; i++) k[i] /= sum;
+  return k;
+}
+
+/** 分離可能ガウシアンぼかし（端は端の値で延長） */
+export function gaussianBlur(src: GrayImage, sigma: number): GrayImage {
+  const { width, height } = src;
+  const k = gaussianKernel(sigma);
+  const r = (k.length - 1) / 2;
+  const tmp = new Float32Array(width * height);
+  const out = new Float32Array(width * height);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let acc = 0;
+      for (let i = -r; i <= r; i++) {
+        const xx = Math.min(width - 1, Math.max(0, x + i));
+        acc += src.data[y * width + xx] * k[i + r];
+      }
+      tmp[y * width + x] = acc;
+    }
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let acc = 0;
+      for (let i = -r; i <= r; i++) {
+        const yy = Math.min(height - 1, Math.max(0, y + i));
+        acc += tmp[yy * width + x] * k[i + r];
+      }
+      out[y * width + x] = acc;
+    }
+  }
+  return { width, height, data: out };
+}
+
+/** 照明ムラを除く：大きくぼかした画像との差を、局所の明るさで割る */
+export function normalizeIllumination(src: GrayImage, sigma = 18): GrayImage {
+  const bg = gaussianBlur(src, sigma);
+  const out = new Float32Array(src.data.length);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = src.data[i] / Math.max(0.05, bg.data[i]);
+  }
+  return { width: src.width, height: src.height, data: out };
+}
+
+/** ridgeRaw の値のうち「はっきりした線」とみなす大きさ（合成画像と実写で調整する） */
+export const RIDGE_FULL_SCALE = 0.06;
+
+/**
+ * 暗い線状構造（しわ）の強調（正規化前の生の値）。
+ * Hessianの最大固有値が大きく、もう一方が小さい（＝点ではなく線）ほど高い
+ */
+export function ridgeRaw(src: GrayImage, sigmas: number[] = [1.5, 2.5, 3.5]): Float32Array {
+  const { width, height } = src;
+  const n = width * height;
+  const best = new Float32Array(n);
+
+  for (const sigma of sigmas) {
+    const g = gaussianBlur(src, sigma).data;
+    const s2 = sigma * sigma;
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = y * width + x;
+        const c = g[i];
+        const ixx = g[i - 1] - 2 * c + g[i + 1];
+        const iyy = g[i - width] - 2 * c + g[i + width];
+        const ixy = (g[i + width + 1] - g[i + width - 1] - g[i - width + 1] + g[i - width - 1]) / 4;
+        const mean = (ixx + iyy) / 2;
+        const diff = Math.sqrt(((ixx - iyy) / 2) ** 2 + ixy * ixy);
+        const l1 = mean + diff; // 大きい方
+        const l2 = mean - diff;
+        if (l1 <= 0) continue; // 暗い線は、断面方向の2階微分が正
+        const ratio = Math.abs(l2) / l1; // 0に近いほど線らしい。1に近いと点（ほくろ・影）
+        const lineness = Math.exp(-(ratio * ratio) / (2 * 0.5 * 0.5));
+        const v = l1 * s2 * lineness;
+        if (v > best[i]) best[i] = v;
+      }
+    }
+  }
+
+  return best;
+}
+
+/**
+ * 線らしさを 0〜1 に正規化する。
+ * 画像ごとの相対値（上位パーセンタイル）で割ると、線の無い画像でもノイズが「強い線」に見えてしまうので、
+ * 照明補正後の画像で意味のある線のコントラスト（fullScale）を固定値で基準にする
+ */
+export function ridgeMap(src: GrayImage, sigmas?: number[], fullScale = RIDGE_FULL_SCALE): Float32Array {
+  const raw = ridgeRaw(src, sigmas);
+  const out = new Float32Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = Math.min(1, raw[i] / fullScale);
+  return out;
+}
+
+class MinHeap {
+  private keys: number[] = [];
+  private vals: number[] = [];
+  get size() {
+    return this.keys.length;
+  }
+  push(key: number, val: number) {
+    const k = this.keys;
+    const v = this.vals;
+    k.push(key);
+    v.push(val);
+    let i = k.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (k[p] <= k[i]) break;
+      [k[p], k[i]] = [k[i], k[p]];
+      [v[p], v[i]] = [v[i], v[p]];
+      i = p;
+    }
+  }
+  pop(): [number, number] {
+    const k = this.keys;
+    const v = this.vals;
+    const top: [number, number] = [k[0], v[0]];
+    const lastK = k.pop()!;
+    const lastV = v.pop()!;
+    if (k.length > 0) {
+      k[0] = lastK;
+      v[0] = lastV;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1;
+        const r = l + 1;
+        let m = i;
+        if (l < k.length && k[l] < k[m]) m = l;
+        if (r < k.length && k[r] < k[m]) m = r;
+        if (m === i) break;
+        [k[m], k[i]] = [k[i], k[m]];
+        [v[m], v[i]] = [v[i], v[m]];
+        i = m;
+      }
+    }
+    return top;
+  }
+}
+
+export interface TracedLine {
+  /** 画素座標の経路（始点→終点） */
+  path: Pt[];
+  /** 経路上の線らしさの平均（0〜1） */
+  strength: number;
+  /** 経路のうち、線らしさが十分ある画素の割合（0〜1） */
+  coverage: number;
+}
+
+export interface TraceOptions {
+  /** 探索してよい範囲。省略時は画像全体 */
+  corridor?: (x: number, y: number) => boolean;
+  /** この強さ・被覆率に満たなければ「線が見つからない」として null を返す */
+  minStrength?: number;
+  minCoverage?: number;
+}
+
+const NEIGHBORS: Array<[number, number, number]> = [
+  [1, 0, 1],
+  [-1, 0, 1],
+  [0, 1, 1],
+  [0, -1, 1],
+  [1, 1, Math.SQRT2],
+  [1, -1, Math.SQRT2],
+  [-1, 1, Math.SQRT2],
+  [-1, -1, Math.SQRT2],
+];
+
+/**
+ * 始点候補のどれかから、終点候補のどれかまで、線らしさが最大になる道筋を探す
+ */
+export function traceLine(
+  ridge: Float32Array,
+  width: number,
+  height: number,
+  starts: Pt[],
+  ends: Pt[],
+  options: TraceOptions = {},
+): TracedLine | null {
+  const { corridor, minStrength = 0.3, minCoverage = 0.6 } = options;
+  const inRange = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height && (!corridor || corridor(x, y));
+
+  const dist = new Float64Array(width * height).fill(Infinity); // float32だと丸めで比較が狂い、経路が循環しうる
+  const prev = new Int32Array(width * height).fill(-1);
+  const heap = new MinHeap();
+  const endSet = new Set<number>();
+
+  for (const e of ends) {
+    const x = Math.round(e.x);
+    const y = Math.round(e.y);
+    if (inRange(x, y)) endSet.add(y * width + x);
+  }
+  for (const s of starts) {
+    const x = Math.round(s.x);
+    const y = Math.round(s.y);
+    if (!inRange(x, y)) continue;
+    const i = y * width + x;
+    dist[i] = 0;
+    heap.push(0, i);
+  }
+  if (endSet.size === 0 || heap.size === 0) return null;
+
+  // 線らしくない画素ほど高コスト。わずかな下駄で、無駄な迂回を防ぐ
+  const cost = (i: number) => 1 / (0.04 + ridge[i]);
+
+  let reached = -1;
+  while (heap.size > 0) {
+    const [d, i] = heap.pop();
+    if (d > dist[i]) continue;
+    if (endSet.has(i)) {
+      reached = i;
+      break;
+    }
+    const x = i % width;
+    const y = (i - x) / width;
+    for (const [dx, dy, len] of NEIGHBORS) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (!inRange(nx, ny)) continue;
+      const ni = ny * width + nx;
+      const nd = d + cost(ni) * len;
+      if (nd < dist[ni]) {
+        dist[ni] = nd;
+        prev[ni] = i;
+        heap.push(nd, ni);
+      }
+    }
+  }
+  if (reached < 0) return null;
+
+  const path: Pt[] = [];
+  let sum = 0;
+  let strong = 0;
+  for (let i = reached, guard = 0; i !== -1 && guard <= width * height; i = prev[i], guard++) {
+    const x = i % width;
+    const y = (i - x) / width;
+    path.push({ x, y });
+    sum += ridge[i];
+    if (ridge[i] > 0.25) strong++;
+  }
+  path.reverse();
+
+  const strength = sum / path.length;
+  const coverage = strong / path.length;
+  if (strength < minStrength || coverage < minCoverage) return null;
+  return { path, strength, coverage };
+}
+
+/** 移動平均で滑らかにし、等間隔の点数に間引く（SVG描画・座標の受け渡し用） */
+export function smoothAndResample(path: Pt[], count = 40, window = 7): Pt[] {
+  if (path.length <= 2) return path.slice();
+  const half = Math.floor(window / 2);
+  const smooth = path.map((_, i) => {
+    let sx = 0;
+    let sy = 0;
+    let c = 0;
+    for (let j = Math.max(0, i - half); j <= Math.min(path.length - 1, i + half); j++) {
+      sx += path[j].x;
+      sy += path[j].y;
+      c++;
+    }
+    return { x: sx / c, y: sy / c };
+  });
+  // 端点は元の位置に固定
+  smooth[0] = path[0];
+  smooth[smooth.length - 1] = path[path.length - 1];
+
+  const out: Pt[] = [];
+  for (let k = 0; k < count; k++) {
+    const t = (k / (count - 1)) * (smooth.length - 1);
+    const i0 = Math.floor(t);
+    const i1 = Math.min(smooth.length - 1, i0 + 1);
+    const f = t - i0;
+    out.push({ x: smooth[i0].x * (1 - f) + smooth[i1].x * f, y: smooth[i0].y * (1 - f) + smooth[i1].y * f });
+  }
+  return out;
+}
