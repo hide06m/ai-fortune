@@ -90,7 +90,8 @@ export interface FortuneResponse {
   message?: string
 }
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// VITE_API_URL を空文字で起動すると同一オリジン（Viteの /api 中継経由）になる。スマホ実機テスト用
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 // トークン管理
 export function getToken(): string | null {
