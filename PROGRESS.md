@@ -1,5 +1,8 @@
 # ai-fortune 進捗メモ（トークン節約用・要点のみ）
 
+> **現在の機能・実装状況の一覧は [STATUS.md](STATUS.md) を見ること。** このファイルは経緯の記録（時系列）。
+> 以下の「実プロジェクトの場所」は古い記述。現在のプロジェクトは `C:\Users\hide0\Projects` 直下（clone済み）。
+
 **実プロジェクトの場所は `C:\Users\hide0\Projects\ai-fortune`（git管理下）。**
 `G:\マイドライブ\AI-project\ai-fortune` はスペック文書・素材・作業ログ置き場（コードなし）。
 過去ログ `G:\マイドライブ\AI-project\ai-fortune\Implement this plan.md` は13,403行/500KB超の全文チャットログなので、
