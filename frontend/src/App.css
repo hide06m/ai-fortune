@@ -257,10 +257,11 @@ body {
 
 .landing-door-container {
   position: absolute;
-  left: 51.8%;
-  top: 69.5%;
-  width: 11.9%;
-  height: 32.6%;
+  /* 彫刻の枠の内側＝木製のドア部分（原画像 x:1295-1535, y:860-1308）に合わせる */
+  left: 51.83%;
+  top: 70.57%;
+  width: 8.79%;
+  height: 29.17%;
   transform: translate(-50%, -50%);
   pointer-events: auto;
 }
@@ -276,7 +277,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 50px 50px 0 0;
+  /* ドアの上部アーチ形（％指定なのでドアの拡大縮小に追従する） */
+  border-radius: 50% 50% 0 0 / 36% 36% 0 0;
 }
 
 .landing-door:hover {
@@ -288,7 +290,7 @@ body {
   position: absolute;
   inset: 0;
   border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50px 50px 0 0;
+  border-radius: 50% 50% 0 0 / 36% 36% 0 0;
   animation: doorGlow 1.5s ease-in-out infinite;
 }
 
@@ -312,6 +314,7 @@ body {
   transform: translate(-50%, -50%);
   color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
+  white-space: nowrap;
   opacity: 0;
   transition: opacity 0.3s;
   z-index: 5;
