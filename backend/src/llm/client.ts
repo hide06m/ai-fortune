@@ -31,9 +31,14 @@ const DIAGNOSIS_TEMPERATURE = 0.55
 const MAX_ATTEMPTS = 3
 const RETRY_DELAYS_MS = [1500, 3500]
 
-function isTransientError(error: unknown): boolean {
+const TRANSIENT_STATUS_CODES = [429, 500, 502, 503, 504]
+
+export function isTransientError(error: unknown): boolean {
+  // @google/generative-ai のエラーは status を持つ（GoogleGenerativeAIFetchError）。無い場合はメッセージの "[503 …]" で判定
+  const status = (error as { status?: number } | null)?.status
+  if (typeof status === 'number' && TRANSIENT_STATUS_CODES.includes(status)) return true
   const msg = error instanceof Error ? error.message : String(error)
-  return /[(429|500|502|503|504)[ ]]/.test(msg) || /fetch failed|ECONNRESET|ETIMEDOUT|network/i.test(msg)
+  return TRANSIENT_STATUS_CODES.some((code) => msg.includes(`[${code} `)) || /fetch failed|ECONNRESET|ETIMEDOUT|network/i.test(msg)
 }
 
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
