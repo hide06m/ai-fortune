@@ -1149,6 +1149,7 @@ function AppContent() {
             </div>
 
             {/* ドア（ログイン済みなら form 画面へ、未ログインなら Google ログイン） */}
+            <div className="landing-stage">
             <div className="landing-door-container">
               <button
                 className="landing-door"
@@ -1158,6 +1159,7 @@ function AppContent() {
               >
                 <span className="door-text">診断へ進む</span>
               </button>
+            </div>
             </div>
 
             {/* ゲスト診断リンク（ログイン済みには不要） */}

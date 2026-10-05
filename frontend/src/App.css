@@ -242,17 +242,32 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.landing-door-container {
+/* 背景画像（background-size: cover）と同じ拡大縮小になる「ステージ」。
+   ドアのボタンはこの中に画像比率（2730x1536）の％で配置するので、どのブラウザ/画面比率でもドアに重なる */
+.landing-stage {
   position: absolute;
-  top: calc(58% + 100px);
-  left: calc(50% + 25px);
+  top: 50%;
+  left: 50%;
+  width: max(100vw, calc(100vh * 2730 / 1536));
+  aspect-ratio: 2730 / 1536;
   transform: translate(-50%, -50%);
   z-index: 10;
+  pointer-events: none;
+}
+
+.landing-door-container {
+  position: absolute;
+  left: 51.8%;
+  top: 69.5%;
+  width: 11.9%;
+  height: 32.6%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
 }
 
 .landing-door {
-  width: 100px;
-  height: 190px;
+  width: 100%;
+  height: 100%;
   background: none;
   border: none;
   cursor: pointer;
@@ -271,8 +286,7 @@ body {
 .landing-door:hover::before {
   content: '';
   position: absolute;
-  width: 100px;
-  height: 190px;
+  inset: 0;
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50px 50px 0 0;
   animation: doorGlow 1.5s ease-in-out infinite;
