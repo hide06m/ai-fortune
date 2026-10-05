@@ -24,6 +24,31 @@ const genAI = new GoogleGenerativeAI(apiKey)
 // アンカー（anchors.ts）による内容の一貫性担保とあわせて、内容と文章表現のブレを両方抑える狙い。
 const DIAGNOSIS_TEMPERATURE = 0.55
 
+/**
+ * Gemini の一時的な混雑（503/429）やネットワーク断のとき、少し待って再試行する。
+ * 診断ごとに石を消費しているので、一時エラーはユーザーに見せずに吸収したい。
+ */
+const MAX_ATTEMPTS = 3
+const RETRY_DELAYS_MS = [1500, 3500]
+
+function isTransientError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return /[(429|500|502|503|504)[ ]]/.test(msg) || /fetch failed|ECONNRESET|ETIMEDOUT|network/i.test(msg)
+}
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (attempt >= MAX_ATTEMPTS || !isTransientError(error)) throw error
+      const delay = RETRY_DELAYS_MS[attempt - 1] ?? 3500
+      console.warn(`[Gemini] 一時的なエラーのため${delay}ms後に再試行します（${attempt}/${MAX_ATTEMPTS - 1}）`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+}
+
 export interface FortuneAnalysisResult {
   analysis: string
   tokensUsed: number
@@ -46,7 +71,7 @@ export async function generateFortuneAnalysis(
     const concernSection = hasConcern ? `\n\nユーザーの悩み・現在の状況:\n${concernText}` : ''
     const prompt = `${fortuneDescription}${concernSection}\n\nこの情報から統合された診断文を生成してください。親切で前向きなメッセージにしてください。`
 
-    const result = await model.generateContent(prompt)
+    const result = await withRetry(() => model.generateContent(prompt))
     const analysis = result.response.text()
 
     return {
@@ -74,10 +99,10 @@ export async function generateFromImagePrompt(
       generationConfig: { temperature: DIAGNOSIS_TEMPERATURE }
     })
 
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
       { text: prompt },
       { inlineData: { data: imageBase64, mimeType } }
-    ])
+    ]))
     const analysis = result.response.text()
 
     return {
@@ -100,7 +125,7 @@ export async function generateFromPrompt(prompt: string): Promise<FortuneAnalysi
       model: 'gemini-3.6-flash',
       generationConfig: { temperature: DIAGNOSIS_TEMPERATURE }
     })
-    const result = await model.generateContent(prompt)
+    const result = await withRetry(() => model.generateContent(prompt))
     const analysis = result.response.text()
 
     return {

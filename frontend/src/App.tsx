@@ -33,6 +33,7 @@ import {
 } from './audio'
 import { CharacterSelectionPage } from './pages/CharacterSelectionPage'
 import { MBTIQuizPage } from './pages/MBTIQuizPage'
+import { displayAnalysis } from './utils/llmError'
 import { MBTIResultCard } from './components/MBTIResultCard'
 import { LoveResultExtras } from './components/LoveResultExtras'
 import { LoveType64QuizPage } from './pages/LoveType64QuizPage'
@@ -1545,7 +1546,7 @@ function AppContent() {
                   em: ({ node, ...props }) => <em className="markdown-em" {...props} />,
                 }}
               >
-                {reading.analysis}
+                {displayAnalysis(reading.analysis)}
               </Markdown>
             </div>
             {reading.cached && <small className="cache-notice">※ キャッシュから取得</small>}
@@ -1755,7 +1756,7 @@ function AppContent() {
                     em: ({ node, ...props }) => <em className="markdown-em" {...props} />,
                   }}
                 >
-                  {compatResult.analysis}
+                  {displayAnalysis(compatResult.analysis ?? "")}
                 </Markdown>
               </div>
               {compatResult.cached && <small className="cache-notice">※ キャッシュから取得</small>}
