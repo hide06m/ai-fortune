@@ -5,7 +5,7 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 
 const apiKey = process.env.GEMINI_API_KEY
 
@@ -116,6 +116,62 @@ export async function generateFromImagePrompt(
     }
   } catch (error) {
     console.error('Error calling Gemini API (vision):', error)
+    throw error
+  }
+}
+
+/**
+ * 手相診断用：画像＋プロンプトを渡し、JSON（診断文＋各線の座標・解説）で受け取る。
+ * 返り値は未検証の生テキスト。parsePalmistryOutput で検証してから使うこと
+ */
+export async function generatePalmistryJson(
+  prompt: string,
+  imageBase64: string,
+  mimeType: string
+): Promise<FortuneAnalysisResult> {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-3.6-flash',
+      generationConfig: {
+        temperature: DIAGNOSIS_TEMPERATURE,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            analysis: { type: SchemaType.STRING },
+            lines: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  id: { type: SchemaType.STRING, format: 'enum', enum: ['heart', 'head', 'life', 'fate'] },
+                  found: { type: SchemaType.BOOLEAN },
+                  points: {
+                    type: SchemaType.ARRAY,
+                    items: {
+                      type: SchemaType.OBJECT,
+                      properties: { x: { type: SchemaType.NUMBER }, y: { type: SchemaType.NUMBER } },
+                      required: ['x', 'y'],
+                    },
+                  },
+                  reading: { type: SchemaType.STRING },
+                },
+                required: ['id', 'found', 'points', 'reading'],
+              },
+            },
+          },
+          required: ['analysis', 'lines'],
+        },
+      },
+    })
+
+    const result = await withRetry(() => model.generateContent([
+      { text: prompt },
+      { inlineData: { data: imageBase64, mimeType } }
+    ]))
+    return { analysis: result.response.text(), tokensUsed: 0 }
+  } catch (error) {
+    console.error('Error calling Gemini API (palmistry json):', error)
     throw error
   }
 }

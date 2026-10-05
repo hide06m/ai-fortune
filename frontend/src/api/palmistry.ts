@@ -10,9 +10,19 @@ export interface PalmIntimacyResult {
   justUnlocked: number | null;
 }
 
+export interface PalmLine {
+  id: 'heart' | 'head' | 'life' | 'fate';
+  label: string;
+  /** 画像左上を(0,0)、右下を(1000,1000)とする座標 */
+  points: Array<{ x: number; y: number }>;
+  reading: string;
+}
+
 export interface PalmistryResponse {
   success: boolean;
   analysis?: string;
+  lines?: PalmLine[];
+  image?: { base64: string; mimeType: string } | null;
   intimacy?: PalmIntimacyResult | null;
   stoneBalance?: number | null;
   error?: string;

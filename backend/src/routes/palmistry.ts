@@ -12,7 +12,8 @@ import { Router, Request, Response } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { consumePalmSessionImage } from '../palm/sessionStore.js'
 import { buildPalmistryPrompt } from '../llm/palmistryPrompt.js'
-import { generateFromImagePrompt } from '../llm/client.js'
+import { generatePalmistryJson } from '../llm/client.js'
+import { parsePalmistryOutput, type PalmLine } from '../llm/palmistryParse.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
 import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
 import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../types/character.js'
@@ -89,12 +90,15 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
 
     let analysis = 'LLM API が未設定です。'
     let llmSucceeded = false
+    let lines: PalmLine[] = []
 
     if (process.env.GEMINI_API_KEY) {
       const prompt = buildPalmistryPrompt(concernText)
       try {
-        const llmResult = await generateFromImagePrompt(prompt, imageBase64, mimeType)
-        analysis = llmResult.analysis
+        const llmResult = await generatePalmistryJson(prompt, imageBase64, mimeType)
+        const parsed = parsePalmistryOutput(llmResult.analysis)
+        analysis = parsed.analysis
+        lines = parsed.lines
         llmSucceeded = true
       } catch (error) {
         console.error('Palmistry LLM generation error:', error)
@@ -114,7 +118,10 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
         await saveReading({
           userId: req.user.userId,
           concern: concernText,
-          analysis,
+          // 診断履歴は写真を保存しないテキストのみなので、線ごとの観察も本文に含めて残す
+          analysis: lines.length > 0
+            ? `${analysis}\n\n## 線ごとの観察\n${lines.map((l) => `- **${l.label}**：${l.reading}`).join('\n')}`
+            : analysis,
           characterId: KOKUU_CHARACTER_ID,
           baziKey: `palm:${uuidv4()}`,
         })
@@ -126,6 +133,9 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
     res.json({
       success: true,
       analysis,
+      // 撮影した写真はこのレスポンスで画面に返すだけ（サーバーには保存しない）。線の座標と一緒に画像上へ重ねて表示する
+      lines,
+      image: llmSucceeded ? { base64: imageBase64, mimeType } : null,
       intimacy: intimacyResult,
       stoneBalance,
     })

@@ -35,6 +35,7 @@ import { CharacterSelectionPage } from './pages/CharacterSelectionPage'
 import { MBTIQuizPage } from './pages/MBTIQuizPage'
 import { displayAnalysis } from './utils/llmError'
 import { MBTIResultCard } from './components/MBTIResultCard'
+import { PalmAnnotatedResult } from './components/PalmAnnotatedResult'
 import { LoveResultExtras } from './components/LoveResultExtras'
 import { LoveType64QuizPage } from './pages/LoveType64QuizPage'
 import { PalmCapturePage } from './pages/PalmCapturePage'
@@ -1530,6 +1531,13 @@ function AppContent() {
             </>
           ) : null}
 
+          {reading.palm && (
+            <div className="result-section">
+              <h2>【手相の読み取り】</h2>
+              <PalmAnnotatedResult imageUrl={reading.palm.imageUrl} lines={reading.palm.lines} />
+            </div>
+          )}
+
           <div className="result-section">
             <h2>【総合結論】</h2>
             <div className="analysis">
@@ -1876,7 +1884,12 @@ function AppContent() {
                 ? (response.intimacy.justUnlocked as CharacterId)
                 : null
             )
-            setReading({ analysis: response.analysis || '' })
+            setReading({
+              analysis: response.analysis || '',
+              palm: response.image && response.lines && response.lines.length > 0
+                ? { imageUrl: `data:${response.image.mimeType};base64,${response.image.base64}`, lines: response.lines }
+                : null,
+            })
             setViewingHistoryReading(false)
             setScreen('result')
           }}
@@ -1900,7 +1913,12 @@ function AppContent() {
                 ? (response.intimacy.justUnlocked as CharacterId)
                 : null
             )
-            setReading({ analysis: response.analysis || '' })
+            setReading({
+              analysis: response.analysis || '',
+              palm: response.image && response.lines && response.lines.length > 0
+                ? { imageUrl: `data:${response.image.mimeType};base64,${response.image.base64}`, lines: response.lines }
+                : null,
+            })
             setViewingHistoryReading(false)
             setScreen('result')
           }}
