@@ -31,7 +31,9 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
       }
       setToken(session.token);
 
-      const url = `${window.location.origin}/palm-capture/${session.token}`;
+      // スマホ実機テスト時は VITE_QR_ORIGIN（トンネルのURL）を指定する。未指定なら今開いているオリジン
+      const qrOrigin = import.meta.env.VITE_QR_ORIGIN || window.location.origin;
+      const url = `${qrOrigin}/palm-capture/${session.token}`;
       if (canvasRef.current) {
         try {
           await QRCode.toCanvas(canvasRef.current, url, { width: 240 });
