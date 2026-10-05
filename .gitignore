@@ -44,3 +44,7 @@ Thumbs.db
 
 # 他社由来の抽出データ（個人利用のみ。絶対にコミット/公開しない）
 frontend/src/data/private/
+
+# 手相の検出調整用サンプル写真とモデル（ローカルのみ）
+frontend/public/dev-samples/
+frontend/public/models/
