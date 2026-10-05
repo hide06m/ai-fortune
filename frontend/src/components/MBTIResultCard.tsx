@@ -3,7 +3,10 @@
  * 役割グループのテーマカラーでタイプ名と5軸のパーセンテージバーを表示する
  */
 
+import { useEffect, useState } from 'react';
 import '../styles/mbti-result.css';
+import { loadMBTIFullContent, type TextBlock } from '../data/privateData';
+import { LongTextSection } from './LongTextSection';
 import { MBTI_TYPES, MBTI_ROLE_THEMES, MBTI_IDENTITY_LABELS } from '../data/mbtiTypes';
 
 interface DimensionResult {
@@ -26,6 +29,11 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
   const info = MBTI_TYPES[coreType];
   const role = info ? MBTI_ROLE_THEMES[info.roleKey] : null;
   const color = role?.color ?? '#888888';
+  const [fullText, setFullText] = useState<TextBlock[] | null>(null);
+
+  useEffect(() => {
+    loadMBTIFullContent(coreType).then(setFullText);
+  }, [coreType]);
 
   return (
     <div className="mbti-result-card" style={{ ['--mbti-color' as string]: color }}>
@@ -57,6 +65,8 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
           </div>
         ))}
       </div>
+
+      {fullText && <LongTextSection blocks={fullText} />}
     </div>
   );
 }

@@ -95,3 +95,54 @@
   background: var(--mbti-color);
   transition: width 0.5s ease-in-out;
 }
+
+.long-text-section {
+  margin-top: 20px;
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+.long-text-section h4 {
+  margin: 20px 0 6px;
+  color: var(--mbti-color, inherit);
+}
+
+.long-text-section p {
+  margin: 0 0 10px;
+}
+
+.love-compat {
+  margin-top: 24px;
+}
+
+.love-compat-selects {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.love-compat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 200px;
+  font-size: 0.85rem;
+}
+
+.love-compat-field select {
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.love-compat-result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 150, 180, 0.12);
+  line-height: 1.7;
+}
+
+.love-compat-score strong {
+  font-size: 2rem;
+  color: #e0527a;
+}

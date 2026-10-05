@@ -34,6 +34,7 @@ import {
 import { CharacterSelectionPage } from './pages/CharacterSelectionPage'
 import { MBTIQuizPage } from './pages/MBTIQuizPage'
 import { MBTIResultCard } from './components/MBTIResultCard'
+import { LoveResultExtras } from './components/LoveResultExtras'
 import { LoveType64QuizPage } from './pages/LoveType64QuizPage'
 import { PalmCapturePage } from './pages/PalmCapturePage'
 import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
@@ -1496,6 +1497,7 @@ function AppContent() {
                   ))}
                 </ul>
               </div>
+              <LoveResultExtras fullType={reading.loveTypeResult.fullType} />
             </div>
           ) : reading.baZi && reading.numerology && reading.kyuseiSeisun ? (
             <>
