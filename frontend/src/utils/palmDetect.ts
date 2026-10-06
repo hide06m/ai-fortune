@@ -206,8 +206,9 @@ export async function detectPalmLines(
   const frame = buildHandFrame(lm);
   const handedness = result.handedness?.[0]?.[0]?.categoryName ?? '';
 
-  // 手の向き：鏡像でない写真で、手のひら側を向けた左手なら orientation > 0、右手なら < 0
-  const hand: 'left' | 'right' = frame.orientation > 0 ? 'left' : 'right';
+  // 手の向き：手のひら側が見えている鏡像でない写真で、親指が画像の右側なら右手（orientation > 0）、左側なら左手（< 0）。
+  // 手のひらを見る向きでは、親指が左にあるのが左手。手の甲を見る向きでは逆になるので、手のひらを撮影してもらう前提
+  const hand: 'left' | 'right' = frame.orientation > 0 ? 'right' : 'left';
   const debugBase = { work: { width: W, height: H }, landmarks: lm, frame, handedness, orientation: frame.orientation };
   if (requiredHand && hand !== requiredHand) {
     return { ok: false, reason: 'wrong-hand', hand, lines: [], debug: { ...debugBase, ridge: new Float32Array(0) } };
