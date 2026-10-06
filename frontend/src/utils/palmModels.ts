@@ -86,8 +86,8 @@ function extent(path: Pt[]) {
 const seamFinder = (spec: SeamSpec) => (ridge: Float32Array) => findSeam(ridge, CANON_W, CANON_H, spec);
 
 /** 通常の4本は線らしさ 0.4 以上、strict は 0.55 以上を求める */
-const MAIN_MEAN = 0.4;
-const MAIN_COVERAGE = 0.65;
+const MAIN_MEAN = 0.3;
+const MAIN_COVERAGE = 0.5;
 const STRICT_MEAN = 0.55;
 const STRICT_COVERAGE = 0.8;
 
@@ -154,7 +154,7 @@ export function buildHeadModel(_h: HandFrame, heartPath?: Pt[]): LineModel {
     }),
     accept: (r) => {
       const e = extent(r.path);
-      return e.aMax >= 0.2 && e.aMin <= -0.2 && e.aSpan >= 0.5 && r.meanRidge >= MAIN_MEAN && r.coverage >= MAIN_COVERAGE;
+      return e.aMax >= 0.2 && e.aMin <= -0.1 && e.aSpan >= 0.45 && r.meanRidge >= MAIN_MEAN && r.coverage >= MAIN_COVERAGE;
     },
   };
 }
@@ -190,7 +190,7 @@ export function buildLifeModel(): LineModel {
       }),
     accept: (r) => {
       const e = extent(r.path);
-      return e.dMin <= 0.3 && e.dMax >= 0.85 && e.dSpan >= 0.7 && r.meanRidge >= 0.35 && r.coverage >= 0.55;
+      return e.dMin <= 0.32 && e.dMax >= 0.85 && e.dSpan >= 0.55 && r.meanRidge >= 0.3 && r.coverage >= 0.45;
     },
   };
 }
@@ -217,7 +217,7 @@ export function buildFateModel(): LineModel {
     }),
     accept: (r) => {
       const e = extent(r.path);
-      return e.dSpan >= 0.35 && e.aSpan <= 0.4 && e.dMin <= 0.55 && e.dMax >= 0.75 && r.meanRidge >= 0.45 && r.coverage >= 0.7;
+      return e.dSpan >= 0.35 && e.aSpan <= 0.4 && e.dMin <= 0.55 && e.dMax >= 0.75 && r.meanRidge >= 0.35 && r.coverage >= 0.55;
     },
   };
 }

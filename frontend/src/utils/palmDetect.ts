@@ -58,6 +58,7 @@ export interface DetectionResult {
     handedness: string;
     orientation: number;
     /** 標準の手のひらでの様子（調整用）：変換後の写真、線らしさ、採用された線の道筋 */
+    attempts?: Attempt[];
     canon?: {
       rgba: Uint8ClampedArray;
       ridge: Float32Array;
@@ -145,10 +146,39 @@ function toOutput(path: Pt[], frame: HandFrame, W: number, H: number): Pt[] {
   });
 }
 
-function runModel(model: LineModel, ridge: Float32Array) {
+/** 各線の探索の結果（調整・デバッグ用）：見つかったか、定義を満たしたか、道筋の範囲と線らしさ */
+export interface Attempt {
+  id: LineId;
+  found: boolean;
+  accepted: boolean;
+  meanRidge?: number;
+  coverage?: number;
+  a?: [number, number];
+  d?: [number, number];
+}
+
+function runModel(model: LineModel, ridge: Float32Array, log?: Attempt[]) {
   const r = model.find(ridge);
-  if (!r || !model.accept(r)) return null;
-  return r;
+  if (!r) {
+    log?.push({ id: model.id, found: false, accepted: false });
+    return null;
+  }
+  const accepted = model.accept(r);
+  if (log) {
+    const q = r.path.map(fromCanon);
+    const as = q.map((v) => v.a);
+    const ds = q.map((v) => v.d);
+    log.push({
+      id: model.id,
+      found: true,
+      accepted,
+      meanRidge: r.meanRidge,
+      coverage: r.coverage,
+      a: [Math.min(...as), Math.max(...as)],
+      d: [Math.min(...ds), Math.max(...ds)],
+    });
+  }
+  return accepted ? r : null;
 }
 
 export async function detectPalmLines(
@@ -214,8 +244,9 @@ export async function detectPalmLines(
   const main = buildMainModels(frame);
   const strict = buildStrictModels(frame);
   const found: Array<{ model: LineModel; path: Pt[]; meanRidge: number; coverage: number }> = [];
+  const attempts: Attempt[] = [];
   const take = (model: LineModel, skipFirst = 0) => {
-    const r = runModel(model, work);
+    const r = runModel(model, work, attempts);
     if (!r) return null;
     found.push({ model, path: r.path, meanRidge: r.meanRidge, coverage: r.coverage });
     suppressPath(work, CANON_W, CANON_H, r.path, 7, skipFirst);
@@ -303,6 +334,6 @@ export async function detectPalmLines(
     ok: true,
     hand,
     lines,
-    debug: { ...debugBase, ridge, canon: { rgba: rect.data, ridge, paths: found.map((f) => ({ id: f.model.id, path: f.path })) } },
+    debug: { ...debugBase, ridge, attempts, canon: { rgba: rect.data, ridge, paths: found.map((f) => ({ id: f.model.id, path: f.path })) } },
   };
 }

@@ -61,21 +61,27 @@ const EXTENSIONS = ['png', 'webp', 'jpg', 'jpeg'];
 async function discoverSamples(): Promise<string[]> {
   const found: string[] = [];
   for (let n = 1; n <= MAX_SAMPLES; n++) {
-    for (const ext of EXTENSIONS) {
-      const name = `sample${n}.${ext}`;
-      try {
-        const res = await fetch(`/dev-samples/${name}`, { method: 'HEAD' });
-        if (res.ok && (res.headers.get('content-type') ?? '').startsWith('image/')) {
-          found.push(name);
-          break;
+    // sample1.png（以前の置き方）と sample01.png（新しい置き方）は、別のサンプルとして、両方を拾う。
+    // draw 付きの正解画像は、別に読み込むので対象外
+    const labels = n < 10 ? [String(n), String(n).padStart(2, '0')] : [String(n)];
+    for (const label of labels) {
+      for (const ext of EXTENSIONS) {
+        const name = `sample${label}.${ext}`;
+        try {
+          const res = await fetch(`/dev-samples/${name}`, { method: 'HEAD' });
+          if (res.ok && (res.headers.get('content-type') ?? '').startsWith('image/')) {
+            found.push(name);
+            break;
+          }
+        } catch {
+          // 見つからなければ次の拡張子へ
         }
-      } catch {
-        // 見つからなければ次の拡張子へ
       }
     }
   }
   return found;
 }
+
 const COLORS: Record<string, string> = {
   heart: '#ff2d6f',
   head: '#1e90ff',

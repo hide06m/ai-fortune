@@ -1,7 +1,7 @@
 /**
  * 手相の線検出を調整するための「正解の線」（開発専用）
  *
- * 利用者が、サンプル写真の上に色で描いた画像（public/dev-samples/annotated/converted/ に置く。git管理外）から、
+ * 利用者が、サンプル写真の上に色で描いた画像（public/dev-samples/ の sampleNNdraw.png。または annotated/converted/ の sampleN.png。git管理外）から、
  * 色ごとに線の道筋を取り出す。赤=感情線、青=頭脳線、緑=生命線、黄=運命線。
  * 道筋は、色の画素のうち最大のかたまりだけを使い、端から端までの距離順に並べ直して等間隔にそろえる。
  */
@@ -139,13 +139,23 @@ export function loadGroundTruth(sample: string): Promise<GroundTruthLines | null
     cache.set(
       sample,
       (async () => {
-        const img = new Image();
-        img.src = `/dev-samples/annotated/converted/${sample}.png`;
-        try {
-          await img.decode();
-        } catch {
-          return null;
+        // 新しい置き方（sampleNNdraw.png）を優先し、なければ、以前の置き方（annotated/converted/）を探す
+        const candidates = [`/dev-samples/${sample}draw.png`, `/dev-samples/annotated/converted/${sample}.png`];
+        let img: HTMLImageElement | null = null;
+        for (const url of candidates) {
+          const head = await fetch(url, { method: 'HEAD' }).catch(() => null);
+          if (!head || !head.ok || !(head.headers.get('content-type') ?? '').startsWith('image/')) continue;
+          const candidate = new Image();
+          candidate.src = url;
+          try {
+            await candidate.decode();
+            img = candidate;
+            break;
+          } catch {
+            // 次の候補へ
+          }
         }
+        if (!img) return null;
         const W = img.naturalWidth;
         const H = img.naturalHeight;
         const canvas = document.createElement('canvas');
