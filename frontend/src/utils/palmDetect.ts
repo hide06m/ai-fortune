@@ -9,7 +9,7 @@
  */
 
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
-import { toGray, normalizeIllumination, ridgeMap, smoothAndResample, segmentHand, edgeBand, type Pt } from './palmLines';
+import { toGray, normalizeIllumination, ridgeMap, ridgeOriented, ridgeNormalize, smoothAndResample, segmentHand, edgeBand, type Pt } from './palmLines';
 import { buildHandFrame, CANON_H, CANON_W, fromCanon, type HandFrame } from './palmGeometry';
 import { buildHeadModel, buildHeartModel, buildMainModels, buildSimianTransverse, buildStrictModels, type LineId, type LineModel } from './palmModels';
 import { suppressPath } from './palmSeam';
@@ -18,6 +18,22 @@ const WORK_MAX_SIZE = 720;
 
 /** 診断で見る手。左右の読み方は流派によって違うため、ここ1か所で切り替えられるようにしてある */
 export const REQUIRED_HAND: 'left' | 'right' = 'left';
+
+/**
+ * しわの強調の方式。'oriented' は、向きを持った細長いフィルタ（続いている薄い線に強い）。
+ * 'hessian' は、点を中心にしたフィルタ（従来）。'max' は、両方の大きい方（調整用）
+ */
+export type RidgeMode = 'hessian' | 'oriented' | 'max';
+
+/**
+ * 向き付きフィルタの反応を 0〜1 にするときの基準（"はっきりした線" の反応の大きさ）。
+ * 14組の評価で選んだ値：0.1→0.065→0.055→0.045 と小さく（敏感に）するほど検出は増えるが、0.045 以下では位置の誤りが増える。
+ * 0.055 は、検出42/55本・位置の誤りがほぼ無い（誤りに見える3本は、正解より長く検出された線）
+ */
+export const ORIENTED_FULL_SCALE = 0.055;
+
+/** 調整用：既定の方式と基準を、実行時に差し替えられるようにする */
+export const ridgeTuning: { mode: RidgeMode; orientedScale: number } = { mode: 'oriented', orientedScale: ORIENTED_FULL_SCALE };
 
 /** 線の測定値（判断基準と結びつけるための客観的な数値。座標系は手のひらの大きさで正規化済み） */
 export interface LineFeatures {
@@ -81,6 +97,16 @@ function getLandmarker(): Promise<HandLandmarker> {
     });
   })();
   return landmarkerPromise;
+}
+
+function computeRidge(canonGray: ReturnType<typeof normalizeIllumination>): Float32Array {
+  const { mode, orientedScale } = ridgeTuning;
+  if (mode === 'hessian') return ridgeMap(canonGray);
+  const oriented = ridgeNormalize(ridgeOriented(canonGray), orientedScale);
+  if (mode === 'oriented') return oriented;
+  const hessian = ridgeMap(canonGray);
+  for (let i = 0; i < oriented.length; i++) oriented[i] = Math.max(oriented[i], hessian[i]);
+  return oriented;
 }
 
 /** 双一次補間で、写真（RGBA）を標準の手のひらに並べ替える */
@@ -218,7 +244,7 @@ export async function detectPalmLines(
   const imageData = ctx.getImageData(0, 0, W, H);
   const rect = rectify(imageData, frame);
   const canonGray = normalizeIllumination(toGray({ data: rect.data, width: CANON_W, height: CANON_H }));
-  const ridge = ridgeMap(canonGray);
+  const ridge = computeRidge(canonGray);
 
   // 写真の外側（並べ替えで範囲外になった部分）は線らしさを0にする
   for (let i = 0; i < ridge.length; i++) if (!rect.valid[i]) ridge[i] = 0;

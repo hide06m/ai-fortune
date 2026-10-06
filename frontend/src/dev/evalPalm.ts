@@ -7,7 +7,7 @@
  * ブラウザのコンソールや調整用ページから `await (await import('/src/dev/evalPalm.ts')).evaluateAll()` で呼べる
  */
 
-import { detectPalmLines } from '../utils/palmDetect';
+import { detectPalmLines, ridgeTuning, type RidgeMode } from '../utils/palmDetect';
 import { loadGroundTruth } from './groundTruth';
 import type { Pt } from '../utils/palmLines';
 
@@ -59,12 +59,45 @@ function dist(p: Pt, poly: Pt[]): number {
   return best;
 }
 
+export interface EvalSums {
+  gtTotal: number;
+  detected: number;
+  /** 検出され、かつ正解と十分に重なった（再現率・精度とも60%以上）線の数 */
+  correct: number;
+  /** 検出されたが、正解とほとんど重ならない（誤った）線の数 */
+  wrong: number;
+  recallSum: number;
+  precSum: number;
+  extra: number;
+}
+
+/** 複数回に分けて評価した結果を合算して、集計の文字列にする */
+export function combineSums(parts: EvalSums[]): EvalSummary['summary'] {
+  const t = parts.reduce(
+    (a, p) => ({ gtTotal: a.gtTotal + p.gtTotal, detected: a.detected + p.detected, correct: a.correct + p.correct, wrong: a.wrong + p.wrong, recallSum: a.recallSum + p.recallSum, precSum: a.precSum + p.precSum, extra: a.extra + p.extra }),
+    { gtTotal: 0, detected: 0, correct: 0, wrong: 0, recallSum: 0, precSum: 0, extra: 0 },
+  );
+  return {
+    gtTotal: t.gtTotal,
+    detected: t.detected,
+    detectRate: (t.detected / Math.max(1, t.gtTotal)).toFixed(2),
+    correct: t.correct,
+    wrong: t.wrong,
+    meanRecallOverAll: (t.recallSum / Math.max(1, t.gtTotal)).toFixed(2),
+    meanPrecisionOverDetected: (t.precSum / Math.max(1, t.detected)).toFixed(2),
+    extraLines: t.extra,
+  };
+}
+
 export interface EvalSummary {
   rows: string[];
+  sums?: EvalSums;
   summary: {
     gtTotal: number;
     detected: number;
     detectRate: string;
+    correct: number;
+    wrong: number;
     meanRecallOverAll: string;
     meanPrecisionOverDetected: string;
     extraLines: number;
@@ -72,11 +105,16 @@ export interface EvalSummary {
   perLine: Record<string, string>;
 }
 
-export async function evaluateAll(files?: string[]): Promise<EvalSummary> {
+export async function evaluateAll(files?: string[], tuning?: { mode?: RidgeMode; orientedScale?: number }): Promise<EvalSummary> {
+  // 方式の指定は、この評価が読み込んだモジュールに直接反映する（別のコピーを触らないため）
+  if (tuning?.mode) ridgeTuning.mode = tuning.mode;
+  if (tuning?.orientedScale) ridgeTuning.orientedScale = tuning.orientedScale;
   const samples = files ?? (await listSamples());
   const rows: string[] = [];
   let gtTotal = 0;
   let detected = 0;
+  let correct = 0;
+  let wrong = 0;
   let recallSum = 0;
   let precSum = 0;
   let extra = 0;
@@ -112,6 +150,8 @@ export async function evaluateAll(files?: string[]): Promise<EvalSummary> {
         const rec = G.filter((p) => dist(p, D) <= tol).length / G.length;
         const prec = D.filter((p) => dist(p, G) <= tol).length / D.length;
         detected++;
+        if (rec >= 0.6 && prec >= 0.6) correct++;
+        else wrong++;
         recallSum += rec;
         precSum += prec;
         per[id].det++;
@@ -133,10 +173,13 @@ export async function evaluateAll(files?: string[]): Promise<EvalSummary> {
       gtTotal,
       detected,
       detectRate: (detected / Math.max(1, gtTotal)).toFixed(2),
+      correct,
+      wrong,
       meanRecallOverAll: (recallSum / Math.max(1, gtTotal)).toFixed(2),
       meanPrecisionOverDetected: (precSum / Math.max(1, detected)).toFixed(2),
       extraLines: extra,
     },
+    sums: { gtTotal, detected, correct, wrong, recallSum, precSum, extra },
     perLine: Object.fromEntries(
       Object.entries(per).map(([k, v]) => [k, `検出${v.det}/${v.n} 平均再現${(v.rec / Math.max(1, v.det)).toFixed(2)}`]),
     ),

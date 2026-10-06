@@ -293,3 +293,77 @@ export function edgeBand(mask: Uint8Array, W: number, H: number, radius: number)
   }
   return out;
 }
+
+/**
+ * 向きを持った細長いフィルタによる「しわらしさ」（暗い線を強調する）。
+ * 線の向きに沿って長く（sigmaAlong）、線をまたぐ向きに細く（sigmaAcross）平均を取る二次微分フィルタを、
+ * 複数の向きで当てて、最も強い反応を使う。続いている薄い線は強まり、ばらばらの肌のきめは弱まる。
+ * 値は raw（正規化前）。ridgeMap と同じ fullScale で 0〜1 にするには ridgeNormalize を使う
+ */
+export function ridgeOriented(
+  src: GrayImage,
+  options: { sigmaAcross?: number; sigmaAlong?: number; angles?: number; stride?: number } = {},
+): Float32Array {
+  const { width: W, height: H, data } = src;
+  const sigmaAcross = options.sigmaAcross ?? 2.0;
+  const sigmaAlong = options.sigmaAlong ?? 6.0;
+  const angles = options.angles ?? 8;
+  const stride = options.stride ?? 2;
+  const radiusAlong = Math.ceil(2.5 * sigmaAlong);
+  const radiusAcross = Math.ceil(3 * sigmaAcross);
+
+  // 向きごとのフィルタ（通常の画素の位置と重み）を作る。重みの合計は 0（一様な明るさに反応しない）
+  const kernels: Array<{ dx: Int16Array; dy: Int16Array; w: Float32Array }> = [];
+  for (let k = 0; k < angles; k++) {
+    const theta = (Math.PI * k) / angles;
+    const cu = Math.cos(theta);
+    const su = Math.sin(theta);
+    const dxs: number[] = [];
+    const dys: number[] = [];
+    const ws: number[] = [];
+    for (let u = -radiusAlong; u <= radiusAlong; u += stride) {
+      const gu = Math.exp(-(u * u) / (2 * sigmaAlong * sigmaAlong));
+      for (let v = -radiusAcross; v <= radiusAcross; v++) {
+        // v: 線をまたぐ向き。中心が負・両側が正の「メキシカンハット」（暗い線で正の反応）
+        const t = (v * v) / (sigmaAcross * sigmaAcross);
+        const gv = (t - 1) * Math.exp(-t / 2);
+        dxs.push(Math.round(u * cu - v * su));
+        dys.push(Math.round(u * su + v * cu));
+        ws.push(gu * gv);
+      }
+    }
+    const mean = ws.reduce((s, x) => s + x, 0) / ws.length;
+    let absSum = 0;
+    for (let i = 0; i < ws.length; i++) {
+      ws[i] -= mean;
+      absSum += Math.abs(ws[i]);
+    }
+    for (let i = 0; i < ws.length; i++) ws[i] /= absSum / 2; // 正負の合計がそれぞれ約1になるように
+    kernels.push({ dx: Int16Array.from(dxs), dy: Int16Array.from(dys), w: Float32Array.from(ws) });
+  }
+
+  const out = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let best = 0;
+      for (const kern of kernels) {
+        let acc = 0;
+        for (let i = 0; i < kern.w.length; i++) {
+          const xx = Math.min(W - 1, Math.max(0, x + kern.dx[i]));
+          const yy = Math.min(H - 1, Math.max(0, y + kern.dy[i]));
+          acc += kern.w[i] * data[yy * W + xx];
+        }
+        if (acc > best) best = acc;
+      }
+      out[y * W + x] = best;
+    }
+  }
+  return out;
+}
+
+/** raw の反応を、fullScale を 1 として 0〜1 に正規化する（画像ごとの相対化はしない） */
+export function ridgeNormalize(raw: Float32Array, fullScale: number): Float32Array {
+  const out = new Float32Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = Math.min(1, raw[i] / fullScale);
+  return out;
+}
