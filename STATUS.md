@@ -49,7 +49,10 @@
 - 各線の定義・合格基準は `palmModels.ts`。位置関係の決まり（感情線は頭脳線より指側）も確認する。ますかけ線は「感情線と頭脳線が別々に見つからず、1本の強い横線がある」ときだけ成立。
 - Gemini は線を探さない。検出できた線の「読み」と診断文を書くだけ（`backend/src/llm/palmistryReading.ts`）。検出できなかった線については言及させない。
 - 診断で見る手は `REQUIRED_HAND`（`palmDetect.ts`、現在は左手）で切り替える。流派によって左右の読み方が違うため。
-- 調整用ページ: 開発時のみ `http://localhost:5173/palm-lab`（サンプル写真は `frontend/public/dev-samples/`、git管理外。左右の制限は外してある）。
+- 調整用ページ: 開発時のみ `http://localhost:5173/palm-lab`（サンプル写真は `frontend/public/dev-samples/`、git管理外。左右の制限は外してある）。写真の右に、アルゴリズムが見ている「標準の手のひら」を出す。
+- **正解データ（調整の基準）**: 利用者が6枚のサンプルに色で描いた線（赤=感情線・青=頭脳線・緑=生命線・黄=運命線）。置き場は `G:マイドライブAI-projectai-fortuneassets手相描写見本`（拡張子はpngだが中身はHEIC）。`frontend/public/dev-samples/annotated/converted/` にPNGへ変換して置くと、`src/dev/groundTruth.ts` が色から線を取り出し、/palm-lab に正解（白の点線）と一致度（正解の何%を再現／検出の何%が正解上／平均ずれ）を表示する。サンプル5だけ、黄と緑の割り当てが他と逆（形から判断して入れ替え）。
+- **定義の根拠**: 各線の探索範囲は、この6枚の正解を手の座標 (a, d) に直した範囲に余裕を足して決めた（`palmModels.ts` の冒頭と各線のコメント）。**6枚に合わせた調整なので、別の手での確認が必要**（過学習の恐れ）。
+- 2026-10-06 時点の一致度（6枚）: 検出された線は、すべて正解の線に沿っている（誤検出なし）。感情線・頭脳線はサンプル2〜4・6で94〜100%再現、生命線は70〜75%、運命線は85〜95%。**未検出**: サンプル1（透かし入り・低コントラスト）の感情線・頭脳線・生命線、サンプル2の頭脳線、サンプル5（親指を折った手・暗い背景）はすべて。
 - **新しいPCで動かすには**: `frontend/public/models/hand_landmarker.task`（約8MB、Google公開ストレージ `mediapipe-models/hand_landmarker/hand_landmarker/float16/1/`）と、`node_modules/@mediapipe/tasks-vision/wasm/*` を `frontend/public/models/wasm/` にコピーする必要がある（git管理外。取得スクリプトは未作成）。
 
 ## 4. 音声

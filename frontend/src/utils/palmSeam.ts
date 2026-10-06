@@ -134,3 +134,124 @@ export function suppressPath(ridge: Float32Array, W: number, H: number, path: Pt
     }
   }
 }
+
+class MinHeap {
+  private keys: number[] = [];
+  private vals: number[] = [];
+  get size() {
+    return this.keys.length;
+  }
+  push(key: number, val: number) {
+    const k = this.keys;
+    const v = this.vals;
+    k.push(key);
+    v.push(val);
+    let i = k.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (k[p] <= k[i]) break;
+      [k[p], k[i]] = [k[i], k[p]];
+      [v[p], v[i]] = [v[i], v[p]];
+      i = p;
+    }
+  }
+  pop(): [number, number] {
+    const k = this.keys;
+    const v = this.vals;
+    const top: [number, number] = [k[0], v[0]];
+    const lastK = k.pop()!;
+    const lastV = v.pop()!;
+    if (k.length > 0) {
+      k[0] = lastK;
+      v[0] = lastV;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1;
+        const r = l + 1;
+        let m = i;
+        if (l < k.length && k[l] < k[m]) m = l;
+        if (r < k.length && k[r] < k[m]) m = r;
+        if (m === i) break;
+        [k[m], k[i]] = [k[i], k[m]];
+        [v[m], v[i]] = [v[i], v[m]];
+        i = m;
+      }
+    }
+    return top;
+  }
+}
+
+const NEIGHBORS: Array<[number, number, number]> = [
+  [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+  [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2],
+];
+
+export interface PathSpec {
+  /** 通ってよい範囲 */
+  inside: (x: number, y: number) => boolean;
+  /** 始点・終点の領域（この中の、どの画素からどの画素へでもよい） */
+  isStart: (x: number, y: number) => boolean;
+  isEnd: (x: number, y: number) => boolean;
+}
+
+/**
+ * 始点の領域から終点の領域まで、線らしさが最大になる道筋を探す（ダイクストラ法）。
+ * 縦や横の一方向に進むとは限らない、弧を描く線（生命線）用。
+ * 始点・終点は領域の中で自由に選ぶので、領域の端が定義に合っていれば、途中は実際のしわに沿う
+ */
+export function findPathBetween(ridge: Float32Array, W: number, H: number, spec: PathSpec): SeamResult | null {
+  const dist = new Float64Array(W * H).fill(Infinity);
+  const prev = new Int32Array(W * H).fill(-1);
+  const heap = new MinHeap();
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (spec.inside(x, y) && spec.isStart(x, y)) {
+        dist[y * W + x] = 0;
+        heap.push(0, y * W + x);
+      }
+    }
+  }
+  if (heap.size === 0) return null;
+
+  // 線らしくない画素ほど高コスト。わずかな下駄で、無駄な迂回を防ぐ
+  const cost = (i: number) => 1 / (0.05 + ridge[i]);
+
+  let reached = -1;
+  while (heap.size > 0) {
+    const [d, i] = heap.pop();
+    if (d > dist[i]) continue;
+    const x = i % W;
+    const y = (i - x) / W;
+    if (spec.isEnd(x, y)) {
+      reached = i;
+      break;
+    }
+    for (const [dx, dy, len] of NEIGHBORS) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H || !spec.inside(nx, ny)) continue;
+      const ni = ny * W + nx;
+      const nd = d + cost(ni) * len;
+      if (nd < dist[ni]) {
+        dist[ni] = nd;
+        prev[ni] = i;
+        heap.push(nd, ni);
+      }
+    }
+  }
+  if (reached < 0) return null;
+
+  const path: Pt[] = [];
+  let sum = 0;
+  let strong = 0;
+  for (let i = reached, guard = 0; i !== -1 && guard <= W * H; i = prev[i], guard++) {
+    const x = i % W;
+    const y = (i - x) / W;
+    path.push({ x, y });
+    sum += ridge[i];
+    if (ridge[i] > COVERAGE_LEVEL) strong++;
+  }
+  path.reverse();
+  return { path, score: sum, meanRidge: sum / path.length, coverage: strong / path.length };
+}

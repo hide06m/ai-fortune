@@ -11,8 +11,8 @@
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import { toGray, normalizeIllumination, ridgeMap, smoothAndResample, segmentHand, edgeBand, type Pt } from './palmLines';
 import { buildHandFrame, CANON_H, CANON_W, fromCanon, type HandFrame } from './palmGeometry';
-import { buildMainModels, buildSimianTransverse, buildStrictModels, type LineId, type LineModel } from './palmModels';
-import { findSeam, suppressPath } from './palmSeam';
+import { buildHeadModel, buildHeartModel, buildMainModels, buildSimianTransverse, buildStrictModels, type LineId, type LineModel } from './palmModels';
+import { suppressPath } from './palmSeam';
 
 const WORK_MAX_SIZE = 720;
 
@@ -146,7 +146,7 @@ function toOutput(path: Pt[], frame: HandFrame, W: number, H: number): Pt[] {
 }
 
 function runModel(model: LineModel, ridge: Float32Array) {
-  const r = findSeam(ridge, CANON_W, CANON_H, model.spec);
+  const r = model.find(ridge);
   if (!r || !model.accept(r)) return null;
   return r;
 }
@@ -225,24 +225,25 @@ export async function detectPalmLines(
   take(main.life, 0.15); // 頭脳線と始点が重なるので、始まりの部分は残す
   take(main.fate);
 
-  // ますかけ線：感情線と頭脳線が1本にまとまっている場合だけ成立する。成立しなければ通常の2本を探す
-  let simian = false;
-  const transverse = buildSimianTransverse(frame);
-  const tr = runModel(transverse, work);
-  if (tr) {
-    const probe = Float32Array.from(work);
-    suppressPath(probe, CANON_W, CANON_H, tr.path, 9);
-    const separateHead = runModel(main.head, probe);
-    const separateHeart = runModel(main.heart, probe);
-    if (!separateHead && !separateHeart) {
-      simian = true;
-      found.push({ model: transverse, path: tr.path, meanRidge: tr.meanRidge, coverage: tr.coverage });
-      suppressPath(work, CANON_W, CANON_H, tr.path, 9);
+  // 感情線・頭脳線を、通常の定義で探す。頭脳線は感情線より下にあるので、感情線が見つかっていればその下だけを探す
+  const heartResult = take(main.heart);
+  const headResult = take(buildHeadModel(frame, heartResult?.path), 0.1);
+
+  // ますかけ線：感情線と頭脳線が1本にまとまっている場合だけ成立する。
+  // 通常の感情線・頭脳線が（両方とも）見つからなかったときに限り、1本の強い横線があるかを調べる
+  if (!heartResult && !headResult) {
+    const transverse = buildSimianTransverse();
+    const tr = runModel(transverse, work);
+    if (tr) {
+      const probe = Float32Array.from(work);
+      suppressPath(probe, CANON_W, CANON_H, tr.path, 9);
+      const separateHead = runModel(buildHeadModel(frame), probe);
+      const separateHeart = runModel(buildHeartModel(frame), probe);
+      if (!separateHead && !separateHeart) {
+        found.push({ model: transverse, path: tr.path, meanRidge: tr.meanRidge, coverage: tr.coverage });
+        suppressPath(work, CANON_W, CANON_H, tr.path, 9);
+      }
     }
-  }
-  if (!simian) {
-    take(main.heart);
-    take(main.head, 0.1);
   }
 
   // 位置関係の決まり：感情線は頭脳線より指に近い側（dが小さい側）にある
@@ -279,6 +280,12 @@ export async function detectPalmLines(
       const near = r.path.filter((p) => heartPath.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 12)).length;
       if (near / r.path.length > 0.3) continue;
     }
+    // すでに見つけた線とほぼ同じ道筋なら、別の線として採用しない
+    const dup = found.some((f) => {
+      const near = r.path.filter((p) => f.path.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 10)).length;
+      return near / r.path.length > 0.5;
+    });
+    if (dup) continue;
     found.push({ model: m, path: r.path, meanRidge: r.meanRidge, coverage: r.coverage });
     suppressPath(work, CANON_W, CANON_H, r.path, 7);
   }
