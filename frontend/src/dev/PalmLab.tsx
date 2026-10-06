@@ -51,7 +51,31 @@ function compare(gt: Pt[], det: Pt[], toPx: (p: Pt) => Pt, palmWidth: number) {
   return { gtCovered, detOnGt, mean };
 }
 
-const SAMPLES = ['sample1.webp', 'sample2.png', 'sample3.png', 'sample4.png', 'sample5.png', 'sample6.png'];
+/**
+ * dev-samples/ にある sample1〜sample30（拡張子は png / webp / jpg / jpeg）を自動で見つける。
+ * 開発サーバーは存在しないファイルにも index.html を返すので、画像として返ってきたものだけを採用する
+ */
+const MAX_SAMPLES = 30;
+const EXTENSIONS = ['png', 'webp', 'jpg', 'jpeg'];
+
+async function discoverSamples(): Promise<string[]> {
+  const found: string[] = [];
+  for (let n = 1; n <= MAX_SAMPLES; n++) {
+    for (const ext of EXTENSIONS) {
+      const name = `sample${n}.${ext}`;
+      try {
+        const res = await fetch(`/dev-samples/${name}`, { method: 'HEAD' });
+        if (res.ok && (res.headers.get('content-type') ?? '').startsWith('image/')) {
+          found.push(name);
+          break;
+        }
+      } catch {
+        // 見つからなければ次の拡張子へ
+      }
+    }
+  }
+  return found;
+}
 const COLORS: Record<string, string> = {
   heart: '#ff2d6f',
   head: '#1e90ff',
@@ -289,13 +313,19 @@ function Sample({ file, run, showRidge }: { file: string; run: number; showRidge
 export function PalmLab() {
   const [run, setRun] = useState(0);
   const [showRidge, setShowRidge] = useState(false);
+  const [samples, setSamples] = useState<string[]>([]);
+
+  useEffect(() => {
+    discoverSamples().then(setSamples);
+  }, []);
+
   return (
     <div style={{ background: '#111', color: '#fff', minHeight: '100vh', padding: 12 }}>
       <button onClick={() => setRun((n) => n + 1)}>再検出</button>{' '}
       <label>
         <input type="checkbox" checked={showRidge} onChange={(e) => setShowRidge(e.target.checked)} /> 右の画像を「しわの強さ」にする
       </label>
-      {SAMPLES.map((f) => (
+      {samples.map((f) => (
         <Sample key={f} file={f} run={run} showRidge={showRidge} />
       ))}
     </div>
