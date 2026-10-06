@@ -79,6 +79,9 @@ export async function uploadPalmImage(
 }
 
 /** 手相診断を実行する（token指定＝PC側フロー／imageBase64直接指定＝スマホ直接フロー） */
+/** サーバー側の診断全体の上限（約100秒）より少し長く待つ。これを超えて応答がなければ、固まったとみなして中断する */
+const SUBMIT_TIMEOUT_MS = 130_000;
+
 export async function submitPalmistry(params: {
   token?: string;
   imageBase64?: string;
@@ -86,11 +89,24 @@ export async function submitPalmistry(params: {
   concern?: string;
   lines?: unknown[];
 }): Promise<PalmistryResponse> {
-  const response = await fetch(`${API_URL}/api/fortune/palmistry`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(params),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/fortune/palmistry`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(params),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { success: false, error: 'TIMEOUT', message: '診断に時間がかかりすぎました。しばらくしてから、もう一度お試しください。' };
+    }
+    return { success: false, error: 'NETWORK', message: '通信に失敗しました。通信環境を確認して、もう一度お試しください。' };
+  } finally {
+    clearTimeout(timer);
+  }
   const data = await response.json();
   if (!response.ok) {
     return { success: false, error: data.error || `API error: ${response.status}`, message: data.message };

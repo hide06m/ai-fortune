@@ -58,11 +58,18 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
         if (result.status === 'uploaded') {
           clearInterval(interval);
           setDiagnosing(true);
-          const response = await submitPalmistry({ token, concern: '' });
-          if (response.success) {
-            onComplete(response);
-          } else {
-            setError(response.error || '診断に失敗しました。');
+          try {
+            const response = await submitPalmistry({ token, concern: '' });
+            if (response.success) {
+              onComplete(response);
+            } else {
+              setError(response.message || response.error || '診断に失敗しました。');
+              setDiagnosing(false);
+            }
+          } catch (err) {
+            // 診断の呼び出しが例外で終わっても、「読み解いています」のまま固まらないようにする
+            console.error('Palmistry diagnosis failed:', err);
+            setError('診断に失敗しました。もう一度お試しください。');
             setDiagnosing(false);
           }
         }
@@ -78,6 +85,18 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
     return (
       <div className="palm-qr-handoff">
         <p>コクウが手相を読み解いています...</p>
+      </div>
+    );
+  }
+
+  // 診断に失敗した（時間切れ・通信エラーなど）ときは、QRの画面ではなく、理由と「戻る」を出す
+  if (error && !canvasRef.current) {
+    return (
+      <div className="palm-qr-handoff">
+        <div className="error">{error}</div>
+        <button type="button" className="secondary-button" onClick={onCancel}>
+          戻る
+        </button>
       </div>
     );
   }

@@ -22,6 +22,11 @@ describe('isTransientError', () => {
     expect(isTransientError(new TypeError('fetch failed'))).toBe(true)
   })
 
+  it('タイムアウトで中断されたリクエストは一時エラーと判定する', () => {
+    expect(isTransientError(new Error('[GoogleGenerativeAI Error]: Request aborted when fetching https://x: This operation was aborted'))).toBe(true)
+    expect(isTransientError(new Error('request timed out'))).toBe(true)
+  })
+
   it('400 や 404 など再試行しても直らないエラーは対象外', () => {
     expect(isTransientError(new Error('Error fetching from https://x: [400 Bad Request] invalid argument'))).toBe(false)
     expect(isTransientError(Object.assign(new Error('x'), { status: 404 }))).toBe(false)

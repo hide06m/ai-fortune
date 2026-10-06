@@ -31,6 +31,16 @@ const DIAGNOSIS_TEMPERATURE = 0.55
 const MAX_ATTEMPTS = 3
 const RETRY_DELAYS_MS = [1500, 3500]
 
+/**
+ * 1回の呼び出しの待ち時間の上限。応答が返らないまま待ち続けると、診断が固まり、石も戻らないため。
+ * 超えたら中断して、一時エラーとして扱う（再試行、または別モデルへの切り替え）。
+ * 画像つきの診断は、通常でも十数秒かかることがあるため、短くしすぎない
+ */
+const REQUEST_TIMEOUT_MS = 40_000
+
+/** 1回の診断（再試行・モデルの切り替えを含む）にかけてよい時間の上限 */
+const OVERALL_DEADLINE_MS = 100_000
+
 const TRANSIENT_STATUS_CODES = [429, 500, 502, 503, 504]
 
 export function isTransientError(error: unknown): boolean {
@@ -38,16 +48,21 @@ export function isTransientError(error: unknown): boolean {
   const status = (error as { status?: number } | null)?.status
   if (typeof status === 'number' && TRANSIENT_STATUS_CODES.includes(status)) return true
   const msg = error instanceof Error ? error.message : String(error)
-  return TRANSIENT_STATUS_CODES.some((code) => msg.includes(`[${code} `)) || /fetch failed|ECONNRESET|ETIMEDOUT|network/i.test(msg)
+  return (
+    TRANSIENT_STATUS_CODES.some((code) => msg.includes(`[${code} `)) ||
+    /fetch failed|ECONNRESET|ETIMEDOUT|network|aborted|timed? ?out/i.test(msg)
+  )
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxAttempts = MAX_ATTEMPTS): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = MAX_ATTEMPTS, deadline = Infinity): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
       return await fn()
     } catch (error) {
       if (attempt >= maxAttempts || !isTransientError(error)) throw error
       const delay = RETRY_DELAYS_MS[attempt - 1] ?? 3500
+      // 診断全体の時間の上限を超えそうなら、これ以上は待たずに失敗とする（払い戻しにつなげる）
+      if (Date.now() + delay + REQUEST_TIMEOUT_MS > deadline) throw error
       console.warn(`[Gemini] 一時的なエラーのため${delay}ms後に再試行します（${attempt}/${maxAttempts - 1}）`)
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
@@ -68,12 +83,15 @@ function fallbackModel(config: Omit<ModelParams, 'model'>) {
     async generateContent(request: string | GenerateContentRequest | Array<string | { text: string } | { inlineData: { data: string; mimeType: string } }>): Promise<GenerateContentResult> {
       // 最初のモデルで起きた本来のエラーを覚えておく。切り替え先が 404 などで失敗しても、利用者には本来の理由を返す
       let firstError: unknown
+      const deadline = Date.now() + OVERALL_DEADLINE_MS
       for (let i = 0; i < MODEL_CHAIN.length; i++) {
         const name = MODEL_CHAIN[i]
-        const model = genAI.getGenerativeModel({ ...config, model: name })
+        // 診断全体の時間の上限に達していたら、切り替え先も試さず、最初のエラーを返す
+        if (i > 0 && Date.now() + REQUEST_TIMEOUT_MS > deadline) break
+        const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
         try {
           // 先頭のモデルは通常どおり再試行する。切り替え先は、待ち時間を抑えるため再試行を減らす
-          return await withRetry(() => model.generateContent(request as never), i === 0 ? MAX_ATTEMPTS : 2)
+          return await withRetry(() => model.generateContent(request as never), i === 0 ? MAX_ATTEMPTS : 2, deadline)
         } catch (error) {
           if (i === 0) {
             firstError = error
