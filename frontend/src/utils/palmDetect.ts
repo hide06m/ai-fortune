@@ -57,6 +57,12 @@ export interface DetectionResult {
     ridge: Float32Array;
     handedness: string;
     orientation: number;
+    /** 標準の手のひらでの様子（調整用）：変換後の写真、線らしさ、採用された線の道筋 */
+    canon?: {
+      rgba: Uint8ClampedArray;
+      ridge: Float32Array;
+      paths: Array<{ id: LineId; path: Pt[] }>;
+    };
   };
 }
 
@@ -190,7 +196,7 @@ export async function detectPalmLines(
   const samples = [0, 1, 2, 5, 9, 13, 17].map((i) => lm[i]);
   const mask = segmentHand(imageData, samples);
   if (mask) {
-    const band = edgeBand(mask, W, H, Math.max(5, Math.round(frame.width * 0.05)));
+    const band = edgeBand(mask, W, H, Math.max(8, Math.round(frame.width * 0.1)));
     for (let cy = 0; cy < CANON_H; cy++) {
       for (let cx = 0; cx < CANON_W; cx++) {
         const { a, d } = fromCanon({ x: cx, y: cy });
@@ -286,5 +292,10 @@ export async function detectPalmLines(
     };
   });
 
-  return { ok: true, hand, lines, debug: { ...debugBase, ridge } };
+  return {
+    ok: true,
+    hand,
+    lines,
+    debug: { ...debugBase, ridge, canon: { rgba: rect.data, ridge, paths: found.map((f) => ({ id: f.model.id, path: f.path })) } },
+  };
 }

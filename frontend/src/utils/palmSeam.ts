@@ -40,7 +40,7 @@ const COVERAGE_LEVEL = 0.3;
 export function findSeam(ridge: Float32Array, W: number, H: number, spec: SeamSpec): SeamResult | null {
   const { axis, tau } = spec;
   const maxStep = spec.maxStep ?? 1;
-  const stepPenalty = spec.stepPenalty ?? 0.1;
+  const stepPenalty = spec.stepPenalty ?? 0.3;
   const sizeT = axis === 'x' ? W : H;
   const sizeO = axis === 'x' ? H : W;
   const from = Math.max(0, Math.round(spec.from));
