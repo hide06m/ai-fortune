@@ -320,3 +320,134 @@ export function smoothAndResample(path: Pt[], count = 40, window = 7): Pt[] {
   }
   return out;
 }
+
+/**
+ * 手のシルエットを推定する。手の色（骨格の点の色）と背景の色（画像の縁のうち手と違う色）の
+ * 2色で画素を分け、縁につながる背景だけを背景とみなす（穴や小さな島は手の側に入れる）。
+ * 手と背景が似た色で分けられないときは null を返す（その場合、輪郭の除外はしない）
+ */
+export function segmentHand(
+  img: { data: ArrayLike<number>; width: number; height: number },
+  handSamples: Pt[],
+): Uint8Array | null {
+  const { width: W, height: H, data } = img;
+  const px = (x: number, y: number) => {
+    const i = (Math.min(H - 1, Math.max(0, Math.round(y))) * W + Math.min(W - 1, Math.max(0, Math.round(x)))) * 4;
+    return [data[i], data[i + 1], data[i + 2]];
+  };
+
+  // 手の色：骨格の各点の周囲3x3の平均
+  const hand = [0, 0, 0];
+  let hn = 0;
+  for (const p of handSamples) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const c = px(p.x + dx, p.y + dy);
+        hand[0] += c[0];
+        hand[1] += c[1];
+        hand[2] += c[2];
+        hn++;
+      }
+    }
+  }
+  if (hn === 0) return null;
+  hand[0] /= hn;
+  hand[1] /= hn;
+  hand[2] /= hn;
+
+  const dist2 = (c: number[], m: number[]) => (c[0] - m[0]) ** 2 + (c[1] - m[1]) ** 2 + (c[2] - m[2]) ** 2;
+
+  // 背景の色：縁の画素のうち、手の色から十分離れているものの平均
+  const ring = 4;
+  const bg = [0, 0, 0];
+  let bn = 0;
+  let ringTotal = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (x >= ring && y >= ring && x < W - ring && y < H - ring) continue;
+      ringTotal++;
+      const c = px(x, y);
+      if (dist2(c, hand) > 45 * 45) {
+        bg[0] += c[0];
+        bg[1] += c[1];
+        bg[2] += c[2];
+        bn++;
+      }
+    }
+  }
+  if (bn < ringTotal * 0.1) return null;
+  bg[0] /= bn;
+  bg[1] /= bn;
+  bg[2] /= bn;
+  if (dist2(hand, bg) < 30 * 30) return null;
+
+  // 画素ごとに、手の色と背景の色のどちらに近いかで分ける
+  const isBg = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const c = [data[i], data[i + 1], data[i + 2]];
+      isBg[y * W + x] = dist2(c, bg) < dist2(c, hand) ? 1 : 0;
+    }
+  }
+
+  // 縁につながっている背景だけを背景とみなす
+  const outside = new Uint8Array(W * H);
+  const stack: number[] = [];
+  const seed = (x: number, y: number) => {
+    const i = y * W + x;
+    if (isBg[i] && !outside[i]) {
+      outside[i] = 1;
+      stack.push(i);
+    }
+  };
+  for (let x = 0; x < W; x++) {
+    seed(x, 0);
+    seed(x, H - 1);
+  }
+  for (let y = 0; y < H; y++) {
+    seed(0, y);
+    seed(W - 1, y);
+  }
+  while (stack.length > 0) {
+    const i = stack.pop()!;
+    const x = i % W;
+    const y = (i - x) / W;
+    if (x > 0) seed(x - 1, y);
+    if (x < W - 1) seed(x + 1, y);
+    if (y > 0) seed(x, y - 1);
+    if (y < H - 1) seed(x, y + 1);
+  }
+
+  const mask = new Uint8Array(W * H);
+  for (let i = 0; i < mask.length; i++) mask[i] = outside[i] ? 0 : 1;
+  return mask;
+}
+
+/** 手のシルエットの縁から radius 画素以内の帯（背景に接する部分）を返す */
+export function edgeBand(mask: Uint8Array, W: number, H: number, radius: number): Uint8Array {
+  // 背景（mask=0）を radius だけ膨らませ、手の側に食い込んだ部分を帯とする（分離可能な最大値フィルタ）
+  const tmp = new Uint8Array(W * H);
+  const out = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let v = 0;
+      for (let dx = -radius; dx <= radius && !v; dx++) {
+        const xx = x + dx;
+        if (xx >= 0 && xx < W && mask[y * W + xx] === 0) v = 1;
+      }
+      tmp[y * W + x] = v;
+    }
+  }
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let v = 0;
+      for (let dy = -radius; dy <= radius && !v; dy++) {
+        const yy = y + dy;
+        if (yy >= 0 && yy < H && tmp[yy * W + x]) v = 1;
+      }
+      out[y * W + x] = v && mask[y * W + x] ? 1 : 0;
+    }
+  }
+  return out;
+}

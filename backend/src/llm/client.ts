@@ -177,6 +177,54 @@ export async function generatePalmistryJson(
 }
 
 /**
+ * 手相診断（候補選択方式）：元の写真と、しわの候補を重ねた写真の2枚を渡し、
+ * 「どの候補がどの線か」と診断文をJSONで受け取る。返り値は未検証の生テキスト
+ */
+export async function generatePalmistrySelectionJson(
+  prompt: string,
+  images: Array<{ base64: string; mimeType: string }>
+): Promise<FortuneAnalysisResult> {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-3.6-flash',
+      generationConfig: {
+        temperature: DIAGNOSIS_TEMPERATURE,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            analysis: { type: SchemaType.STRING },
+            lines: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  id: { type: SchemaType.STRING, format: 'enum', enum: ['heart', 'head', 'life', 'fate'] },
+                  candidateId: { type: SchemaType.STRING },
+                  reading: { type: SchemaType.STRING },
+                },
+                required: ['id', 'candidateId', 'reading'],
+              },
+            },
+          },
+          required: ['analysis', 'lines'],
+        },
+      },
+    })
+
+    const parts = [
+      { text: prompt },
+      ...images.map((img) => ({ inlineData: { data: img.base64, mimeType: img.mimeType } })),
+    ]
+    const result = await withRetry(() => model.generateContent(parts))
+    return { analysis: result.response.text(), tokensUsed: 0 }
+  } catch (error) {
+    console.error('Error calling Gemini API (palmistry selection):', error)
+    throw error
+  }
+}
+
+/**
  * 完成済みのプロンプトをそのまま Gemini に渡して診断文を生成する
  * （相性診断など、独自の指示文をすべてプロンプト側で組み立て済みのケース用）
  */

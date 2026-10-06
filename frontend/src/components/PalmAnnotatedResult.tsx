@@ -73,6 +73,13 @@ export function PalmAnnotatedResult({ imageUrl, lines }: Props) {
                 {l.points.length < 2 && <small>（写真ではっきり見えませんでした）</small>}
               </span>
               <span className="palm-result-card-text">{l.reading}</span>
+              {l.evidence && l.evidence.length > 0 && (
+                <ul className="palm-result-evidence">
+                  {l.evidence.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              )}
             </button>
           );
         })}

@@ -34,6 +34,8 @@ const norm = (p: Pt): Pt => {
 
 export interface HandFrame {
   F: (a: number, d: number) => Pt;
+  /** 画像上の点を、手の座標系 (a, d) に戻す */
+  toFrame: (p: Pt) => { a: number; d: number };
   width: number;
   length: number;
 }
@@ -54,6 +56,11 @@ export function buildHandFrame(lm: Pt[]): HandFrame {
   return {
     width,
     length,
+    toFrame: (p) => {
+      const dx = p.x - B.x;
+      const dy = p.y - B.y;
+      return { a: (dx * A.x + dy * A.y) / width, d: (dx * D.x + dy * D.y) / length };
+    },
     F: (a, d) => ({ x: B.x + A.x * a * width + D.x * d * length, y: B.y + A.y * a * width + D.y * d * length }),
   };
 }

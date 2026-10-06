@@ -16,6 +16,10 @@ interface PalmSession {
   status: PalmSessionStatus
   imageBase64: string | null
   mimeType: string | null
+  /** しわの候補を重ねた画像（候補選択方式のとき） */
+  annotatedBase64: string | null
+  /** フロントが画像処理で取り出した候補（未検証。使う前に sanitizeCandidates で検証する） */
+  candidates: unknown
   createdAt: number
   expiresAt: number
 }
@@ -46,6 +50,8 @@ export function createPalmSession(): { token: string; expiresAt: number } {
     status: 'pending',
     imageBase64: null,
     mimeType: null,
+    annotatedBase64: null,
+    candidates: null,
     createdAt: now,
     expiresAt: now + SESSION_TTL_MS,
   }
@@ -60,24 +66,40 @@ export function getPalmSessionStatus(token: string): PalmSessionStatus | null {
 }
 
 /** スマホ側から撮影画像をアップロードする */
-export function setPalmSessionImage(token: string, imageBase64: string, mimeType: string): boolean {
+export function setPalmSessionImage(
+  token: string,
+  imageBase64: string,
+  mimeType: string,
+  extras?: { annotatedBase64?: string | null; candidates?: unknown }
+): boolean {
   const session = sessions.get(token)
   if (!session || isExpired(session)) return false
   session.imageBase64 = imageBase64
   session.mimeType = mimeType
+  session.annotatedBase64 = extras?.annotatedBase64 ?? null
+  session.candidates = extras?.candidates ?? null
   session.status = 'uploaded'
   return true
 }
 
 /** PC側が診断のために画像を取得する。取得後はセッションを消費済みにして画像データを破棄する */
-export function consumePalmSessionImage(token: string): { imageBase64: string; mimeType: string } | null {
+export function consumePalmSessionImage(
+  token: string
+): { imageBase64: string; mimeType: string; annotatedBase64: string | null; candidates: unknown } | null {
   const session = sessions.get(token)
   if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) {
     return null
   }
-  const result = { imageBase64: session.imageBase64, mimeType: session.mimeType }
+  const result = {
+    imageBase64: session.imageBase64,
+    mimeType: session.mimeType,
+    annotatedBase64: session.annotatedBase64,
+    candidates: session.candidates,
+  }
   session.status = 'consumed'
   session.imageBase64 = null
   session.mimeType = null
+  session.annotatedBase64 = null
+  session.candidates = null
   return result
 }

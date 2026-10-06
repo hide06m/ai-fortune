@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { PalmCameraCapture } from '../components/PalmCameraCapture';
-import { uploadPalmImage } from '../api/palmistry';
+import { uploadPalmImage, type PalmExtras } from '../api/palmistry';
 
 interface PalmRelayCapturePageProps {
   token: string;
@@ -14,11 +14,11 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
   const [status, setStatus] = useState<'capturing' | 'uploading' | 'done' | 'error'>('capturing');
   const [error, setError] = useState('');
 
-  const handleCapture = async (imageBase64: string, mimeType: string) => {
+  const handleCapture = async (imageBase64: string, mimeType: string, extras?: PalmExtras) => {
     setStatus('uploading');
     setError('');
     try {
-      const response = await uploadPalmImage(token, imageBase64, mimeType);
+      const response = await uploadPalmImage(token, imageBase64, mimeType, extras);
       if (response.success) {
         setStatus('done');
       } else {

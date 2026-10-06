@@ -6,9 +6,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/palm-capture.css';
 import { assessImageQuality, type ImageQualityResult } from '../utils/imageQuality';
+import { analyzePalmImage } from '../utils/palmCapture';
+import type { PalmExtras } from '../api/palmistry';
 
 interface PalmCameraCaptureProps {
-  onCapture: (imageBase64: string, mimeType: string) => void;
+  onCapture: (imageBase64: string, mimeType: string, extras?: PalmExtras) => void;
 }
 
 const CAPTURE_MAX_WIDTH = 1024;
@@ -24,6 +26,7 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   const [cameraError, setCameraError] = useState('');
   const [liveQuality, setLiveQuality] = useState<ImageQualityResult | null>(null);
   const [retakeMessage, setRetakeMessage] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -70,7 +73,8 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleShutter = () => {
+  const handleShutter = async () => {
+    if (analyzing) return;
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
 
@@ -91,7 +95,16 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     setRetakeMessage('');
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     const base64 = dataUrl.split(',')[1];
-    onCapture(base64, 'image/jpeg');
+
+    // しわの候補を取り出して番号付きの画像を作る（失敗しても候補なしで続行）
+    setAnalyzing(true);
+    const analysis = await analyzePalmImage(canvas);
+    setAnalyzing(false);
+    onCapture(
+      base64,
+      'image/jpeg',
+      analysis ? { candidates: analysis.candidates, annotatedBase64: analysis.annotatedBase64 } : undefined,
+    );
   };
 
   return (
@@ -121,8 +134,8 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
 
           {retakeMessage && <div className="error">{retakeMessage}</div>}
 
-          <button type="button" className="primary-button palm-capture-shutter" onClick={handleShutter}>
-            📷 撮影する
+          <button type="button" className="primary-button palm-capture-shutter" onClick={handleShutter} disabled={analyzing}>
+            {analyzing ? '手相の線を解析しています…' : '📷 撮影する'}
           </button>
         </>
       )}

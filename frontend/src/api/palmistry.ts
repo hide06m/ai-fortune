@@ -13,9 +13,17 @@ export interface PalmIntimacyResult {
 export interface PalmLine {
   id: 'heart' | 'head' | 'life' | 'fate';
   label: string;
-  /** 画像左上を(0,0)、右下を(1000,1000)とする座標 */
+  /** 画像左上を(0,0)、右下を(1000,1000)とする座標。見つからなかった線は空 */
   points: Array<{ x: number; y: number }>;
   reading: string;
+  /** 測定値を言葉にした根拠（候補選択方式のときのみ） */
+  evidence?: string[];
+}
+
+/** 撮影時に画像処理で取り出した、しわの候補と、番号付きで重ねた画像 */
+export interface PalmExtras {
+  candidates?: unknown[];
+  annotatedBase64?: string;
 }
 
 export interface PalmistryResponse {
@@ -56,11 +64,16 @@ export async function getPalmSessionStatus(token: string): Promise<{ success: bo
 }
 
 /** スマホ側：撮影した画像をアップロード */
-export async function uploadPalmImage(token: string, imageBase64: string, mimeType: string): Promise<{ success: boolean; error?: string }> {
+export async function uploadPalmImage(
+  token: string,
+  imageBase64: string,
+  mimeType: string,
+  extras?: PalmExtras,
+): Promise<{ success: boolean; error?: string }> {
   const response = await fetch(`${API_URL}/api/palm-session/${token}/upload`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ imageBase64, mimeType }),
+    body: JSON.stringify({ imageBase64, mimeType, ...extras }),
   });
   return response.json();
 }
@@ -71,6 +84,8 @@ export async function submitPalmistry(params: {
   imageBase64?: string;
   mimeType?: string;
   concern?: string;
+  candidates?: unknown[];
+  annotatedBase64?: string;
 }): Promise<PalmistryResponse> {
   const response = await fetch(`${API_URL}/api/fortune/palmistry`, {
     method: 'POST',

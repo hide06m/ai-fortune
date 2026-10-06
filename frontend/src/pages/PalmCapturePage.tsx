@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { PalmCameraCapture } from '../components/PalmCameraCapture';
-import { submitPalmistry, type PalmistryResponse } from '../api/palmistry';
+import { submitPalmistry, type PalmistryResponse, type PalmExtras } from '../api/palmistry';
 
 interface PalmCapturePageProps {
   onComplete: (response: PalmistryResponse) => void;
@@ -15,11 +15,11 @@ export function PalmCapturePage({ onComplete, onCancel }: PalmCapturePageProps) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const handleCapture = async (imageBase64: string, mimeType: string) => {
+  const handleCapture = async (imageBase64: string, mimeType: string, extras?: PalmExtras) => {
     setSubmitting(true);
     setError('');
     try {
-      const response = await submitPalmistry({ imageBase64, mimeType, concern: '' });
+      const response = await submitPalmistry({ imageBase64, mimeType, concern: '', ...extras });
       if (response.success) {
         onComplete(response);
       } else if (response.error === 'INSUFFICIENT_STONES') {

@@ -72,3 +72,17 @@
 .palm-result-card-text {
   font-size: 0.92rem;
 }
+
+.palm-result-evidence {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  list-style: none;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.palm-result-evidence li::before {
+  content: '・';
+}
