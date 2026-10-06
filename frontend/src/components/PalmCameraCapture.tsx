@@ -7,12 +7,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import '../styles/palm-capture.css';
 import { assessImageQuality, type ImageQualityResult } from '../utils/imageQuality';
 import { analyzePalmImage } from '../utils/palmCapture';
+import { REQUIRED_HAND } from '../utils/palmDetect';
 import type { PalmExtras } from '../api/palmistry';
 
 interface PalmCameraCaptureProps {
   onCapture: (imageBase64: string, mimeType: string, extras?: PalmExtras) => void;
 }
 
+const HAND_NAME = REQUIRED_HAND === 'left' ? '左手' : '右手';
 const CAPTURE_MAX_WIDTH = 1024;
 const LIVE_CHECK_INTERVAL_MS = 600;
 
@@ -96,15 +98,15 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     const base64 = dataUrl.split(',')[1];
 
-    // しわの候補を取り出して番号付きの画像を作る（失敗しても候補なしで続行）
+    // 手相の線を検出する。手が違う・見つからないときは撮り直し。解析自体が失敗しても診断は続ける（線の表示がなくなるだけ）
     setAnalyzing(true);
     const analysis = await analyzePalmImage(canvas);
     setAnalyzing(false);
-    onCapture(
-      base64,
-      'image/jpeg',
-      analysis ? { candidates: analysis.candidates, annotatedBase64: analysis.annotatedBase64 } : undefined,
-    );
+    if (analysis.status === 'retake') {
+      setRetakeMessage(analysis.message);
+      return;
+    }
+    onCapture(base64, 'image/jpeg', analysis.status === 'ok' ? { lines: analysis.lines } : undefined);
   };
 
   return (
@@ -130,7 +132,7 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
             )}
           </div>
 
-          <p className="palm-capture-instruction">手のひらを白い枠に合わせてください</p>
+          <p className="palm-capture-instruction">{HAND_NAME}の手のひらを、白い枠に合わせてください</p>
 
           {retakeMessage && <div className="error">{retakeMessage}</div>}
 

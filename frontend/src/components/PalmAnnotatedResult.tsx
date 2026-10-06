@@ -13,6 +13,10 @@ const LINE_COLORS: Record<PalmLine['id'], string> = {
   head: '#4aa8ff',
   life: '#3ddc84',
   fate: '#ffc94a',
+  simian: '#ff8a3d',
+  sun: '#f06292',
+  health: '#26c6da',
+  marriage: '#ba68c8',
 };
 
 interface Props {
@@ -70,7 +74,6 @@ export function PalmAnnotatedResult({ imageUrl, lines }: Props) {
               <span className="palm-result-card-title">
                 <i className="palm-result-swatch" />
                 {l.label}
-                {l.points.length < 2 && <small>（写真ではっきり見えませんでした）</small>}
               </span>
               <span className="palm-result-card-text">{l.reading}</span>
               {l.evidence && l.evidence.length > 0 && (

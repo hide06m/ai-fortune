@@ -24,16 +24,13 @@ router.get('/:token', (req: Request, res: Response) => {
 })
 
 router.post('/:token/upload', (req: Request, res: Response) => {
-  const { imageBase64, mimeType, annotatedBase64, candidates } = req.body
+  const { imageBase64, mimeType, lines } = req.body
 
   if (typeof imageBase64 !== 'string' || !imageBase64 || typeof mimeType !== 'string' || !mimeType.startsWith('image/')) {
     return res.status(400).json({ success: false, error: 'imageBase64（string）とmimeType（image/*）が必要です' })
   }
 
-  const extras = {
-    annotatedBase64: typeof annotatedBase64 === 'string' && annotatedBase64 ? annotatedBase64 : null,
-    candidates: Array.isArray(candidates) ? candidates : null,
-  }
+  const extras = { lines: Array.isArray(lines) ? lines : null }
   const ok = setPalmSessionImage(req.params.token, imageBase64, mimeType, extras)
   if (!ok) {
     return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })

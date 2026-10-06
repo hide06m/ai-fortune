@@ -11,19 +11,19 @@ export interface PalmIntimacyResult {
 }
 
 export interface PalmLine {
-  id: 'heart' | 'head' | 'life' | 'fate';
+  id: 'heart' | 'head' | 'life' | 'fate' | 'simian' | 'marriage' | 'sun' | 'health';
   label: string;
-  /** 画像左上を(0,0)、右下を(1000,1000)とする座標。見つからなかった線は空 */
+  /** 画像左上を(0,0)、右下を(1000,1000)とする座標（検出できた線の形そのもの） */
   points: Array<{ x: number; y: number }>;
   reading: string;
-  /** 測定値を言葉にした根拠（候補選択方式のときのみ） */
+  /** 測定値を言葉にした根拠 */
   evidence?: string[];
 }
 
 /** 撮影時に画像処理で取り出した、しわの候補と、番号付きで重ねた画像 */
 export interface PalmExtras {
-  candidates?: unknown[];
-  annotatedBase64?: string;
+  /** 撮影時に検出できた線（確実に検出できた線だけ） */
+  lines?: unknown[];
 }
 
 export interface PalmistryResponse {
@@ -84,8 +84,7 @@ export async function submitPalmistry(params: {
   imageBase64?: string;
   mimeType?: string;
   concern?: string;
-  candidates?: unknown[];
-  annotatedBase64?: string;
+  lines?: unknown[];
 }): Promise<PalmistryResponse> {
   const response = await fetch(`${API_URL}/api/fortune/palmistry`, {
     method: 'POST',

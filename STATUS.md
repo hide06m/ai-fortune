@@ -14,7 +14,7 @@
 | 数秘術 | ✅ | 同上 | なし |
 | 九星気学 | ✅ | 同上 | なし |
 | 西洋占星術 | ✅ | 計算＋テスト＋Gemini解説 | なし |
-| 手相診断 | 🟡 | 撮影→手の骨格検出→しわの候補を取り出し→Geminiが「どれが何の線か」を選ぶ→選ばれた線を写真に重ねて、線ごとの読みと測定値の根拠を表示。判断基準は `backend/src/llm/palmistryCriteria.ts`（オリジナルの文章）。**精度は調整中**（サンプル6枚で確認。輪郭の影を拾う、本当のしわを候補に取りこぼす場合あり）。QRの実機テストは完了。写真は保存しない | なし |
+| 手相診断 | 🟡 | **左手の手のひら**を撮影→手の骨格検出→「標準の手のひら」に変換→各線の**定義**（始点・終点・向き・通る範囲）に合う線だけを検出→検出できた線だけを写真に重ねて、線ごとの読みと測定値の根拠を表示。基本の4本（感情線・頭脳線・生命線・運命線）に加え、**確実に検出できたときだけ**ますかけ線・太陽線・健康線・結婚線を出す（見つからなければ何も言わず省く）。判断基準は `backend/src/llm/palmistryCriteria.ts`（オリジナルの文章）。**精度は調整中**（サンプル6枚で確認。基準は厳しめなので、検出される線が少ないことがある）。写真は保存しない | なし |
 | 2人の相性診断（生年月日） | ✅ | 2人の生年月日からGeminiで生成 | なし |
 | 性格診断（16タイプ） | ✅ | 60問・5軸・7段階。結果カード（タイプ名、グループ色、5軸バー）。長文解説＋Gemini解説の両方を表示 | **あり**（設問文は他社と同内容、長文解説は他社の抽出データ） |
 | ラブタイプ診断64 | ✅ | 6軸の設問、ベース16キャラ×4系統の結果、アプローチ長文、相性（64×64） | **あり**（キャラ説明文、アプローチ長文、相性2,080件は他社データ） |
@@ -45,9 +45,11 @@
 | 感想フォーム | 🟡 | `POST /api/feedback` は**ログ出力のみで保存されない**（feedbackテーブルは作成済みだが未使用） |
 
 ### 手相診断の技術メモ
-- 流れ: 撮影側（スマホ/PC）で MediaPipe により手の骨格を検出 → しわの強調画像から候補を最大3本/線ずつ抽出（`frontend/src/utils/palmDetect.ts`, `palmLines.ts`, `palmGeometry.ts`）→ 番号付きの画像と候補をサーバーへ → Gemini が選択（`backend/src/llm/palmistrySelection.ts`）。候補が無いときは従来方式（Geminiが座標も答える）にフォールバック。
-- 調整用ページ: 開発時のみ `http://localhost:5173/palm-lab`（サンプル写真は `frontend/public/dev-samples/`、git管理外）。
-- 開発専用API: `POST /api/fortune/palmistry/dev-select`（NODE_ENV=development のときだけ有効。認証・石・回数制限なし）。
+- 流れ: 撮影側（スマホ/PC）で MediaPipe により手の骨格を検出 → 手の向きから左右を判定（左手以外は撮り直し）→ 写真を「標準の手のひら」座標（a: 小指側負・親指側正、d: 指の付け根0〜手首1）に並べ替え → しわの強調画像の上で、**線の定義の範囲内だけ**を動的計画法で探索（`frontend/src/utils/palmDetect.ts`, `palmModels.ts`, `palmSeam.ts`, `palmGeometry.ts`, `palmLines.ts`）→ 定義を満たした線だけをサーバーへ。
+- 各線の定義・合格基準は `palmModels.ts`。位置関係の決まり（感情線は頭脳線より指側）も確認する。ますかけ線は「感情線と頭脳線が別々に見つからず、1本の強い横線がある」ときだけ成立。
+- Gemini は線を探さない。検出できた線の「読み」と診断文を書くだけ（`backend/src/llm/palmistryReading.ts`）。検出できなかった線については言及させない。
+- 診断で見る手は `REQUIRED_HAND`（`palmDetect.ts`、現在は左手）で切り替える。流派によって左右の読み方が違うため。
+- 調整用ページ: 開発時のみ `http://localhost:5173/palm-lab`（サンプル写真は `frontend/public/dev-samples/`、git管理外。左右の制限は外してある）。
 - **新しいPCで動かすには**: `frontend/public/models/hand_landmarker.task`（約8MB、Google公開ストレージ `mediapipe-models/hand_landmarker/hand_landmarker/float16/1/`）と、`node_modules/@mediapipe/tasks-vision/wasm/*` を `frontend/public/models/wasm/` にコピーする必要がある（git管理外。取得スクリプトは未作成）。
 
 ## 4. 音声

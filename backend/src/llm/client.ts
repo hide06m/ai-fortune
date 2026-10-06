@@ -121,10 +121,10 @@ export async function generateFromImagePrompt(
 }
 
 /**
- * 手相診断用：画像＋プロンプトを渡し、JSON（診断文＋各線の座標・解説）で受け取る。
- * 返り値は未検証の生テキスト。parsePalmistryOutput で検証してから使うこと
+ * 手相診断：手のひらの写真1枚とプロンプトを渡し、診断文と、検出済みの線ごとの読みをJSONで受け取る。
+ * 線の検出・座標は画像処理側の仕事なので、Gemini には書かせない。返り値は未検証の生テキスト
  */
-export async function generatePalmistryJson(
+export async function generatePalmistryReadingJson(
   prompt: string,
   imageBase64: string,
   mimeType: string
@@ -144,19 +144,14 @@ export async function generatePalmistryJson(
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  id: { type: SchemaType.STRING, format: 'enum', enum: ['heart', 'head', 'life', 'fate'] },
-                  found: { type: SchemaType.BOOLEAN },
-                  points: {
-                    type: SchemaType.ARRAY,
-                    items: {
-                      type: SchemaType.OBJECT,
-                      properties: { x: { type: SchemaType.NUMBER }, y: { type: SchemaType.NUMBER } },
-                      required: ['x', 'y'],
-                    },
+                  id: {
+                    type: SchemaType.STRING,
+                    format: 'enum',
+                    enum: ['heart', 'head', 'life', 'fate', 'simian', 'marriage', 'sun', 'health'],
                   },
                   reading: { type: SchemaType.STRING },
                 },
-                required: ['id', 'found', 'points', 'reading'],
+                required: ['id', 'reading'],
               },
             },
           },
@@ -171,55 +166,7 @@ export async function generatePalmistryJson(
     ]))
     return { analysis: result.response.text(), tokensUsed: 0 }
   } catch (error) {
-    console.error('Error calling Gemini API (palmistry json):', error)
-    throw error
-  }
-}
-
-/**
- * 手相診断（候補選択方式）：元の写真と、しわの候補を重ねた写真の2枚を渡し、
- * 「どの候補がどの線か」と診断文をJSONで受け取る。返り値は未検証の生テキスト
- */
-export async function generatePalmistrySelectionJson(
-  prompt: string,
-  images: Array<{ base64: string; mimeType: string }>
-): Promise<FortuneAnalysisResult> {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.6-flash',
-      generationConfig: {
-        temperature: DIAGNOSIS_TEMPERATURE,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            analysis: { type: SchemaType.STRING },
-            lines: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  id: { type: SchemaType.STRING, format: 'enum', enum: ['heart', 'head', 'life', 'fate'] },
-                  candidateId: { type: SchemaType.STRING },
-                  reading: { type: SchemaType.STRING },
-                },
-                required: ['id', 'candidateId', 'reading'],
-              },
-            },
-          },
-          required: ['analysis', 'lines'],
-        },
-      },
-    })
-
-    const parts = [
-      { text: prompt },
-      ...images.map((img) => ({ inlineData: { data: img.base64, mimeType: img.mimeType } })),
-    ]
-    const result = await withRetry(() => model.generateContent(parts))
-    return { analysis: result.response.text(), tokensUsed: 0 }
-  } catch (error) {
-    console.error('Error calling Gemini API (palmistry selection):', error)
+    console.error('Error calling Gemini API (palmistry reading):', error)
     throw error
   }
 }

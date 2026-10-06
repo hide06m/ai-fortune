@@ -16,10 +16,8 @@ interface PalmSession {
   status: PalmSessionStatus
   imageBase64: string | null
   mimeType: string | null
-  /** しわの候補を重ねた画像（候補選択方式のとき） */
-  annotatedBase64: string | null
-  /** フロントが画像処理で取り出した候補（未検証。使う前に sanitizeCandidates で検証する） */
-  candidates: unknown
+  /** 撮影側が検出できた線（未検証。使う前に sanitizeDetectedLines で検証する） */
+  lines: unknown
   createdAt: number
   expiresAt: number
 }
@@ -50,8 +48,7 @@ export function createPalmSession(): { token: string; expiresAt: number } {
     status: 'pending',
     imageBase64: null,
     mimeType: null,
-    annotatedBase64: null,
-    candidates: null,
+    lines: null,
     createdAt: now,
     expiresAt: now + SESSION_TTL_MS,
   }
@@ -70,14 +67,13 @@ export function setPalmSessionImage(
   token: string,
   imageBase64: string,
   mimeType: string,
-  extras?: { annotatedBase64?: string | null; candidates?: unknown }
+  extras?: { lines?: unknown }
 ): boolean {
   const session = sessions.get(token)
   if (!session || isExpired(session)) return false
   session.imageBase64 = imageBase64
   session.mimeType = mimeType
-  session.annotatedBase64 = extras?.annotatedBase64 ?? null
-  session.candidates = extras?.candidates ?? null
+  session.lines = extras?.lines ?? null
   session.status = 'uploaded'
   return true
 }
@@ -85,7 +81,7 @@ export function setPalmSessionImage(
 /** PC側が診断のために画像を取得する。取得後はセッションを消費済みにして画像データを破棄する */
 export function consumePalmSessionImage(
   token: string
-): { imageBase64: string; mimeType: string; annotatedBase64: string | null; candidates: unknown } | null {
+): { imageBase64: string; mimeType: string; lines: unknown } | null {
   const session = sessions.get(token)
   if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) {
     return null
@@ -93,13 +89,11 @@ export function consumePalmSessionImage(
   const result = {
     imageBase64: session.imageBase64,
     mimeType: session.mimeType,
-    annotatedBase64: session.annotatedBase64,
-    candidates: session.candidates,
+    lines: session.lines,
   }
   session.status = 'consumed'
   session.imageBase64 = null
   session.mimeType = null
-  session.annotatedBase64 = null
-  session.candidates = null
+  session.lines = null
   return result
 }

@@ -9,7 +9,7 @@
  * 運命や健康・寿命などの断定には使わない。基準を変えたいときは、このファイルの文言と閾値だけを直せばよい。
  */
 
-export type PalmLineKey = 'heart' | 'head' | 'life' | 'fate'
+export type PalmLineKey = 'heart' | 'head' | 'life' | 'fate' | 'simian' | 'marriage' | 'sun' | 'health'
 
 /** フロントが測定して送ってくる値（座標は手のひらの大きさで正規化済み） */
 export interface MeasuredFeatures {
@@ -41,7 +41,7 @@ interface LineCriteria {
   brokenMeaning: string
 }
 
-export const LINE_CRITERIA: Record<PalmLineKey, LineCriteria> = {
+const MAIN_CRITERIA: Record<'heart' | 'head' | 'life' | 'fate', LineCriteria> = {
   heart: {
     label: '感情線',
     theme: '気持ちの出し方、人との関わり方、愛情の向け方',
@@ -92,21 +92,90 @@ export const LINE_CRITERIA: Record<PalmLineKey, LineCriteria> = {
   },
 }
 
+// 確実に検出できたときだけ使う線（基本の4本と同じ形式）
+const SIMIAN_CRITERIA: LineCriteria = {
+  label: 'ますかけ線',
+  theme: '感情と思考が一体で働く傾向（感情線と頭脳線が1本にまとまって手のひらを横切る、持つ人の少ない線）',
+  lengthBreaks: [0.9, 1.3],
+  longMeaning: '気持ちと考えが分かれにくく、物事に一途に打ち込む傾向',
+  shortMeaning: '',
+  curvedMeaning: '',
+  straightMeaning: '',
+  deepMeaning: '集中力が強く、決めたことをやり抜く意志の傾向',
+  faintMeaning: '',
+  brokenMeaning: '',
+}
+const MARRIAGE_CRITERIA: LineCriteria = {
+  label: '結婚線',
+  theme: '親しいパートナーシップへの向き合い方（本数や長さは、関係の数や期間を断定するものではない）',
+  lengthBreaks: [0.12, 0.3],
+  longMeaning: '一人の相手との関係をじっくり育てる傾向',
+  shortMeaning: '関係を気負わず、自然な流れに任せる傾向',
+  curvedMeaning: '',
+  straightMeaning: '',
+  deepMeaning: 'パートナーシップへの意識がはっきりしている傾向',
+  faintMeaning: '',
+  brokenMeaning: '',
+}
+const SUN_CRITERIA: LineCriteria = {
+  label: '太陽線',
+  theme: '才能が人から見える形になること、周囲からの評価との縁',
+  lengthBreaks: [0.4, 0.7],
+  longMeaning: '持ち味が周囲に伝わりやすく、評価を得やすい傾向',
+  shortMeaning: '評価より、自分の納得を大切にして取り組む傾向',
+  curvedMeaning: '',
+  straightMeaning: '一つの持ち味を軸に、ぶれずに磨いていく傾向',
+  deepMeaning: '自分の強みや魅力を自覚していて、表に出す力の傾向',
+  faintMeaning: '',
+  brokenMeaning: '',
+}
+const HEALTH_CRITERIA: LineCriteria = {
+  label: '健康線',
+  theme: '生活リズムの整え方、ストレスとの付き合い方（体調や病気を診断するものではない）',
+  lengthBreaks: [0.45, 0.8],
+  longMeaning: '生活のリズムを意識して整えようとする傾向',
+  shortMeaning: '細かいことに縛られず、のびのび過ごす傾向',
+  curvedMeaning: '',
+  straightMeaning: '',
+  deepMeaning: '心身の状態に敏感で、調子を自分でつかみやすい傾向',
+  faintMeaning: '',
+  brokenMeaning: '',
+}
+
+export const LINE_CRITERIA: Record<PalmLineKey, LineCriteria> = {
+  ...MAIN_CRITERIA,
+  simian: SIMIAN_CRITERIA,
+  marriage: MARRIAGE_CRITERIA,
+  sun: SUN_CRITERIA,
+  health: HEALTH_CRITERIA,
+}
+
 /** 測定値を言葉に直す（画面の根拠表示と、診断文の材料に使う） */
 export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { evidence: string[]; tendencies: string[] } {
   const c = LINE_CRITERIA[id]
   const evidence: string[] = []
   const tendencies: string[] = []
+  const addTendency = (t: string) => {
+    if (t) tendencies.push(t)
+  }
+
+  if (id === 'simian') {
+    evidence.push('形：感情線と頭脳線が1本にまとまり、手のひらを横切っている')
+    if (f.depth >= 0.65) evidence.push('濃さ：はっきりと濃い')
+    addTendency(c.longMeaning)
+    if (f.depth >= 0.65) addTendency(c.deepMeaning)
+    return { evidence, tendencies }
+  }
 
   // 長さ
   const [shortBreak, longBreak] = c.lengthBreaks
   const lengthPct = Math.round(f.lengthRatio * 100)
   if (f.lengthRatio < shortBreak) {
     evidence.push(`長さ：短め（指の付け根〜手首の約${lengthPct}％）`)
-    tendencies.push(c.shortMeaning)
+    addTendency(c.shortMeaning)
   } else if (f.lengthRatio > longBreak) {
     evidence.push(`長さ：長め（指の付け根〜手首の約${lengthPct}％）`)
-    tendencies.push(c.longMeaning)
+    addTendency(c.longMeaning)
   } else {
     evidence.push(`長さ：標準的（指の付け根〜手首の約${lengthPct}％）`)
   }
@@ -114,10 +183,10 @@ export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { eviden
   // 曲がり
   if (f.straightness < 0.75) {
     evidence.push('形：大きく曲がっている')
-    tendencies.push(c.curvedMeaning)
+    addTendency(c.curvedMeaning)
   } else if (f.straightness > 0.9) {
     evidence.push('形：まっすぐに近い')
-    tendencies.push(c.straightMeaning)
+    addTendency(c.straightMeaning)
   } else {
     evidence.push('形：ゆるやかなカーブ')
   }
@@ -125,10 +194,10 @@ export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { eviden
   // 濃さ・深さ
   if (f.depth >= 0.65) {
     evidence.push('濃さ：はっきりと濃い')
-    tendencies.push(c.deepMeaning)
+    addTendency(c.deepMeaning)
   } else if (f.depth < 0.4) {
     evidence.push('濃さ：薄め')
-    tendencies.push(c.faintMeaning)
+    addTendency(c.faintMeaning)
   } else {
     evidence.push('濃さ：標準的')
   }
@@ -136,7 +205,7 @@ export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { eviden
   // 途切れ
   if (f.continuity < 0.8) {
     evidence.push('連続性：途切れ・かすれがある')
-    tendencies.push(c.brokenMeaning)
+    addTendency(c.brokenMeaning)
   } else {
     evidence.push('連続性：ほぼ途切れなく続いている')
   }
@@ -164,18 +233,19 @@ export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { eviden
   return { evidence, tendencies }
 }
 
-/** プロンプトに差し込む判断基準（4本の線のテーマと読み方の要約） */
-export function criteriaPromptBlock(): string {
+/** プロンプトに差し込む判断基準。検出できた線についてだけ書く（検出できなかった線の説明は渡さない） */
+export function criteriaPromptBlock(keys: PalmLineKey[]): string {
+  const pair = (a: string, b: string, la: string, lb: string) => [a && `${la}：${a}`, b && `${lb}：${b}`].filter(Boolean).join('／')
   const parts: string[] = []
-  for (const key of ['heart', 'head', 'life', 'fate'] as PalmLineKey[]) {
+  for (const key of keys) {
     const c = LINE_CRITERIA[key]
-    parts.push(
-      `- **${c.label}**（${c.theme}）\n` +
-        `  長い：${c.longMeaning}／短い：${c.shortMeaning}\n` +
-        `  曲がりが大きい：${c.curvedMeaning}／まっすぐ：${c.straightMeaning}\n` +
-        `  濃い：${c.deepMeaning}／薄い：${c.faintMeaning}\n` +
-        `  途切れ：${c.brokenMeaning}`
-    )
+    const rows = [
+      pair(c.longMeaning, c.shortMeaning, '長い', '短い'),
+      pair(c.curvedMeaning, c.straightMeaning, '曲がりが大きい', 'まっすぐ'),
+      pair(c.deepMeaning, c.faintMeaning, '濃い', '薄い'),
+      c.brokenMeaning && `途切れ：${c.brokenMeaning}`,
+    ].filter(Boolean)
+    parts.push(`- **${c.label}**（${c.theme}）\n` + rows.map((r) => `  ${r}`).join('\n'))
   }
   return parts.join('\n')
 }
