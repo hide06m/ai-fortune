@@ -30,6 +30,11 @@ function loadAudioPrefs() {
   }
 }
 
+// 設定パネル（SettingsButton）は、initAudio() より前に描画されて isBgmMuted() を読む。
+// 保存済みの設定をここで先に読み込んでおかないと、BGMが実際はオフなのに、
+// パネルが「BGM ON」と表示してしまい、利用者がオンにし直せなくなる
+loadAudioPrefs()
+
 export function isBgmMuted(): boolean {
   return bgmMuted
 }
