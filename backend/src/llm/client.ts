@@ -28,7 +28,8 @@ const DIAGNOSIS_TEMPERATURE = 0.55
  * Gemini の一時的な混雑（503/429）やネットワーク断のとき、少し待って再試行する。
  * 診断ごとに石を消費しているので、一時エラーはユーザーに見せずに吸収したい。
  */
-const MAX_ATTEMPTS = 3
+// 混雑（503）は、同じモデルに少し待って再試行しても、すぐには直らないことが多い。再試行は控えめにして、早めに別のモデルへ切り替える
+const MAX_ATTEMPTS = 2
 const RETRY_DELAYS_MS = [1500, 3500]
 
 /**
@@ -37,6 +38,26 @@ const RETRY_DELAYS_MS = [1500, 3500]
  * 画像つきの診断は、通常でも十数秒かかることがあるため、短くしすぎない
  */
 const REQUEST_TIMEOUT_MS = 40_000
+
+/**
+ * SDK のタイムアウトとは別に、呼び出し全体に掛ける「確実な上限」。
+ * 万一 SDK のタイムアウトが効かない状況（応答の途中で止まるなど）でも、この時間で必ず制御が戻る
+ */
+function withHardTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Gemini request timed out after ${ms}ms`)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
 
 /** 1回の診断（再試行・モデルの切り替えを含む）にかけてよい時間の上限 */
 const OVERALL_DEADLINE_MS = 100_000
@@ -91,7 +112,14 @@ function fallbackModel(config: Omit<ModelParams, 'model'>) {
         const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
         try {
           // 先頭のモデルは通常どおり再試行する。切り替え先は、待ち時間を抑えるため再試行を減らす
-          return await withRetry(() => model.generateContent(request as never), i === 0 ? MAX_ATTEMPTS : 2, deadline)
+          const startedAt = Date.now()
+          const result = await withRetry(
+            () => withHardTimeout(model.generateContent(request as never), REQUEST_TIMEOUT_MS + 5_000),
+            MAX_ATTEMPTS,
+            deadline
+          )
+          console.log(`[Gemini] ${name} 成功（${Math.round((Date.now() - startedAt) / 1000)}秒）`)
+          return result
         } catch (error) {
           if (i === 0) {
             firstError = error

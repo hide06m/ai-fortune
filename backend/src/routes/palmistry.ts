@@ -93,6 +93,7 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
 
     await applyIntimacy()
 
+    const startedAt = Date.now()
     let analysis = 'LLM API が未設定です。'
     let llmSucceeded = false
     let lines: ReadingLine[] = []
@@ -135,6 +136,10 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
         console.error('Failed to save reading (palmistry):', error)
       }
     }
+
+    console.log(
+      `[palmistry] 診断${llmSucceeded ? '成功' : '失敗（払い戻し）'}：${Math.round((Date.now() - startedAt) / 1000)}秒、検出された線${detected.length}本、返す線${lines.length}本`
+    )
 
     res.json({
       success: true,

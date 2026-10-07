@@ -18,6 +18,13 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [diagnosing, setDiagnosing] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  // onComplete は親の再描画のたびに別の関数になるので、問い合わせの仕組みには ref 経由で渡す
+  // （依存に入れると、再描画のたびに問い合わせが作り直される）
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  // 診断の送信は一度だけ（問い合わせが重なって、同じ画像を二重に送らないように）
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,13 +62,15 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
     const interval = setInterval(async () => {
       try {
         const result = await getPalmSessionStatus(token);
-        if (result.status === 'uploaded') {
+        if (result.status === 'uploaded' && !submittedRef.current) {
+          submittedRef.current = true;
           clearInterval(interval);
           setDiagnosing(true);
+          setElapsed(0);
           try {
             const response = await submitPalmistry({ token, concern: '' });
             if (response.success) {
-              onComplete(response);
+              onCompleteRef.current(response);
             } else {
               setError(response.message || response.error || '診断に失敗しました。');
               setDiagnosing(false);
@@ -79,12 +88,25 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [token, onComplete]);
+  }, [token]);
+
+  // 診断中は、経過時間を数える（混雑すると1分以上かかるため、止まっていないことを見せる）
+  useEffect(() => {
+    if (!diagnosing) return;
+    const timer = setInterval(() => setElapsed((n) => n + 1), 1000);
+    return () => clearInterval(timer);
+  }, [diagnosing]);
 
   if (diagnosing) {
     return (
       <div className="palm-qr-handoff">
         <p>コクウが手相を読み解いています...</p>
+        {elapsed >= 15 && (
+          <p className="palm-qr-hint">
+            ただいま占いの精霊が混み合っていて、少し時間がかかっています（{elapsed}秒経過）。
+            最大で1分半ほどかかることがあります。そのままお待ちください。
+          </p>
+        )}
       </div>
     );
   }
