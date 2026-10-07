@@ -1427,7 +1427,7 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 8px;
-  min-width: 130px;
+  min-width: 190px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1449,4 +1449,35 @@ h1 {
 
 .settings-toggle-row:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* 音量スライダー（BGM・SEのオン／オフの行の下） */
+.settings-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 8px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.settings-volume-row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: #b9a8ff;
+  cursor: pointer;
+}
+
+.settings-volume-row.is-off {
+  opacity: 0.4;
+}
+
+.settings-volume-row.is-off input[type='range'] {
+  cursor: not-allowed;
+}
+
+.settings-volume-value {
+  width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

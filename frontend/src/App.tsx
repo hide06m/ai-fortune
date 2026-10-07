@@ -29,7 +29,11 @@ import {
   isBgmMuted,
   isSeMuted,
   setBgmMuted,
-  setSeMuted
+  setSeMuted,
+  getBgmVolume,
+  getSeVolume,
+  setBgmVolume,
+  setSeVolume
 } from './audio'
 import { CharacterSelectionPage } from './pages/CharacterSelectionPage'
 import { MBTIQuizPage } from './pages/MBTIQuizPage'
@@ -1935,6 +1939,19 @@ function SettingsButton() {
   const [open, setOpen] = useState(false)
   const [bgmOn, setBgmOn] = useState(!isBgmMuted())
   const [seOn, setSeOn] = useState(!isSeMuted())
+  // 音量は 0〜100（％）で扱う。保存は audio.ts 側（0〜1）
+  const [bgmVol, setBgmVol] = useState(Math.round(getBgmVolume() * 100))
+  const [seVol, setSeVol] = useState(Math.round(getSeVolume() * 100))
+
+  const changeBgmVolume = (percent: number) => {
+    setBgmVol(percent)
+    setBgmVolume(percent / 100)
+  }
+
+  const changeSeVolume = (percent: number) => {
+    setSeVol(percent)
+    setSeVolume(percent / 100)
+  }
 
   const toggleBgm = () => {
     const next = !bgmOn
@@ -1964,10 +1981,39 @@ function SettingsButton() {
             <span>BGM</span>
             <span>{bgmOn ? 'ON' : 'OFF'}</span>
           </button>
+          <label className={`settings-volume-row${bgmOn ? '' : ' is-off'}`}>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={bgmVol}
+              disabled={!bgmOn}
+              aria-label="BGMの音量"
+              onChange={(e) => changeBgmVolume(Number(e.target.value))}
+            />
+            <span className="settings-volume-value">{bgmVol}%</span>
+          </label>
           <button type="button" className="settings-toggle-row" onClick={toggleSe}>
             <span>SE</span>
             <span>{seOn ? 'ON' : 'OFF'}</span>
           </button>
+          <label className={`settings-volume-row${seOn ? '' : ' is-off'}`}>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={seVol}
+              disabled={!seOn}
+              aria-label="効果音の音量"
+              onChange={(e) => changeSeVolume(Number(e.target.value))}
+              // 離したときに、ノック音を1回鳴らして、音量を確かめられるようにする
+              onPointerUp={() => playKnock()}
+              onKeyUp={() => playKnock()}
+            />
+            <span className="settings-volume-value">{seVol}%</span>
+          </label>
         </div>
       )}
     </div>

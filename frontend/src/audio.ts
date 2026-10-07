@@ -2,6 +2,20 @@ import { Howl } from 'howler'
 
 const FOREST_BGM_VOLUME = 0.2025
 
+// 各音の基準の音量（音量スライダーが100%のときの音量）。実際の音量は、基準 × 利用者が決めた音量（0〜1）
+const BASE_VOLUME = {
+  treesway: 0.6,
+  bird: 0.03,
+  roomBgm: 0.6,
+  forestBgm: FOREST_BGM_VOLUME,
+  knock: 0.7,
+  door: 0.7,
+} as const
+
+// 利用者が決めた音量（0〜1）。localStorageに保存する
+let bgmVolume = 1
+let seVolume = 1
+
 // 音声オブジェクト
 let treeswayLoop: Howl | null = null
 let birdLoop: Howl | null = null
@@ -21,10 +35,19 @@ let seMuted = false
 // 参照されないまま鳴り続ける／止められない」状態になる（BGMが不安定に途切れる原因）
 let initialized = false
 
+/** 保存された音量の文字列を 0〜1 にする（無い・不正なときは 1 = 基準のまま） */
+function parseVolume(raw: string | null): number {
+  if (raw === null) return 1
+  const v = Number(raw)
+  return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1
+}
+
 function loadAudioPrefs() {
   try {
     bgmMuted = localStorage.getItem('audio_bgm_muted') === 'true'
     seMuted = localStorage.getItem('audio_se_muted') === 'true'
+    bgmVolume = parseVolume(localStorage.getItem('audio_bgm_volume'))
+    seVolume = parseVolume(localStorage.getItem('audio_se_volume'))
   } catch {
     // localStorageが使えない環境ではデフォルト（ON）のまま
   }
@@ -41,6 +64,42 @@ export function isBgmMuted(): boolean {
 
 export function isSeMuted(): boolean {
   return seMuted
+}
+
+export function getBgmVolume(): number {
+  return bgmVolume
+}
+
+export function getSeVolume(): number {
+  return seVolume
+}
+
+/** BGMの音量（0〜1）を変える。保存し、いま鳴っている／これから鳴るBGMにも反映する */
+export function setBgmVolume(volume: number) {
+  bgmVolume = Math.min(1, Math.max(0, volume))
+  try {
+    localStorage.setItem('audio_bgm_volume', String(bgmVolume))
+  } catch {
+    // 保存できなくても今回のセッション内では反映される
+  }
+  treeswayLoop?.volume(BASE_VOLUME.treesway * bgmVolume)
+  birdLoop?.volume(BASE_VOLUME.bird * bgmVolume)
+  // ルーム・森のBGMは、鳴っていないときに音量を変えると、フェードインの出発点がずれるので、鳴っているときだけ即時反映する
+  if (bgmLoop?.playing()) bgmLoop.volume(BASE_VOLUME.roomBgm * bgmVolume)
+  if (forestBgmLoop?.playing()) forestBgmLoop.volume(BASE_VOLUME.forestBgm * bgmVolume)
+}
+
+/** 効果音の音量（0〜1）を変える。保存し、これから鳴る効果音に反映する */
+export function setSeVolume(volume: number) {
+  seVolume = Math.min(1, Math.max(0, volume))
+  try {
+    localStorage.setItem('audio_se_volume', String(seVolume))
+  } catch {
+    // 保存できなくても今回のセッション内では反映される
+  }
+  knockSound?.volume(BASE_VOLUME.knock * seVolume)
+  doorOpenSound1?.volume(BASE_VOLUME.door * seVolume)
+  doorOpenSound2?.volume(BASE_VOLUME.door * seVolume)
 }
 
 export function setBgmMuted(muted: boolean) {
@@ -73,7 +132,7 @@ export function initAudio() {
   treeswayLoop = new Howl({
     src: ['/assets/treesway001.mp3'],
     loop: true,
-    volume: 0.6,
+    volume: BASE_VOLUME.treesway * bgmVolume,
     fade: 500
   })
 
@@ -81,7 +140,7 @@ export function initAudio() {
   birdLoop = new Howl({
     src: ['/assets/bird001.mp3'],
     loop: true,
-    volume: 0.03,
+    volume: BASE_VOLUME.bird * bgmVolume,
     fade: 500
   })
 
@@ -89,7 +148,7 @@ export function initAudio() {
   bgmLoop = new Howl({
     src: ['/assets/roombgm001.mp3'],
     loop: true,
-    volume: 0.6,
+    volume: BASE_VOLUME.roomBgm * bgmVolume,
     fade: 500
   })
 
@@ -97,26 +156,26 @@ export function initAudio() {
   forestBgmLoop = new Howl({
     src: ['/assets/forestBGM001.mp3'],
     loop: true,
-    volume: FOREST_BGM_VOLUME,
+    volume: BASE_VOLUME.forestBgm * bgmVolume,
     fade: 800
   })
 
   // ノック音
   knockSound = new Howl({
     src: ['/assets/knock001.wav'],
-    volume: 0.7
+    volume: BASE_VOLUME.knock * seVolume
   })
 
   // ドア開く音 1
   doorOpenSound1 = new Howl({
     src: ['/assets/doorOpen001.wav'],
-    volume: 0.7
+    volume: BASE_VOLUME.door * seVolume
   })
 
   // ドア開く音 2
   doorOpenSound2 = new Howl({
     src: ['/assets/doorOpen002.wav'],
-    volume: 0.7
+    volume: BASE_VOLUME.door * seVolume
   })
 
   // 保存済みのON/OFF設定を新しく作成したHowlインスタンスへ反映
@@ -126,10 +185,13 @@ export function initAudio() {
 
 // ランディングページの背景音を開始
 export function startAmbientLoop() {
+  // フェードアウトで音量が0になったまま止まっていることがあるので、再生の前に、利用者の音量へ戻す
   if (treeswayLoop && !treeswayLoop.playing()) {
+    treeswayLoop.volume(BASE_VOLUME.treesway * bgmVolume)
     treeswayLoop.play()
   }
   if (birdLoop && !birdLoop.playing()) {
+    birdLoop.volume(BASE_VOLUME.bird * bgmVolume)
     birdLoop.play()
   }
 }
@@ -176,7 +238,7 @@ export function switchToRoomBGM() {
     if (bgmLoop && !bgmLoop.playing()) {
       bgmLoop.volume(0)
       bgmLoop.play()
-      bgmLoop.fade(0, 0.6, 500)
+      bgmLoop.fade(0, BASE_VOLUME.roomBgm * bgmVolume, 500)
     }
   }, 500)
 }
@@ -186,7 +248,7 @@ export function startForestBgmLayer() {
   if (forestBgmLoop && !forestBgmLoop.playing()) {
     forestBgmLoop.volume(0)
     forestBgmLoop.play()
-    forestBgmLoop.fade(0, FOREST_BGM_VOLUME, 800)
+    forestBgmLoop.fade(0, BASE_VOLUME.forestBgm * bgmVolume, 800)
   }
 }
 
