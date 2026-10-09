@@ -80,3 +80,10 @@
   color: #666;
   font-size: 0.9rem;
 }
+
+.palm-capture-hint-line {
+  margin: 8px 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  text-align: center;
+}

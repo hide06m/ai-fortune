@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import '../styles/palm-capture.css';
 import { assessImageQuality, type ImageQualityResult } from '../utils/imageQuality';
 import { analyzePalmImage } from '../utils/palmCapture';
-import { REQUIRED_HAND } from '../utils/palmDetect';
+import { REQUIRED_HAND, preloadHandLandmarker } from '../utils/palmDetect';
 import type { PalmExtras } from '../api/palmistry';
 
 interface PalmCameraCaptureProps {
@@ -29,6 +29,8 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   const [liveQuality, setLiveQuality] = useState<ImageQualityResult | null>(null);
   const [retakeMessage, setRetakeMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  // 手の検出の準備の状況（画面を開いた時点で先に読み込み始める）
+  const [detectorState, setDetectorState] = useState<'loading' | 'ready' | 'failed'>('loading');
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -61,6 +63,19 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     };
   }, []);
 
+  // 手の検出の準備を、撮影ボタンを押す前に始めておく
+  useEffect(() => {
+    const startedAt = performance.now();
+    let cancelled = false;
+    preloadHandLandmarker().then((ok) => {
+      console.info(`[palm] 手の検出の準備 ${ok ? '完了' : '失敗'}（${Math.round(performance.now() - startedAt)}ms）`);
+      if (!cancelled) setDetectorState(ok ? 'ready' : 'failed');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ライブプレビュー中、明るさ・ピントを定期的にチェックして先出しでフィードバックする
   useEffect(() => {
     const interval = setInterval(() => {
@@ -76,9 +91,14 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   }, []);
 
   const handleShutter = async () => {
+    console.info('[palm] 撮影ボタン', { analyzing, readyState: videoRef.current?.readyState, width: videoRef.current?.videoWidth });
     if (analyzing) return;
     const video = videoRef.current;
-    if (!video || video.readyState < 2) return;
+    if (!video || video.readyState < 2 || !video.videoWidth) {
+      // 何も表示せずに無視すると、「押しても何も起こらない」ように見えるので、理由を出す
+      setRetakeMessage('カメラの映像を準備しています。映像が映ってから、もう一度押してください。');
+      return;
+    }
 
     const scale = Math.min(1, CAPTURE_MAX_WIDTH / video.videoWidth);
     const canvas = document.createElement('canvas');
@@ -136,8 +156,15 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
 
           {retakeMessage && <div className="error">{retakeMessage}</div>}
 
+          {detectorState === 'loading' && (
+            <p className="palm-capture-hint-line">手の検出の準備中です（初回は数十秒かかることがあります）…</p>
+          )}
+          {detectorState === 'failed' && (
+            <p className="palm-capture-hint-line">この端末では、手相の線の検出を使えません。線の表示なしで診断します。</p>
+          )}
+
           <button type="button" className="primary-button palm-capture-shutter" onClick={handleShutter} disabled={analyzing}>
-            {analyzing ? '手相の線を解析しています…' : '📷 撮影する'}
+            {analyzing ? '手相の線を解析しています…（最大30秒）' : '📷 撮影する'}
           </button>
         </>
       )}

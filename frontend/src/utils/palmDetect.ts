@@ -86,6 +86,7 @@ export interface DetectionResult {
 let landmarkerPromise: Promise<HandLandmarker> | null = null;
 
 function getLandmarker(): Promise<HandLandmarker> {
+  // 失敗した（拒否された）Promiseを、キャッシュしたまま使い回さない。次の呼び出しで、やり直せるようにする
   landmarkerPromise ??= (async () => {
     const vision = await FilesetResolver.forVisionTasks('/models/wasm');
     return HandLandmarker.createFromOptions(vision, {
@@ -95,8 +96,26 @@ function getLandmarker(): Promise<HandLandmarker> {
       minHandDetectionConfidence: 0.3,
       minHandPresenceConfidence: 0.3,
     });
-  })();
+  })().catch((error) => {
+    landmarkerPromise = null;
+    throw error;
+  });
   return landmarkerPromise;
+}
+
+/**
+ * 手の検出の準備（モデル約8MB・実行用ファイル約12MBの読み込み）を、先に始めておく。
+ * 撮影ボタンを押してから読み込み始めると、スマホの回線では、長く待たされるため。
+ * 準備できたら true、失敗したら false
+ */
+export async function preloadHandLandmarker(): Promise<boolean> {
+  try {
+    await getLandmarker();
+    return true;
+  } catch (error) {
+    console.warn('[palm] 手の検出の準備に失敗しました', error);
+    return false;
+  }
 }
 
 function computeRidge(canonGray: ReturnType<typeof normalizeIllumination>): Float32Array {
