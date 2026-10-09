@@ -102,3 +102,10 @@
   margin: 12px 0 4px;
   font-weight: bold;
 }
+
+.palm-capture-trace {
+  margin-top: 12px;
+  font-size: 0.7rem;
+  opacity: 0.6;
+  word-break: break-all;
+}

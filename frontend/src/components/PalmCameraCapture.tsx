@@ -32,6 +32,9 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   // 撮影した瞬間の写真（あれば、撮影完了の画面を出す）
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // 画面の一番下に出す、動作の記録（スマホではコンソールが見られないので、画面で確認できるようにする）
+  const [trace, setTrace] = useState<string[]>([]);
+  const note = (text: string) => setTrace((t) => [...t.slice(-5), text]);
   // 手の検出の準備の状況（画面を開いた時点で先に読み込み始める）
   const [detectorState, setDetectorState] = useState<'loading' | 'ready' | 'failed'>('loading');
 
@@ -102,11 +105,13 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   }, [analyzing]);
 
   const handleShutter = async () => {
+    note('ボタンを押した');
     console.info('[palm] 撮影ボタン', { analyzing, readyState: videoRef.current?.readyState, width: videoRef.current?.videoWidth });
     if (analyzing) return;
     const video = videoRef.current;
     if (!video || video.readyState < 2 || !video.videoWidth) {
       // 何も表示せずに無視すると、「押しても何も起こらない」ように見えるので、理由を出す
+      note('映像が未準備');
       setRetakeMessage('カメラの映像を準備しています。映像が映ってから、もう一度押してください。');
       return;
     }
@@ -119,22 +124,23 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // 明るさ・ピントの警告は、ライブ表示で出している。押した後は止めずに進める（手の検出が最終的に判断する）。
+    // 止めると、ライブの警告と同じ文言が出るだけで「押しても何も変わらない」ように見えるため
     const quality = assessImageQuality(canvas);
-    if (!quality.ok) {
-      setRetakeMessage(REASON_MESSAGES[quality.reason!]);
-      return;
-    }
+    console.info('[palm] 画質', quality);
 
     setRetakeMessage('');
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     const base64 = dataUrl.split(',')[1];
     // 押した瞬間の写真を固定し、すぐに撮影完了の画面へ移る
     setCapturedUrl(dataUrl);
+    note('写真を固定（' + canvas.width + 'x' + canvas.height + '）');
 
     // 手相の線を検出する。手が違う・見つからないときは撮り直し。解析自体が失敗しても診断は続ける（線の表示がなくなるだけ）
     setAnalyzing(true);
     const analysis = await analyzePalmImage(canvas);
     setAnalyzing(false);
+    note('解析結果: ' + analysis.status + (analysis.status === 'ok' ? '（線' + analysis.lines.length + '本）' : ''));
     if (analysis.status === 'retake') {
       // 撮り直し：カメラの画面へ戻し、理由を出す
       setCapturedUrl(null);
@@ -195,6 +201,7 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
           )}
         </>
       )}
+      {trace.length > 0 && <p className="palm-capture-trace">{trace.join(' → ')}</p>}
     </div>
   );
 }
