@@ -12,6 +12,8 @@
  */
 
 import { Router, Request, Response } from 'express'
+import fs from 'fs'
+import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { consumePalmSessionImage } from '../palm/sessionStore.js'
 import { generatePalmistryReadingJson } from '../llm/client.js'
@@ -23,6 +25,23 @@ import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 
 const router = Router()
+
+/**
+ * 開発時だけ、撮影した写真と検出結果を、git管理外のフォルダへ保存する（検出の精度改善に、実機の写真を使うため）。
+ * 本番（NODE_ENV=production）では保存しない。写真は診断後に破棄する方針は、本番では変わらない
+ */
+function saveDevCapture(imageBase64: string, rawLines: unknown): void {
+  if (process.env.NODE_ENV === 'production') return
+  try {
+    const dir = path.resolve(process.cwd(), '../frontend/public/dev-samples/captures')
+    fs.mkdirSync(dir, { recursive: true })
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    fs.writeFileSync(path.join(dir, `${stamp}.jpg`), Buffer.from(imageBase64, 'base64'))
+    fs.writeFileSync(path.join(dir, `${stamp}.lines.json`), JSON.stringify(rawLines ?? null))
+  } catch (error) {
+    console.warn('[palmistry] 開発用の保存に失敗しました', error)
+  }
+}
 const KOKUU_CHARACTER_ID: CharacterId = 3
 
 router.post('/', dailyLimiter, async (req: Request, res: Response) => {
@@ -52,6 +71,8 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
     if (!imageBase64 || !mimeType) {
       return res.status(400).json({ success: false, error: 'token、またはimageBase64+mimeTypeのいずれかが必要です' })
     }
+
+    saveDevCapture(imageBase64, rawLines)
 
     // 親密度更新はコクウ（キャラID3）固定
     let intimacyResult: { characterId: CharacterId; intimacyLevel: number; justUnlocked: CharacterId | null } | null = null
