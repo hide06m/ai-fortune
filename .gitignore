@@ -48,3 +48,6 @@ frontend/src/data/private/
 # 手相の検出調整用サンプル写真とモデル（ローカルのみ）
 frontend/public/dev-samples/
 frontend/public/models/
+
+# Obsidian Vault（AIの共通記憶。このプロジェクトの差分・コミットに混ぜない）
+ai-vault/
