@@ -132,7 +132,9 @@ export function PalmCameraCapture({ onCapture, analyzeOnDevice = true, initialMe
     setRetakeMessage('');
     setCapturedUrl(canvas.toDataURL('image/jpeg', 0.6));
     note('写真を固定');
-    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    await new Promise<void>((resolve) => setTimeout(resolve, 60));
+    note('処理開始');
+    try {
 
     // 明るさ・ピントの警告は、ライブ表示で出している。押した後は止めずに進める（手の検出が最終的に判断する）。
     // 止めると、ライブの警告と同じ文言が出るだけで「押しても何も変わらない」ように見えるため
@@ -160,6 +162,14 @@ export function PalmCameraCapture({ onCapture, analyzeOnDevice = true, initialMe
       return;
     }
     onCapture(base64, 'image/jpeg', analysis.status === 'ok' ? { lines: analysis.lines } : undefined);
+    } catch (error) {
+      // 例外で止まると画面が固まって見えるので、カメラに戻して理由を出す
+      console.error('[palm] 撮影処理で例外', error);
+      note('エラー: ' + (error instanceof Error ? error.message : String(error)));
+      setAnalyzing(false);
+      setCapturedUrl(null);
+      setRetakeMessage('撮影の処理でエラーが起きました。もう一度撮影してください。');
+    }
   };
 
   return (

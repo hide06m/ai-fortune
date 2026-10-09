@@ -21,7 +21,10 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
     setStatus('uploading');
     setError('');
     try {
-      const response = await uploadPalmImage(token, imageBase64, mimeType, extras);
+      const response = await Promise.race([
+        uploadPalmImage(token, imageBase64, mimeType, extras),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('upload timeout')), 60_000)),
+      ]);
       if (response.success) {
         setStatus('done');
       } else {
