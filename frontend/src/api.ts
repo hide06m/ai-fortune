@@ -95,7 +95,7 @@ const CONFIGURED_API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:300
 // localhost 以外（トンネル経由のスマホなど）から開いたときに localhost:3000 を指すと、その端末自身を見てしまい通信できない。
 // その場合は同一オリジン（Viteの /api 中継）を使う
 const OPENED_ON_LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
-export const API_URL = !OPENED_ON_LOCAL && /^https?://(localhost|127.0.0.1)/.test(CONFIGURED_API_URL) ? '' : CONFIGURED_API_URL
+export const API_URL = !OPENED_ON_LOCAL && /^https?:\/\/(localhost|127\.0\.0\.1)/.test(CONFIGURED_API_URL) ? '' : CONFIGURED_API_URL
 
 // トークン管理
 export function getToken(): string | null {
