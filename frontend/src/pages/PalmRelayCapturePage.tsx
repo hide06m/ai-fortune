@@ -13,6 +13,8 @@ interface PalmRelayCapturePageProps {
 export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
   const [status, setStatus] = useState<'capturing' | 'uploading' | 'done' | 'error'>('capturing');
   const [error, setError] = useState('');
+  // 撮り直すときにカメラ部分を作り直すための番号
+  const [attempt, setAttempt] = useState(0);
 
   const handleCapture = async (imageBase64: string, mimeType: string, extras?: PalmExtras) => {
     setStatus('uploading');
@@ -44,9 +46,24 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
   return (
     <div className="palm-relay-container">
       <h1>手相を撮影してください</h1>
-      <PalmCameraCapture onCapture={handleCapture} />
-      {status === 'uploading' && <p>アップロード中...</p>}
-      {error && <div className="error">{error}</div>}
+      <PalmCameraCapture key={attempt} onCapture={handleCapture} />
+      {status === 'uploading' && <p>PCへ送信中です。そのままお待ちください...</p>}
+      {error && (
+        <>
+          <div className="error">{error}</div>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              setError('');
+              setStatus('capturing');
+              setAttempt((n) => n + 1);
+            }}
+          >
+            撮り直す
+          </button>
+        </>
+      )}
     </div>
   );
 }

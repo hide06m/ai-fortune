@@ -29,6 +29,9 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
   const [liveQuality, setLiveQuality] = useState<ImageQualityResult | null>(null);
   const [retakeMessage, setRetakeMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  // 撮影した瞬間の写真（あれば、撮影完了の画面を出す）
+  const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   // 手の検出の準備の状況（画面を開いた時点で先に読み込み始める）
   const [detectorState, setDetectorState] = useState<'loading' | 'ready' | 'failed'>('loading');
 
@@ -90,6 +93,14 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // 解析中は、経過秒数を数えて「止まっていない」ことを見せる
+  useEffect(() => {
+    if (!analyzing) return;
+    setElapsed(0);
+    const timer = setInterval(() => setElapsed((n) => n + 1), 1000);
+    return () => clearInterval(timer);
+  }, [analyzing]);
+
   const handleShutter = async () => {
     console.info('[palm] 撮影ボタン', { analyzing, readyState: videoRef.current?.readyState, width: videoRef.current?.videoWidth });
     if (analyzing) return;
@@ -117,12 +128,16 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     setRetakeMessage('');
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     const base64 = dataUrl.split(',')[1];
+    // 押した瞬間の写真を固定し、すぐに撮影完了の画面へ移る
+    setCapturedUrl(dataUrl);
 
     // 手相の線を検出する。手が違う・見つからないときは撮り直し。解析自体が失敗しても診断は続ける（線の表示がなくなるだけ）
     setAnalyzing(true);
     const analysis = await analyzePalmImage(canvas);
     setAnalyzing(false);
     if (analysis.status === 'retake') {
+      // 撮り直し：カメラの画面へ戻し、理由を出す
+      setCapturedUrl(null);
       setRetakeMessage(analysis.message);
       return;
     }
@@ -135,7 +150,17 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
         <div className="error">{cameraError}</div>
       ) : (
         <>
-          <div className="palm-capture-viewport">
+          {capturedUrl && (
+            <div className="palm-capture-done">
+              <h2>📷 撮影しました</h2>
+              <img src={capturedUrl} alt="撮影した手のひら" className="palm-capture-done-image" />
+              <p className="palm-capture-done-status">
+                {analyzing ? `手相の線を解析しています…（${elapsed}秒）` : '診断の準備をしています…'}
+              </p>
+              <p className="palm-capture-hint-line">スマホはそのままで大丈夫です。終わると自動で次へ進みます。</p>
+            </div>
+          )}
+          <div className="palm-capture-viewport" style={capturedUrl ? { display: 'none' } : undefined}>
             <video ref={videoRef} autoPlay playsInline muted className="palm-capture-video" />
             <svg className="palm-capture-guide" viewBox="0 0 200 260" preserveAspectRatio="xMidYMid meet">
               <path
@@ -152,20 +177,22 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
             )}
           </div>
 
-          <p className="palm-capture-instruction">{HAND_NAME}の手のひらを、白い枠に合わせてください</p>
+          {!capturedUrl && <p className="palm-capture-instruction">{HAND_NAME}の手のひらを、白い枠に合わせてください</p>}
 
           {retakeMessage && <div className="error">{retakeMessage}</div>}
 
-          {detectorState === 'loading' && (
+          {!capturedUrl && detectorState === 'loading' && (
             <p className="palm-capture-hint-line">手の検出の準備中です（初回は数十秒かかることがあります）…</p>
           )}
-          {detectorState === 'failed' && (
+          {!capturedUrl && detectorState === 'failed' && (
             <p className="palm-capture-hint-line">この端末では、手相の線の検出を使えません。線の表示なしで診断します。</p>
           )}
 
-          <button type="button" className="primary-button palm-capture-shutter" onClick={handleShutter} disabled={analyzing}>
-            {analyzing ? '手相の線を解析しています…（最大30秒）' : '📷 撮影する'}
-          </button>
+          {!capturedUrl && (
+            <button type="button" className="primary-button palm-capture-shutter" onClick={handleShutter}>
+              📷 撮影する
+            </button>
+          )}
         </>
       )}
     </div>
