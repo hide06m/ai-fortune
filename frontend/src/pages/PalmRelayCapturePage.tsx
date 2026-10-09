@@ -2,9 +2,9 @@
  * 手相撮影画面（PCからQRコードで飛んできたスマホ側。スタンドアロンで表示される）
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PalmCameraCapture } from '../components/PalmCameraCapture';
-import { uploadPalmImage, type PalmExtras } from '../api/palmistry';
+import { uploadPalmImage, getPalmSessionStatusWithRetake, type PalmExtras } from '../api/palmistry';
 
 interface PalmRelayCapturePageProps {
   token: string;
@@ -15,6 +15,7 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
   const [error, setError] = useState('');
   // 撮り直すときにカメラ部分を作り直すための番号
   const [attempt, setAttempt] = useState(0);
+  const [retakeMessage, setRetakeMessage] = useState('');
 
   const handleCapture = async (imageBase64: string, mimeType: string, extras?: PalmExtras) => {
     setStatus('uploading');
@@ -34,6 +35,24 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
     }
   };
 
+  // 送信後は、PC側の解析で撮り直しになっていないかを見守る（なっていたらカメラの画面へ戻す）
+  useEffect(() => {
+    if (status !== 'done') return;
+    const timer = setInterval(async () => {
+      try {
+        const r = await getPalmSessionStatusWithRetake(token);
+        if (r.success && r.status === 'pending' && r.retakeMessage) {
+          setRetakeMessage(r.retakeMessage);
+          setStatus('capturing');
+          setAttempt((n) => n + 1);
+        }
+      } catch {
+        // 通信の一時的な失敗は無視（次の間隔で再試行）
+      }
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [status, token]);
+
   if (status === 'done') {
     return (
       <div className="palm-relay-container">
@@ -46,7 +65,7 @@ export function PalmRelayCapturePage({ token }: PalmRelayCapturePageProps) {
   return (
     <div className="palm-relay-container">
       <h1>手相を撮影してください</h1>
-      <PalmCameraCapture key={attempt} onCapture={handleCapture} />
+      <PalmCameraCapture key={attempt} onCapture={handleCapture} analyzeOnDevice={false} initialMessage={retakeMessage} />
       {status === 'uploading' && <p>PCへ送信中です。そのままお待ちください...</p>}
       {error && (
         <>

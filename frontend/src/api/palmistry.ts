@@ -63,6 +63,27 @@ export async function getPalmSessionStatus(token: string): Promise<{ success: bo
   return response.json();
 }
 
+/** PC側：スマホの撮影完了をポーリングで確認（撮り直しの依頼が出ていれば retakeMessage が入る） */
+export async function getPalmSessionStatusWithRetake(token: string): Promise<{ success: boolean; status?: string; retakeMessage?: string | null }> {
+  const response = await fetch(`${API_URL}/api/palm-session/${token}`, { method: 'GET', headers: authHeaders() });
+  return response.json();
+}
+
+/** PC側：アップロードされた画像を取得する（解析用。消費しない） */
+export async function fetchPalmSessionImage(token: string): Promise<{ success: boolean; imageBase64?: string; mimeType?: string }> {
+  const response = await fetch(`${API_URL}/api/palm-session/${token}/image`, { method: 'GET', headers: authHeaders() });
+  return response.json();
+}
+
+/** PC側：解析の結果、撮り直しが必要だとスマホへ伝える */
+export async function requestPalmRetake(token: string, message: string): Promise<void> {
+  await fetch(`${API_URL}/api/palm-session/${token}/retake`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ message }),
+  });
+}
+
 /** スマホ側：撮影した画像をアップロード */
 export async function uploadPalmImage(
   token: string,

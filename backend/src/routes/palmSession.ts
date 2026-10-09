@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express'
-import { createPalmSession, getPalmSessionStatus, setPalmSessionImage } from '../palm/sessionStore.js'
+import { createPalmSession, getPalmSessionStatus, setPalmSessionImage, peekPalmSessionImage, requestPalmRetake } from '../palm/sessionStore.js'
 
 const router = Router()
 
@@ -20,7 +20,25 @@ router.get('/:token', (req: Request, res: Response) => {
   if (!status) {
     return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })
   }
-  res.json({ success: true, status })
+  res.json({ success: true, status: status.status, retakeMessage: status.retakeMessage })
+})
+
+// PC側：解析のために、アップロードされた画像を取得する（消費しない。診断の送信で初めて破棄される）
+router.get('/:token/image', (req: Request, res: Response) => {
+  const image = peekPalmSessionImage(req.params.token)
+  if (!image) {
+    return res.status(404).json({ success: false, error: '画像がありません' })
+  }
+  res.json({ success: true, ...image })
+})
+
+// PC側：解析の結果、撮り直しが必要になったことをスマホへ伝える
+router.post('/:token/retake', (req: Request, res: Response) => {
+  const message = typeof req.body?.message === 'string' ? req.body.message.slice(0, 200) : '撮り直してください'
+  if (!requestPalmRetake(req.params.token, message)) {
+    return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })
+  }
+  res.json({ success: true })
 })
 
 router.post('/:token/upload', (req: Request, res: Response) => {

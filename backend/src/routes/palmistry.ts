@@ -41,7 +41,8 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
       }
       imageBase64 = consumed.imageBase64
       mimeType = consumed.mimeType
-      rawLines = consumed.lines
+      // PC側で解析した線があればそれを使う（スマホでは解析しない）
+      rawLines = Array.isArray(directLines) ? directLines : consumed.lines
     } else if (typeof directImageBase64 === 'string' && directImageBase64 && typeof directMimeType === 'string') {
       imageBase64 = directImageBase64
       mimeType = directMimeType

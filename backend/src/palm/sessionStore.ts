@@ -18,6 +18,8 @@ interface PalmSession {
   mimeType: string | null
   /** 撮影側が検出できた線（未検証。使う前に sanitizeDetectedLines で検証する） */
   lines: unknown
+  /** PC側の解析で撮り直しになったときの理由（スマホへ伝える） */
+  retakeMessage: string | null
   createdAt: number
   expiresAt: number
 }
@@ -49,6 +51,7 @@ export function createPalmSession(): { token: string; expiresAt: number } {
     imageBase64: null,
     mimeType: null,
     lines: null,
+    retakeMessage: null,
     createdAt: now,
     expiresAt: now + SESSION_TTL_MS,
   }
@@ -56,10 +59,29 @@ export function createPalmSession(): { token: string; expiresAt: number } {
   return { token, expiresAt: session.expiresAt }
 }
 
-export function getPalmSessionStatus(token: string): PalmSessionStatus | null {
+export function getPalmSessionStatus(token: string): { status: PalmSessionStatus; retakeMessage: string | null } | null {
   const session = sessions.get(token)
   if (!session || isExpired(session)) return null
-  return session.status
+  return { status: session.status, retakeMessage: session.retakeMessage }
+}
+
+/** PC側が解析のために画像を見る（消費しない） */
+export function peekPalmSessionImage(token: string): { imageBase64: string; mimeType: string } | null {
+  const session = sessions.get(token)
+  if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) return null
+  return { imageBase64: session.imageBase64, mimeType: session.mimeType }
+}
+
+/** PC側の解析で撮り直しになった：画像を破棄して待機に戻し、理由をスマホへ伝える */
+export function requestPalmRetake(token: string, message: string): boolean {
+  const session = sessions.get(token)
+  if (!session || isExpired(session)) return false
+  session.status = 'pending'
+  session.imageBase64 = null
+  session.mimeType = null
+  session.lines = null
+  session.retakeMessage = message
+  return true
 }
 
 /** スマホ側から撮影画像をアップロードする */
@@ -75,6 +97,7 @@ export function setPalmSessionImage(
   session.mimeType = mimeType
   session.lines = extras?.lines ?? null
   session.status = 'uploaded'
+  session.retakeMessage = null
   return true
 }
 

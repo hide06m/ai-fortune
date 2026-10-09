@@ -11,6 +11,10 @@ import { REQUIRED_HAND, preloadHandLandmarker } from '../utils/palmDetect';
 import type { PalmExtras } from '../api/palmistry';
 
 interface PalmCameraCaptureProps {
+  /** false なら、端末では線の解析をせず、撮影した写真をすぐ渡す（解析はPC側で行う） */
+  analyzeOnDevice?: boolean;
+  /** 最初から表示しておく案内（撮り直しの理由など） */
+  initialMessage?: string;
   onCapture: (imageBase64: string, mimeType: string, extras?: PalmExtras) => void;
 }
 
@@ -23,11 +27,11 @@ const REASON_MESSAGES: Record<NonNullable<ImageQualityResult['reason']>, string>
   blurry: 'ピントが合っていません。手のひらとカメラを安定させてください',
 };
 
-export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
+export function PalmCameraCapture({ onCapture, analyzeOnDevice = true, initialMessage }: PalmCameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraError, setCameraError] = useState('');
   const [liveQuality, setLiveQuality] = useState<ImageQualityResult | null>(null);
-  const [retakeMessage, setRetakeMessage] = useState('');
+  const [retakeMessage, setRetakeMessage] = useState(initialMessage ?? '');
   const [analyzing, setAnalyzing] = useState(false);
   // 撮影した瞬間の写真（あれば、撮影完了の画面を出す）
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
@@ -124,17 +128,25 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // 押した瞬間に、固定した写真をすぐ画面に出す（重い処理の前に一度描画させる）
+    setRetakeMessage('');
+    setCapturedUrl(canvas.toDataURL('image/jpeg', 0.6));
+    note('写真を固定');
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
     // 明るさ・ピントの警告は、ライブ表示で出している。押した後は止めずに進める（手の検出が最終的に判断する）。
     // 止めると、ライブの警告と同じ文言が出るだけで「押しても何も変わらない」ように見えるため
     const quality = assessImageQuality(canvas);
     console.info('[palm] 画質', quality);
 
-    setRetakeMessage('');
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     const base64 = dataUrl.split(',')[1];
-    // 押した瞬間の写真を固定し、すぐに撮影完了の画面へ移る
-    setCapturedUrl(dataUrl);
-    note('写真を固定（' + canvas.width + 'x' + canvas.height + '）');
+    if (!analyzeOnDevice) {
+      // 解析はPC側で行う。写真をすぐ渡して、送信へ進む
+      note('送信へ');
+      onCapture(base64, 'image/jpeg');
+      return;
+    }
 
     // 手相の線を検出する。手が違う・見つからないときは撮り直し。解析自体が失敗しても診断は続ける（線の表示がなくなるだけ）
     setAnalyzing(true);
@@ -161,7 +173,7 @@ export function PalmCameraCapture({ onCapture }: PalmCameraCaptureProps) {
               <h2>📷 撮影しました</h2>
               <img src={capturedUrl} alt="撮影した手のひら" className="palm-capture-done-image" />
               <p className="palm-capture-done-status">
-                {analyzing ? `手相の線を解析しています…（${elapsed}秒）` : '診断の準備をしています…'}
+                {analyzing ? `手相の線を解析しています…（${elapsed}秒）` : analyzeOnDevice ? '診断の準備をしています…' : '写真をPCへ送っています…'}
               </p>
               <p className="palm-capture-hint-line">スマホはそのままで大丈夫です。終わると自動で次へ進みます。</p>
             </div>
