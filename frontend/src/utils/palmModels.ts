@@ -171,7 +171,7 @@ export function buildHeadModel(_h: HandFrame, heartPath?: Pt[]): LineModel {
  * 正解15組で、0.05→0.3 にすると、正解（正）41→42・誤5→4、実機写真の生命線が 51/49 → 73/100 になった
  */
 // 開発の調整用。モジュールが複数回読み込まれても、同じ値を共有する
-export const lifeTuning: { floor: number } = ((globalThis as { __lifeTuning?: { floor: number } }).__lifeTuning ??= { floor: 0.05 });
+export const lifeTuning: { floor: number } = ((globalThis as { __lifeTuning?: { floor: number } }).__lifeTuning ??= { floor: 0.3 });
 
 export function buildLifeModel(): LineModel {
   const corridor: Array<[number, number]> = [
