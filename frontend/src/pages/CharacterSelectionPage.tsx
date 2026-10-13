@@ -17,6 +17,7 @@ import { getCharacterIntimacy, getUnlockedCharacters, sendCharacterGift, getChar
 import { getStoneBalance } from '../api/stones';
 import { speakGreeting, isVoiceEnabled } from '../services/textToSpeech';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
+import { HamsterLoading } from '../components/HamsterLoading';
 
 export type KuriDiagnosisMode = 'mbti' | 'love64';
 
@@ -61,8 +62,10 @@ function IntimacyHeart({ intimacy }: { intimacy: IntimacyState }) {
 }
 
 export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelectionPageProps) {
-  const [rotation, setRotation] = useState(0);
-  const [selectedCharacterId, setSelectedCharacterId] = useState<CharacterId>(1); // ナツメをデフォルト選択
+  // ナツメ（1番）が正面に来る向きから始める（5体なので 72° 毎）
+  const [rotation, setRotation] = useState(72);
+  // 選択中のキャラは、正面に来ているキャラ。矢印・ホイール・クリックで回すと、下の表示も同時に切り替わる
+  const selectedCharacterId = ((Math.round((((rotation % 360) + 360) % 360) / 72) % 5) + 5) % 5 as CharacterId;
   const [intimacies, setIntimacies] = useState<Map<number, IntimacyState>>(new Map());
   const [unlockedCharacters, setUnlockedCharacters] = useState<Set<number>>(new Set());
   const [stoneBalance, setStoneBalance] = useState<number | null>(null);
@@ -222,7 +225,7 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
   };
 
   if (loading) {
-    return <div className="character-selection loading">読み込み中...</div>;
+    return <HamsterLoading message="占い師たちを呼んでいます..." showEstimate={false} />;
   }
 
   return (
@@ -255,10 +258,8 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
                   pointerEvents: isCenter ? 'auto' : 'none',
                 }}
                 onClick={() => {
-                  if (isCenter) {
-                    setSelectedCharacterId(charId as CharacterId);
-                  } else {
-                    // クリックした方向に回転
+                  if (!isCenter) {
+                    // クリックした方向に回転（回すと選択も切り替わる）
                     const diff = offsetRotation;
                     setRotation((prev) => prev + (diff > 180 ? 360 - diff : -diff));
                   }
@@ -354,7 +355,7 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
 
       {/* ナビゲーションヒント */}
       <div className="navigation-hint">
-        ← → キーまたはマウスホイールでキャラクターを選択
+        ← → キーまたはマウスホイールで、占い師を切り替え
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import {
   type PalmistryResponse,
 } from '../api/palmistry';
 import { analyzePalmImage } from '../utils/palmCapture';
+import { HamsterLoading } from '../components/HamsterLoading';
 
 /** base64の写真を、解析用のcanvasに描く */
 async function imageToCanvas(base64: string, mimeType: string): Promise<HTMLCanvasElement> {
@@ -146,24 +147,20 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
   }, [diagnosing]);
 
   if (analyzingPhoto) {
-    return (
-      <div className="palm-qr-handoff">
-        <p>スマホの写真を受け取りました。手相の線を解析しています...</p>
-      </div>
-    );
+    return <HamsterLoading message="スマホの写真を受け取りました。手相の線を解析しています..." showEstimate={false} />;
   }
 
   if (diagnosing) {
     return (
-      <div className="palm-qr-handoff">
-        <p>コクウが手相を読み解いています...</p>
-        {elapsed >= 15 && (
-          <p className="palm-qr-hint">
-            ただいま占いの精霊が混み合っていて、少し時間がかかっています（{elapsed}秒経過）。
-            最大で1分半ほどかかることがあります。そのままお待ちください。
-          </p>
-        )}
-      </div>
+      <HamsterLoading
+        message="コクウが手相を読み解いています..."
+        showEstimate={false}
+        hint={
+          elapsed >= 15
+            ? `ただいま占いの精霊が混み合っていて、少し時間がかかっています（${elapsed}秒経過）。最大で1分半ほどかかることがあります。`
+            : '少しお待ちください'
+        }
+      />
     );
   }
 

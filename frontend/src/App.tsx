@@ -332,8 +332,11 @@ function AppContent() {
   const [pendingMeetingCheck, setPendingMeetingCheck] = useState(false)
 
   // 会話シーン共通：1文字ずつ表示するタイプライター演出
-  const [typedLength, setTypedLength] = useState(0)
-  const [dialogueSentenceIndex, setDialogueSentenceIndex] = useState(0)
+  // タイプライターの進み具合と、何文目を出すか。どちらも「どの文・どのステップのものか」を一緒に持つ。
+  // 別々の値だけで持つと、セリフが切り替わった最初の1フレームに、前のセリフの進み具合や文の番号が残り、
+  // 新しい文が一瞬まるごと見えたり、別の文が見えたりする（描画のあとに effect で0へ戻すため）
+  const [typedState, setTypedState] = useState({ text: '', n: 0 })
+  const [sentenceState, setSentenceState] = useState({ key: '', index: 0 })
   const typewriterTimerRef = useRef<number | null>(null)
 
   // Form state
@@ -576,12 +579,32 @@ function AppContent() {
     : currentStepNoSplit
       ? [currentStepFullText]
       : splitIntoSentences(currentStepFullText)
-  const currentDialogueText = currentDialogueSentences[dialogueSentenceIndex] ?? currentDialogueSentences[0] ?? ''
-
-  // ステップが切り替わったら、文の分割位置を先頭に戻す
+  // 会話シーンで使う画像（背景・キャラの表情）を先に読み込む。切り替えのたびに読み込むと、
+  // 読み込み中は前の画像が残ったり、一瞬別の絵が見えたりするため
   useEffect(() => {
-    setDialogueSentenceIndex(0)
-  }, [screen, guestPhase, guestStep, guideDialogue, tutorialSegment, tutorialStepIndex])
+    const urls = new Set<string>(['/assets/room001.jpg', '/assets/index001.jpg'])
+    for (let i = 1; i <= 4; i++) urls.add(`/assets/characters/0-musubi/ham00${i}.webp`)
+    if (screen === 'tutorial' && tutorialSegment) {
+      const folders: Record<string, string> = { musubi: '0-musubi', natsume: '1-natsume', tsuki: '2-tsuki', kokuu: '3-kokuu', kuri: '4-kuri' }
+      for (const st of getTutorialSteps(tutorialSegment, meetingCharacterId)) {
+        if (st.type === 'dialogue' && st.image) urls.add(`/assets/characters/${folders[st.character ?? 'musubi'] ?? '0-musubi'}/${st.image}.webp`)
+        if (st.type === 'itemReveal' && st.image) urls.add(st.image)
+      }
+    }
+    urls.forEach((u) => {
+      const img = new Image()
+      img.src = u
+    })
+  }, [screen, tutorialSegment, meetingCharacterId])
+
+  // ステップが切り替わったら、文の分割位置は自動で先頭に戻る（キーが変わるため）
+  const dialogueStepKey = `${screen}|${guestPhase}|${guestStep}|${guideDialogue}|${tutorialSegment}|${tutorialStepIndex}`
+  const dialogueSentenceIndex = sentenceState.key === dialogueStepKey ? sentenceState.index : 0
+  const setDialogueSentenceIndex = (index: number) => setSentenceState({ key: dialogueStepKey, index })
+  const currentDialogueText = currentDialogueSentences[dialogueSentenceIndex] ?? currentDialogueSentences[0] ?? ''
+  // 表示する文字数：別の文のものなら0（切り替わった瞬間に、新しい文が見えてしまわないように）
+  const typedLength = typedState.text === currentDialogueText ? typedState.n : 0
+  const setTypedLength = (n: number) => setTypedState({ text: currentDialogueText, n })
 
   // セリフが変わるたびに、1文字ずつ表示するタイプライター演出を開始
   useEffect(() => {
@@ -589,13 +612,13 @@ function AppContent() {
       window.clearInterval(typewriterTimerRef.current)
       typewriterTimerRef.current = null
     }
-    setTypedLength(0)
+    setTypedState({ text: currentDialogueText, n: 0 })
     if (!currentDialogueText) return
 
     let i = 0
     typewriterTimerRef.current = window.setInterval(() => {
       i++
-      setTypedLength(i)
+      setTypedState({ text: currentDialogueText, n: i })
       if (i >= currentDialogueText.length && typewriterTimerRef.current) {
         window.clearInterval(typewriterTimerRef.current)
         typewriterTimerRef.current = null

@@ -22,9 +22,13 @@ const FRAME_URLS = Array.from(
 interface HamsterLoadingProps {
   message?: string;
   isVisible?: boolean;
+  /** 「推定時間：あと○秒」を出すか（所要時間が読めない処理では false にして、代わりに hint を渡す） */
+  showEstimate?: boolean;
+  /** メッセージの下に出す補足 */
+  hint?: string;
 }
 
-export function HamsterLoading({ message = 'AI が思考中...', isVisible = true }: HamsterLoadingProps) {
+export function HamsterLoading({ message = 'AI が思考中...', isVisible = true, showEstimate = true, hint }: HamsterLoadingProps) {
   const [estimatedTime, setEstimatedTime] = useState(3); // 推定時間（秒）
   const [frameIndex, setFrameIndex] = useState(0);
   const startTimeRef = useRef<number | null>(null);
@@ -80,7 +84,8 @@ export function HamsterLoading({ message = 'AI が思考中...', isVisible = tru
       {/* メッセージ */}
       <div className="loading-message">
         <p className="main-message">✨ {message}</p>
-        <p className="estimate">推定時間：あと {estimatedTime} 秒</p>
+        {showEstimate && <p className="estimate">推定時間：あと {estimatedTime} 秒</p>}
+        {hint && <p className="estimate">{hint}</p>}
 
         {/* ドット animation */}
         <div className="loading-dots">

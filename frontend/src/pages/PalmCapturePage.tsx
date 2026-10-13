@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { PalmCameraCapture } from '../components/PalmCameraCapture';
+import { HamsterLoading } from '../components/HamsterLoading';
 import { submitPalmistry, type PalmistryResponse, type PalmExtras } from '../api/palmistry';
 
 interface PalmCapturePageProps {
@@ -36,11 +37,7 @@ export function PalmCapturePage({ onComplete, onCancel }: PalmCapturePageProps) 
   };
 
   if (submitting) {
-    return (
-      <div className="palm-capture">
-        <p>コクウが手相を読み解いています...</p>
-      </div>
-    );
+    return <HamsterLoading message="コクウが手相を読み解いています..." showEstimate={false} hint="最大で1分半ほどかかることがあります" />;
   }
 
   return (
