@@ -1233,7 +1233,7 @@ function AppContent() {
   if (screen === 'guide-conversation') {
     const isTyping = typedLength < currentDialogueText.length
     return (
-      <div className="vn-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
+      <div className="vn-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }} onClick={() => guideDialogue && handleDialogueBoxClick(handleGuideContinue)}>
         <div className="vn-character-bust-wrap">
           <img
             src={`/assets/characters/0-musubi/ham00${guideExpression}.webp`}
@@ -1242,7 +1242,7 @@ function AppContent() {
           />
         </div>
         {guideDialogue && (
-          <div className="vn-dialogue-box" onClick={() => handleDialogueBoxClick(handleGuideContinue)}>
+          <div className="vn-dialogue-box">
             <div className="vn-speaker-name">ムスビ</div>
             <p className="vn-dialogue-text">{currentDialogueText.slice(0, typedLength)}</p>
             {!isTyping && <div className="vn-continue-hint">▼</div>}
@@ -1258,7 +1258,7 @@ function AppContent() {
     // 初対面の第一声（pre-form の最初の1文）だけは、まだキャラクターを見せない
     const showCharacter = !(guestPhase === 'pre-form' && guestStep === 0)
     return (
-      <div className="vn-scene" style={{ backgroundImage: 'url(/assets/index001.jpg)' }}>
+      <div className="vn-scene" style={{ backgroundImage: 'url(/assets/index001.jpg)' }} onClick={() => handleDialogueBoxClick(handleGuestDialogueClick)}>
         <div className="vn-character-bust-wrap">
           {showCharacter && (
             <img
@@ -1269,7 +1269,7 @@ function AppContent() {
             />
           )}
         </div>
-        <div className="vn-dialogue-box" onClick={() => handleDialogueBoxClick(handleGuestDialogueClick)}>
+        <div className="vn-dialogue-box">
           <div className="vn-speaker-name">???</div>
           <p className="vn-dialogue-text">{currentDialogueText.slice(0, typedLength)}</p>
           {!isTyping && <div className="vn-continue-hint">▼</div>}
@@ -1347,7 +1347,7 @@ function AppContent() {
     }
     const folder = TUTORIAL_CHARACTER_FOLDERS[step.character ?? 'musubi'] ?? '0-musubi'
     return (
-      <div className="vn-scene" style={{ backgroundImage: `url(${background})` }}>
+      <div className="vn-scene" style={{ backgroundImage: `url(${background})` }} onClick={() => handleDialogueBoxClick(handleTutorialAdvance)}>
         {step.image && (
           <div className="vn-character-bust-wrap">
             <img
@@ -1357,7 +1357,7 @@ function AppContent() {
             />
           </div>
         )}
-        <div className="vn-dialogue-box" onClick={() => handleDialogueBoxClick(handleTutorialAdvance)}>
+        <div className="vn-dialogue-box">
           {step.speaker && <div className="vn-speaker-name">{step.speaker}</div>}
           <p className="vn-dialogue-text">{currentDialogueText.slice(0, typedLength)}</p>
           {!isTyping && <div className="vn-continue-hint">▼</div>}
