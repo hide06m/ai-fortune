@@ -84,7 +84,8 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = MAX_ATTEMPTS, de
       const delay = RETRY_DELAYS_MS[attempt - 1] ?? 3500
       // 診断全体の時間の上限を超えそうなら、これ以上は待たずに失敗とする（払い戻しにつなげる）
       if (Date.now() + delay + REQUEST_TIMEOUT_MS > deadline) throw error
-      console.warn(`[Gemini] 一時的なエラーのため${delay}ms後に再試行します（${attempt}/${maxAttempts - 1}）`)
+      const cause = (error as { cause?: { code?: string; message?: string } })?.cause
+      console.warn(`[Gemini] 一時的なエラーのため${delay}ms後に再試行します（${attempt}/${maxAttempts - 1}）`, cause?.code ?? cause?.message ?? (error instanceof Error ? error.message.slice(0, 120) : ''))
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
