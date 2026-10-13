@@ -469,14 +469,19 @@ body {
   animation: fadeIn 0.8s ease-out;
 }
 
-/* キャラクターは、元（352px）の2倍。頭を上に置いて、下半身はセリフ枠の後ろへ隠す。
+/* キャラクターは、元（352px）の2倍。下半身はセリフ枠の後ろ・画面の外へ隠す。
    スマホで左右が切れすぎないよう、画面幅の1.36倍までに抑える */
 .vn-character-bust-wrap {
+  /* 下に合わせて置く：体の2割ほどが画面の下へはみ出す位置（画面が縦に長いPCで、足元が浮いて見えないように）。
+     ただし、画面が低くて頭が上に切れるときは、頭が画面の上端（2vh）に来る位置で止める。
+     画像の縦横比は 900:1205（高さ＝幅×1.339） */
+  --bust-w: min(704px, 136vw);
+  --bust-h: calc(var(--bust-w) * 1.339);
   position: absolute;
-  top: 2vh;
+  top: max(2vh, calc(100% - var(--bust-h) * 0.78));
   left: 50%;
   transform: translateX(-50%);
-  width: min(704px, 136vw);
+  width: var(--bust-w);
   display: flex;
   justify-content: center;
   pointer-events: none;
