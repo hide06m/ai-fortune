@@ -1,0 +1,138 @@
+/* カウンセリング方式の入力（ムスビが1項目ずつ質問する） */
+
+/* 入力パネル：セリフ枠の少し上に出す。立ち絵（大きい）の上に重なるので、半透明の暗い面にする */
+.counsel-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(clamp(200px, 32vh, 320px) + 32px);
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100% - clamp(200px, 32vh, 320px) - 60px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  background: rgba(15, 8, 30, 0.82);
+  border: 1px solid rgba(201, 162, 75, 0.55);
+  border-radius: 8px;
+  color: #fff;
+  text-align: left;
+  z-index: 5;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.counsel-panel .birthdate-input-group {
+  justify-content: center;
+}
+
+.counsel-selects {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.counsel-selects select,
+.counsel-free input,
+.counsel-free textarea {
+  padding: 10px 12px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  box-sizing: border-box;
+}
+
+.counsel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.counsel-chip {
+  padding: 9px 14px;
+  font-size: 0.95rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.counsel-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.counsel-chip.is-selected {
+  background: rgba(255, 209, 102, 0.9);
+  border-color: #ffd166;
+  color: #2a1a05;
+  font-weight: 700;
+}
+
+.counsel-free {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.counsel-free input,
+.counsel-free textarea {
+  width: 100%;
+}
+
+.counsel-link {
+  display: block;
+  margin: 10px auto 0;
+  background: none;
+  border: none;
+  color: #ffd166;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.counsel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.counsel-next,
+.counsel-back {
+  padding: 10px 22px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 209, 102, 0.8);
+}
+
+.counsel-next {
+  background: #ffd166;
+  color: #2a1a05;
+  font-weight: 700;
+}
+
+.counsel-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.counsel-back {
+  background: transparent;
+  color: #ffd166;
+}
+
+.counsel-error {
+  margin-top: 8px;
+  color: #ffb4b4;
+}
+
+.counsel-error p {
+  margin: 0 0 8px;
+  white-space: pre-line;
+}

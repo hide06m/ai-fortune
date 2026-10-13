@@ -3,6 +3,8 @@
  * Express + TypeScript
  */
 
+// 他の import より先に、OSの証明書ストアを信頼する設定を読み込む（セキュリティソフトのあるPCで外向きHTTPSが失敗しないように）
+import './tlsTrust.js'
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'

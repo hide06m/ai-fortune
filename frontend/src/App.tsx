@@ -46,6 +46,8 @@ import { PalmCapturePage } from './pages/PalmCapturePage'
 import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
 import { isMobileDevice } from './utils/device'
 import { HamsterLoading } from './components/HamsterLoading'
+import { BirthDateInput } from './components/BirthDateInput'
+import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import {
   TUTORIAL_INTRO_STEPS,
   TUTORIAL_MEETING_STEPS,
@@ -174,108 +176,6 @@ function pickRandomLoadingMessage(): string {
   return LOADING_FLAVOR_MESSAGES[Math.floor(Math.random() * LOADING_FLAVOR_MESSAGES.length)]
 }
 
-// 生年月日入力：年4桁→自動で月欄へ、月2桁→自動で日欄へフォーカス移動する
-function BirthDateInput({
-  id,
-  value,
-  onChange,
-}: {
-  id: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  const initial = value ? value.split('-') : ['', '', '']
-  const [year, setYear] = useState(initial[0] || '')
-  const [month, setMonth] = useState(initial[1] || '')
-  const [day, setDay] = useState(initial[2] || '')
-  const monthRef = useRef<HTMLInputElement>(null)
-  const dayRef = useRef<HTMLInputElement>(null)
-  const nativeDateRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (year.length === 4 && month.length > 0 && day.length > 0) {
-      onChange(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`)
-    } else {
-      onChange('')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [year, month, day])
-
-  return (
-    <div className="birthdate-input-group">
-      <input
-        id={id}
-        type="text"
-        inputMode="numeric"
-        placeholder="年"
-        maxLength={4}
-        value={year}
-        onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, '').slice(0, 4)
-          setYear(v)
-          if (v.length === 4) monthRef.current?.focus()
-        }}
-        className="birthdate-year"
-      />
-      <span className="birthdate-sep">/</span>
-      <input
-        ref={monthRef}
-        type="text"
-        inputMode="numeric"
-        placeholder="月"
-        maxLength={2}
-        value={month}
-        onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, '').slice(0, 2)
-          setMonth(v)
-          if (v.length === 2) dayRef.current?.focus()
-        }}
-        className="birthdate-month"
-      />
-      <span className="birthdate-sep">/</span>
-      <input
-        ref={dayRef}
-        type="text"
-        inputMode="numeric"
-        placeholder="日"
-        maxLength={2}
-        value={day}
-        onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, '').slice(0, 2)
-          setDay(v)
-        }}
-        className="birthdate-day"
-      />
-      <button
-        type="button"
-        className="birthdate-calendar-button"
-        aria-label="カレンダーから選択"
-        onClick={() => {
-          const el = nativeDateRef.current as (HTMLInputElement & { showPicker?: () => void }) | null
-          el?.showPicker ? el.showPicker() : el?.focus()
-        }}
-      >
-        📅
-      </button>
-      <input
-        ref={nativeDateRef}
-        type="date"
-        className="birthdate-native-picker"
-        tabIndex={-1}
-        value={year.length === 4 && month.length > 0 && day.length > 0 ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : ''}
-        onChange={(e) => {
-          const [y, m, d] = e.target.value.split('-')
-          if (y && m && d) {
-            setYear(y)
-            setMonth(m)
-            setDay(d)
-          }
-        }}
-      />
-    </div>
-  )
-}
-
 function AppContent() {
   // Authentication state
   const [authenticated, setAuthenticated] = useState(isAuthenticated())
@@ -283,7 +183,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'form' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'form' | 'counseling' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -762,7 +662,8 @@ function AppContent() {
   // handoffステップに到達した時の実処理（ドアノック演出 or フォームへ遷移）
   const runTutorialHandoff = (action: 'doorKnock' | 'gotoForm') => {
     if (action === 'gotoForm') {
-      setScreen('form')
+      // 入力フォームではなく、ムスビが1項目ずつ質問するカウンセリング方式で聞く
+      setScreen('counseling')
       return
     }
 
@@ -865,7 +766,8 @@ function AppContent() {
     if (guestStep < lines.length - 1) {
       setGuestStep(guestStep + 1)
     } else if (guestPhase === 'pre-form') {
-      setScreen('form')
+      // 入力フォームではなく、ムスビが1項目ずつ質問するカウンセリング方式で聞く
+      setScreen('counseling')
     } else {
       setScreen('guest-farewell')
     }
@@ -940,6 +842,11 @@ function AppContent() {
   // 診断実行
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submitFortune()
+  }
+
+  // 診断を実行する。カウンセリング方式では、答えをそのまま渡す（state の更新を待たずに済むように）
+  const submitFortune = async (values?: CounselingValues) => {
     setError('')
     setDuplicateNotice(null)
     setLoadingMessage(pickRandomLoadingMessage())
@@ -948,10 +855,10 @@ function AppContent() {
 
     try {
       const request: FortuneRequest = {
-        birthDate,
-        birthTime,
-        birthPlace,
-        concern,
+        birthDate: values?.birthDate ?? birthDate,
+        birthTime: values?.birthTime ?? birthTime,
+        birthPlace: values?.birthPlace ?? birthPlace,
+        concern: values?.concern ?? concern,
         characterId: selectedCharacterId
       }
 
@@ -1366,6 +1273,29 @@ function AppContent() {
     )
   }
 
+  // ========== カウンセリング方式の入力（ゲスト診断・ログイン初回診断） ==========
+  if (screen === 'counseling') {
+    return (
+      <>
+        {loading && <HamsterLoading message={loadingMessage} />}
+        <CounselingScene
+          background={mode === 'guest' ? '/assets/index001.jpg' : '/assets/room001.jpg'}
+          characterImage={mode === 'guest' ? '/assets/characters/0-musubi/ham003.webp' : '/assets/characters/0-musubi/ham002.webp'}
+          speakerName={mode === 'guest' ? '???' : 'ムスビ'}
+          busy={loading}
+          error={error}
+          onComplete={(values) => {
+            setBirthDate(values.birthDate)
+            setBirthTime(values.birthTime)
+            setBirthPlace(values.birthPlace)
+            setConcern(values.concern)
+            void submitFortune(values)
+          }}
+        />
+      </>
+    )
+  }
+
   // ========== フォーム画面（占い場） ==========
   const requiredStoneCost = DIAGNOSIS_STONE_COST[selectedCharacterId as CharacterId] ?? 1
   if (screen === 'form') {
@@ -1425,7 +1355,7 @@ function AppContent() {
             <input
               id="birthPlace"
               type="text"
-              placeholder="例: 北海道札幌市"
+              placeholder="例: 東京都千代田区"
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
             />
