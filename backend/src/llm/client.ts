@@ -97,7 +97,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = MAX_ATTEMPTS, de
  * 切り替え先は、画像入力とJSON出力（responseSchema）で実際に応答することを、2026-10-06 に確認した flash モデル。
  * （gemini-3.7-flash / 3.8-flash は同日に混雑、gemini-2.5-flash はこのキーでは 404、gemini-3-flash-preview は応答に約1分かかった）
  */
-const MODEL_CHAIN = ['gemini-3.6-flash', 'gemini-3.5-flash']
+// 先頭のモデルが混雑（503）のとき、次のモデルへ切り替える。2026-10-13 に、画像入力とJSON出力（responseSchema）で応答することを確認した flash 系を並べている。
+// 先頭の2つが同時に混雑して全滅した日があったので、系統の違うモデルを後ろに足してある
+const MODEL_CHAIN = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3-flash-preview']
 
 /** 混雑で失敗したら次のモデルに切り替えながら generateContent する、簡易のモデル */
 function fallbackModel(config: Omit<ModelParams, 'model'>) {

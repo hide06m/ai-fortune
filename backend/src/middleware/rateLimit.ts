@@ -22,7 +22,11 @@ export const dailyLimiter = rateLimit({
   },
   message: 'Too many fortune readings today. Please try again tomorrow.',
   statusCode: 429,
-  skip: (req: any) => req.path === '/health'
+  skip: (req: any) => req.path === '/health',
+  // 診断（AIの生成）が失敗したときは、1日の回数に数えない。
+  // 失敗は 200 で返ることもあるので、各ルートが res.locals.diagnosisFailed を立てたものも「失敗」とみなす
+  skipFailedRequests: true,
+  requestWasSuccessful: (_req: any, res: any) => res.statusCode < 400 && !res.locals?.diagnosisFailed,
 })
 
 // 開発環境用: 制限なし

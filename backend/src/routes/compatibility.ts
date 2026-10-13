@@ -90,6 +90,8 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
         analysis = llmResult.analysis
       } catch (error) {
         console.error('Compatibility LLM generation error:', error)
+        // 失敗した診断は、1日の回数に数えない（利用者のせいではないため。rateLimit の requestWasSuccessful が見る）
+        res.locals.diagnosisFailed = true
         analysis = `LLM生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
         if (shouldChargeStone) {
           try {
