@@ -111,6 +111,13 @@ const GUEST_PRE_FORM_LINES = [
   'いずれにせよ、君がこの深い森の、それもひときわ大きな木の前にたどり着いたということは、人生のどこかの歯車がほんの少しだけ狂ってしまった証拠だ。',
   '専門外ではあるけれど、少しだけ君の輪郭を視てみようか。',
 ]
+// ゲストが1日の回数の上限に達していたとき：入力の途中で行き止まりにせず、物語の中でそのまま幕を引く
+const GUEST_LIMIT_LINES = [
+  '……おや。',
+  '今日はもう、君の輪郭を一度視てしまったようだ。同じ日に何度も覗き込むものじゃない。輪郭はね、見すぎると、かえってぼやけてしまうんだ。',
+  '明日になれば、森はまた君に扉を開く。ログインして、あの大きな木のドアから入ってきてくれてもいい。そのときは、もう少しゆっくり話そう。',
+  'また、どこかで',
+]
 const GUEST_POST_RESULT_LINES = [
   '機会があれば、うちの占術師たちに会えることもあるだろう',
   'また、どこかで',
@@ -172,6 +179,10 @@ const LOADING_FLAVOR_MESSAGES = [
   '静かな部屋の隅で、ただ静かに息を吸い、そして吐き出している',
 ]
 
+function guestLinesFor(phase: 'pre-form' | 'post-result' | 'limit'): string[] {
+  return phase === 'pre-form' ? GUEST_PRE_FORM_LINES : phase === 'limit' ? GUEST_LIMIT_LINES : GUEST_POST_RESULT_LINES
+}
+
 function pickRandomLoadingMessage(): string {
   return LOADING_FLAVOR_MESSAGES[Math.floor(Math.random() * LOADING_FLAVOR_MESSAGES.length)]
 }
@@ -220,7 +231,7 @@ function AppContent() {
   const [guideNextScreen, setGuideNextScreen] = useState<'form' | 'character-selection'>('form')
 
   // ゲスト体験フロー（固定シナリオ：占いの館前でムスビと出会う）
-  const [guestPhase, setGuestPhase] = useState<'pre-form' | 'post-result'>('pre-form')
+  const [guestPhase, setGuestPhase] = useState<'pre-form' | 'post-result' | 'limit'>('pre-form')
   const [guestStep, setGuestStep] = useState(0)
 
   // 初回ログイン（サインアップ）チュートリアル
@@ -455,7 +466,7 @@ function AppContent() {
   // 現在のステップのセリフ全文（会話シーン以外では空文字）
   const currentStepFullText =
     screen === 'guest-conversation'
-      ? (guestPhase === 'pre-form' ? GUEST_PRE_FORM_LINES : GUEST_POST_RESULT_LINES)[guestStep] || ''
+      ? guestLinesFor(guestPhase)[guestStep] || ''
       : screen === 'guide-conversation'
         ? guideDialogue
         : screen === 'tutorial' && currentTutorialStep &&
@@ -762,7 +773,7 @@ function AppContent() {
 
   // ゲスト会話シーンのセリフを進める（pre-form の最後→診断フォームへ／post-result の最後→お別れ画面へ）
   const handleGuestDialogueClick = () => {
-    const lines = guestPhase === 'pre-form' ? GUEST_PRE_FORM_LINES : GUEST_POST_RESULT_LINES
+    const lines = guestLinesFor(guestPhase)
     if (guestStep < lines.length - 1) {
       setGuestStep(guestStep + 1)
     } else if (guestPhase === 'pre-form') {
@@ -873,6 +884,11 @@ function AppContent() {
           message: response.message || 'ちょっと待って、前も全く同じ内容で占ってるよ',
           existingReadingId: response.existingReadingId,
         })
+      } else if (response.rateLimited && mode === 'guest') {
+        // 回数の上限：行き止まりにせず、ムスビが幕を引く会話へ進める
+        setGuestPhase('limit')
+        setGuestStep(0)
+        setScreen('guest-conversation')
       } else if (!response.success) {
         setError(response.error || 'Failed to get reading')
       } else if (response.reading) {

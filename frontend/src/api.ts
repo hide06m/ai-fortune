@@ -88,6 +88,8 @@ export interface FortuneResponse {
   duplicate?: boolean
   existingReadingId?: string
   message?: string
+  /** 1日の診断回数の上限に達した（429） */
+  rateLimited?: boolean
 }
 
 // VITE_API_URL を空文字で起動すると同一オリジン（Viteの /api 中継経由）になる。スマホ実機テスト用
@@ -207,6 +209,7 @@ export async function callFortuneAPI(request: FortuneRequest): Promise<FortuneRe
     if (response.status === 429) {
       return {
         success: false,
+        rateLimited: true,
         error: '本日の診断回数上限に達しました。明日もう一度お試しください。'
       }
     }

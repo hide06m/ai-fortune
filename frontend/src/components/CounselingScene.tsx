@@ -38,7 +38,7 @@ type StepId = 'birthDate' | 'birthTime' | 'birthPlace' | 'concern' | 'done';
 
 const QUESTIONS: Record<StepId, string> = {
   birthDate:
-    'まず、君がこの世界に最初の息を吸い込んだ日を教えてもらえるかな。年と月と日だ。数字を打ち込んでもいいし、カレンダーやリストから選んでもらってもかまわない。',
+    'まず、君がこの世界に最初の息を吸い込んだ日を教えてもらえるかな。年と月と日だ。',
   birthTime:
     '次は時刻だ。生まれた時間を覚えているなら、それも手がかりになる。正確でなくていい。朝だったか夜だったか、そのくらいの目安で十分だよ。わからなければ、わからないと言ってくれればいい。',
   birthPlace:
@@ -120,7 +120,8 @@ function BirthDateSelects({ value, onChange }: { value: string; onChange: (v: st
 export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete }: CounselingSceneProps) {
   const [step, setStep] = useState<StepId>('birthDate');
   const [birthDate, setBirthDate] = useState('');
-  const [dateMode, setDateMode] = useState<'type' | 'list'>('type');
+  // 既定はリストから選ぶ。打ち込み・カレンダー入力に切り替えられる
+  const [dateMode, setDateMode] = useState<'type' | 'list'>('list');
   // 出生時刻：選んだ目安（ラベル）と、時刻の値（自由入力で上書きできる）
   const [timeChoice, setTimeChoice] = useState<string | null>(null);
   const [birthTime, setBirthTime] = useState('');
@@ -174,11 +175,14 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
         <div className="counsel-panel">
           {step === 'birthDate' && (
             <>
-              {dateMode === 'type' ? (
-                <BirthDateInput id="counselBirthDate" value={birthDate} onChange={setBirthDate} />
-              ) : (
-                <BirthDateSelects value={birthDate} onChange={setBirthDate} />
-              )}
+              <div className="counsel-row">
+                <span className="counsel-label">生年月日</span>
+                {dateMode === 'type' ? (
+                  <BirthDateInput id="counselBirthDate" value={birthDate} onChange={setBirthDate} />
+                ) : (
+                  <BirthDateSelects value={birthDate} onChange={setBirthDate} />
+                )}
+              </div>
               <button type="button" className="counsel-link" onClick={() => setDateMode(dateMode === 'type' ? 'list' : 'type')}>
                 {dateMode === 'type' ? 'リストから選ぶ' : '打ち込み・カレンダーで入力する'}
               </button>
