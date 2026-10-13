@@ -76,7 +76,7 @@ const MAIN_CRITERIA: Record<'heart' | 'head' | 'life' | 'fate', LineCriteria> = 
     straightMeaning: '手首に向かってまっすぐなほど、堅実で変化を好みすぎない傾向',
     deepMeaning: '体力・気力の土台がしっかりしていて、立て直しが早い傾向',
     faintMeaning: '無理をせず、周囲に合わせて力を調整する繊細さの傾向',
-    brokenMeaning: '生活環境や役割の転換期を経験しやすい傾向。途切れたあとにまた線が続いているなら、転換期で一度立ち止まっても、そこから持ち直して立て直す力がある傾向',
+    brokenMeaning: '生活環境や役割の転換期を経験しやすい傾向',
   },
   fate: {
     label: '運命線',
@@ -204,8 +204,7 @@ export function describeFeatures(id: PalmLineKey, f: MeasuredFeatures): { eviden
 
   // 途切れ
   if (f.continuity < 0.8) {
-    // 生命線は手首側まで届いた線だけが検出されるので、途切れがあるなら「途中で切れて、その先でまた続いている」形
-    evidence.push(id === 'life' ? '連続性：途中で一度途切れ、その先でまた続いている' : '連続性：途切れ・かすれがある')
+    evidence.push('連続性：途切れ・かすれがある')
     addTendency(c.brokenMeaning)
   } else {
     evidence.push('連続性：ほぼ途切れなく続いている')

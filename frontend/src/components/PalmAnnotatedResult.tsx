@@ -34,28 +34,35 @@ export function PalmAnnotatedResult({ imageUrl, lines }: Props) {
       <div className="palm-result-image">
         <img src={imageUrl} alt="撮影した手のひら" />
         <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
-          {lines
-            .filter((l) => l.points.length >= 2)
-            .map((l) => {
-              const color = LINE_COLORS[l.id];
-              const dim = activeId !== null && activeId !== l.id;
-              const pts = l.points.map((p) => `${p.x},${p.y}`).join(' ');
-              return (
-                <g key={l.id} opacity={dim ? 0.25 : 1} onClick={() => toggle(l.id)} style={{ cursor: 'pointer' }}>
-                  {/* 細い線でも押しやすいよう、透明の太い線を重ねる */}
-                  <polyline points={pts} fill="none" stroke="transparent" strokeWidth={28} vectorEffect="non-scaling-stroke" />
-                  <polyline
-                    points={pts}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={activeId === l.id ? 6 : 4}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </g>
-              );
-            })}
+          {lines.map((l) => {
+            // しわが確認できた区間だけを描く（途切れの間は描かない）
+            const segs = (l.segments && l.segments.length > 0 ? l.segments : [l.points]).filter((s) => s.length >= 2);
+            if (segs.length === 0) return null;
+            const color = LINE_COLORS[l.id];
+            const dim = activeId !== null && activeId !== l.id;
+            return (
+              <g key={l.id} opacity={dim ? 0.25 : 1} onClick={() => toggle(l.id)} style={{ cursor: 'pointer' }}>
+                {segs.map((seg, i) => {
+                  const pts = seg.map((p) => `${p.x},${p.y}`).join(' ');
+                  return (
+                    <g key={i}>
+                      {/* 細い線でも押しやすいよう、透明の太い線を重ねる */}
+                      <polyline points={pts} fill="none" stroke="transparent" strokeWidth={28} vectorEffect="non-scaling-stroke" />
+                      <polyline
+                        points={pts}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={activeId === l.id ? 6 : 4}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })}
         </svg>
       </div>
 

@@ -15,6 +15,8 @@ export interface PalmLine {
   label: string;
   /** 画像左上を(0,0)、右下を(1000,1000)とする座標（検出できた線の形そのもの） */
   points: Array<{ x: number; y: number }>;
+  /** しわが確認できた区間ごとの座標（画像にはこれだけを描く。途切れの間は描かない） */
+  segments?: Array<Array<{ x: number; y: number }>>;
   reading: string;
   /** 測定値を言葉にした根拠 */
   evidence?: string[];

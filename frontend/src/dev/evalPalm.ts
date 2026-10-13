@@ -145,9 +145,11 @@ export async function evaluateAll(files?: string[], tuning?: { mode?: RidgeMode;
       }
       if (g && d) {
         const G = densify(g.map(toPx), 2);
-        const D = densify(d.points.map(toPx), 2);
+        // 検出は、しわが確認できた区間だけ（途切れの間は含まない）
+        const Ds = d.segments.map((s) => densify(s.map(toPx), 2));
+        const D = Ds.flat();
         const tol = 0.1 * palmWidth;
-        const rec = G.filter((p) => dist(p, D) <= tol).length / G.length;
+        const rec = G.filter((p) => Ds.some((s) => dist(p, s) <= tol)).length / G.length;
         const prec = D.filter((p) => dist(p, G) <= tol).length / D.length;
         detected++;
         if (rec >= 0.6 && prec >= 0.6) correct++;
@@ -184,4 +186,52 @@ export async function evaluateAll(files?: string[], tuning?: { mode?: RidgeMode;
       Object.entries(per).map(([k, v]) => [k, `検出${v.det}/${v.n} 平均再現${(v.rec / Math.max(1, v.det)).toFixed(2)}`]),
     ),
   };
+}
+
+/** 1枚の評価結果（精度の確認ページ用）：線ごとの数値と、描画用の検出・正解の座標 */
+export interface SampleReport {
+  file: string;
+  hasHand: boolean;
+  lines: Array<{
+    id: (typeof LINE_IDS)[number];
+    /** 正解の線の座標（0〜1000）。無ければ null */
+    gt: Pt[] | null;
+    /** 検出された、しわが確認できた区間ごとの座標（0〜1000）。検出されなければ null */
+    segments: Pt[][] | null;
+    recall?: number;
+    precision?: number;
+    verdict: 'correct' | 'wrong' | 'missed' | 'extra' | 'none';
+  }>;
+}
+
+export async function evaluateOne(file: string): Promise<SampleReport> {
+  const img = new Image();
+  img.src = `/dev-samples/${file}`;
+  await img.decode();
+  const res = await detectPalmLines(img, { requiredHand: null });
+  const gt = await loadGroundTruth(file.replace(/\.[^.]+$/, ''));
+  if (!res.debug) return { file, hasHand: false, lines: [] };
+  const W = res.debug.work.width;
+  const H = res.debug.work.height;
+  const toPx = (p: Pt): Pt => ({ x: (p.x / 1000) * W, y: (p.y / 1000) * H });
+  const lines: SampleReport['lines'] = [];
+  for (const id of LINE_IDS) {
+    const g = gt?.[id] ?? null;
+    const d = res.lines.find((l) => l.id === id) ?? null;
+    if (!g && !d) continue;
+    let recall: number | undefined;
+    let precision: number | undefined;
+    let verdict: SampleReport['lines'][number]['verdict'] = 'none';
+    if (g && d) {
+      const G = densify(g.map(toPx), 2);
+      const Ds = d.segments.map((s) => densify(s.map(toPx), 2));
+      const tol = 0.1 * res.debug.frame.width;
+      recall = G.filter((p) => Ds.some((s) => dist(p, s) <= tol)).length / G.length;
+      precision = Ds.flat().filter((p) => dist(p, G) <= tol).length / Ds.flat().length;
+      verdict = recall >= 0.6 && precision >= 0.6 ? 'correct' : 'wrong';
+    } else if (g) verdict = 'missed';
+    else verdict = 'extra';
+    lines.push({ id, gt: g, segments: d ? d.segments : null, recall, precision, verdict });
+  }
+  return { file, hasHand: true, lines };
 }

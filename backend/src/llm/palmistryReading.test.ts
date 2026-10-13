@@ -95,6 +95,19 @@ describe('buildReadingPrompt', () => {
   })
 })
 
+describe('sanitizeDetectedLines の確認できた区間', () => {
+  it('segments が無ければ全体を1区間として扱う', () => {
+    const out = sanitizeDetectedLines([goodLine('heart')])
+    expect(out[0].segments).toHaveLength(1)
+  })
+
+  it('segments は区間ごとに残し、2点未満の区間は捨てる', () => {
+    const seg = [{ x: 1, y: 1 }, { x: 5, y: 5 }]
+    const out = sanitizeDetectedLines([{ ...goodLine('life'), segments: [seg, [{ x: 9, y: 9 }], seg] }])
+    expect(out[0].segments).toHaveLength(2)
+  })
+})
+
 describe('describeFeatures', () => {
   it('測定値を判断基準の言葉と傾向に直す', () => {
     const r = describeFeatures('heart', { ...features, lengthRatio: 0.95, straightness: 0.6, depth: 0.8, continuity: 0.5 })
@@ -103,13 +116,6 @@ describe('describeFeatures', () => {
     expect(r.evidence.join(' ')).toContain('濃い')
     expect(r.evidence.join(' ')).toContain('途切れ')
     expect(r.tendencies.length).toBeGreaterThanOrEqual(4)
-  })
-
-  it('生命線の途切れは「途中で一度途切れ、その先でまた続く」と書き、寿命や病気としては読まない', () => {
-    const r = describeFeatures('life', { ...features, continuity: 0.6 })
-    expect(r.evidence.join(' ')).toContain('その先でまた続いている')
-    expect(r.tendencies.join(' ')).toContain('持ち直')
-    expect(r.tendencies.join(' ')).not.toMatch(/寿命|病気/)
   })
 
   it('感情線の終点が人差し指側のとき、その位置を根拠に含める', () => {

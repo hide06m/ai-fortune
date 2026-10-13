@@ -52,8 +52,10 @@ export interface LineFeatures {
 
 export interface DetectedLine {
   id: LineId;
-  /** 元画像の左上を(0,0)、右下を(1000,1000)とする座標（始点→終点の順） */
+  /** 元画像の左上を(0,0)、右下を(1000,1000)とする座標（始点→終点の順）。確認できた区間をつなげたもの */
   points: Pt[];
+  /** しわが実際に確認できた区間ごとの座標（途切れの間は含めない。画像にはこれだけを描く） */
+  segments: Pt[][];
   features: LineFeatures;
 }
 
@@ -182,9 +184,59 @@ function computeFeatures(path: Pt[], depth: number, continuity: number, frame: H
   return { lengthRatio: len, straightness: len > 0 ? chord / len : 0, depth, continuity, start: s, end: e };
 }
 
+/** この線らしさ以上の画素を「しわが確認できた」とみなす（探索の COVERAGE_LEVEL と同じ） */
+const CONFIRM_LEVEL = 0.3;
+/** 確認できた区間として残す最短の長さ（標準の手のひらの画素。短い断片はノイズとして捨てる） */
+const MIN_CONFIRMED_RUN = 14;
+/** この長さ以下の切れ目は、画素の揺れとして区間をつなぐ */
+const MAX_BRIDGED_GAP = 3;
+
+/**
+ * 経路のうち、しわが実際に確認できる区間だけを取り出す。
+ * 探索は、薄い・途切れた部分も渡って1本の経路にするが、渡っただけの部分は「線がある」証拠にならない。
+ * ここで確認できた区間だけを残し、診断・測定・画像への描画は、その区間だけで行う
+ */
+function confirmedRuns(path: Pt[], ridge: Float32Array): Pt[][] {
+  const ok = path.map((p) => {
+    const x = Math.round(p.x);
+    const y = Math.round(p.y);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx;
+        const yy = y + dy;
+        if (xx >= 0 && yy >= 0 && xx < CANON_W && yy < CANON_H && ridge[yy * CANON_W + xx] >= CONFIRM_LEVEL) return true;
+      }
+    }
+    return false;
+  });
+  // 短い切れ目はつなぐ
+  for (let i = 0; i < ok.length; ) {
+    if (ok[i]) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < ok.length && !ok[j]) j++;
+    if (i > 0 && j < ok.length && j - i <= MAX_BRIDGED_GAP) for (let k = i; k < j; k++) ok[k] = true;
+    i = j;
+  }
+  const runs: Pt[][] = [];
+  for (let i = 0; i < path.length; ) {
+    if (!ok[i]) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < path.length && ok[j]) j++;
+    if (j - i >= MIN_CONFIRMED_RUN) runs.push(path.slice(i, j));
+    i = j;
+  }
+  return runs;
+}
+
 /** 結果の経路（標準の手のひらの画素）を、元の写真の 0〜1000 座標に直す */
-function toOutput(path: Pt[], frame: HandFrame, W: number, H: number): Pt[] {
-  return smoothAndResample(path, 48, 9).map((p) => {
+function toOutput(path: Pt[], frame: HandFrame, W: number, H: number, count = 48): Pt[] {
+  return smoothAndResample(path, count, Math.min(9, Math.max(3, Math.floor(path.length / 4) * 2 + 1))).map((p) => {
     const { a, d } = fromCanon(p);
     const q = frame.F(a, d);
     return { x: (q.x / W) * 1000, y: (q.y / H) * 1000 };
@@ -367,14 +419,29 @@ export async function detectPalmLines(
     suppressPath(work, CANON_W, CANON_H, r.path, 7);
   }
 
-  const lines: DetectedLine[] = found.map((f) => {
+  // 確認できた区間（しわが実際に見える部分）だけを線として扱う。1区間も確認できなければ、その線は省く
+  const lines: DetectedLine[] = [];
+  for (const f of found) {
     const ordered = f.model.startAtHigh ? [...f.path].reverse() : f.path;
-    return {
+    const runs = confirmedRuns(ordered, ridge);
+    if (runs.length === 0) continue;
+    const first = runs[0][0];
+    const last = runs[runs.length - 1][runs[runs.length - 1].length - 1];
+    const startIdx = ordered.indexOf(first);
+    const endIdx = ordered.indexOf(last);
+    const extent = ordered.slice(startIdx, endIdx + 1);
+    const confirmed = runs.flat();
+    const depth = confirmed.reduce((sum, p) => sum + ridge[Math.round(p.y) * CANON_W + Math.round(p.x)], 0) / confirmed.length;
+    const totalLen = confirmed.length;
+    const segments = runs.map((run) => toOutput(run, frame, W, H, Math.max(2, Math.min(48, Math.round((run.length / totalLen) * 48)))));
+    lines.push({
       id: f.model.id,
-      points: toOutput(ordered, frame, W, H),
-      features: computeFeatures(ordered, f.meanRidge, f.coverage, frame),
-    };
-  });
+      points: segments.flat(),
+      segments,
+      // 長さ・始点・終点は、確認できた区間の両端のあいだで測る。連続性は、その範囲のうち確認できた割合
+      features: computeFeatures(extent, depth, Math.min(1, confirmed.length / extent.length), frame),
+    });
+  }
 
   return {
     ok: true,

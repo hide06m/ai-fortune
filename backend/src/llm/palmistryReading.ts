@@ -13,12 +13,15 @@ export interface DetectedLine {
   id: PalmLineKey
   /** 0〜1000 の座標（画像左上が原点、始点→終点の順） */
   points: Array<{ x: number; y: number }>
+  /** 線として確認できた部分（しわが見える区間）ごとの座標。途切れの間は含めない */
+  segments: Array<Array<{ x: number; y: number }>>
   features: MeasuredFeatures
 }
 
 const LINE_KEYS = Object.keys(LINE_CRITERIA) as PalmLineKey[]
 const MAX_LINES = 8
 const MAX_POINTS = 80
+const MAX_SEGMENTS = 6
 
 function num(n: unknown): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null
@@ -43,6 +46,22 @@ export function sanitizeDetectedLines(raw: unknown): DetectedLine[] {
     }
     if (points.length < 2) continue
 
+    // 確認できた区間。無ければ全体を1区間として扱う
+    const clampPt = (p: any) => {
+      const x = num(p?.x)
+      const y = num(p?.y)
+      return x === null || y === null ? null : { x: Math.min(1000, Math.max(0, Math.round(x))), y: Math.min(1000, Math.max(0, Math.round(y))) }
+    }
+    const segments: Array<Array<{ x: number; y: number }>> = []
+    if (Array.isArray(l.segments)) {
+      for (const seg of l.segments.slice(0, MAX_SEGMENTS)) {
+        if (!Array.isArray(seg)) continue
+        const pts = seg.slice(0, MAX_POINTS).map(clampPt).filter((p): p is { x: number; y: number } => p !== null)
+        if (pts.length >= 2) segments.push(pts)
+      }
+    }
+    if (segments.length === 0) segments.push(points)
+
     const f = l.features
     const lengthRatio = num(f?.lengthRatio)
     const straightness = num(f?.straightness)
@@ -58,6 +77,7 @@ export function sanitizeDetectedLines(raw: unknown): DetectedLine[] {
     out.push({
       id: l.id,
       points,
+      segments,
       features: {
         lengthRatio: lengthRatio!,
         straightness: straightness!,
@@ -98,8 +118,7 @@ ${measurementTable(lines)}
 ## 測定値の言葉づかい（reading はこの基準に合わせる。画面には同じ基準の根拠が並んで表示される）
 - 形：直線度0.9超＝「まっすぐに近い」／0.75未満＝「大きく曲がっている」／その間＝「ゆるやかなカーブ」
 - 濃さ：0.65以上＝「はっきりと濃い」／0.4未満＝「薄め」／その間＝「標準的」
-- 連続性：0.8未満＝「途切れ・かすれがある」（生命線だけは「途中で一度途切れ、その先でまた続いている」）／それ以上＝「ほぼ途切れなく続いている」
-- 生命線の途切れの読み方：寿命や病気の兆候として読まない。「生活や役割の転換期を経験しやすい」「転換期で立ち止まっても、そこから持ち直す力がある」という傾向として、前向きに書く。いつ頃の出来事かの断定（年齢・年数）もしない
+- 連続性：0.8未満＝「途切れ・かすれがある」／それ以上＝「ほぼ途切れなく続いている」
 - 長さ（線ごとの境目）：感情線は0.6未満が短め・0.85超が長め／頭脳線は0.8未満が短め・1.15超が長め／生命線は0.85未満が短め・1.2超が長め／運命線は0.6未満が短め・0.95超が長め
 
 ## 判断基準（検出できた線について）
@@ -113,6 +132,7 @@ ${linesBlock}
 # 診断のルール
 - 上に挙がった線**だけ**を読む。挙がっていない線（検出できなかった線）については、**言及しない**。「見つかりませんでした」「読み取れませんでした」「無いようです」とも書かない。手相には、無い人が多い線もあり、検出できなかったことは診断に使わない。
 - 手相は流派で解釈が分かれるため、断定ではなく「傾向」として語る。医学的な診断・寿命・健康についての断定は絶対にしない。
+- **画像で確認できた（しわが見える）部分だけを、線として読む。** 途切れている部分や、かすれて確認できない部分については、つながっていたと仮定したり、その先を推測したり、意味を付け足したりしない。測定値にない根拠で、読みを足さない。
 - 文章に、画像処理の内部の情報（座標・色・番号など）は書かない。
 
 ${situation}
@@ -143,6 +163,8 @@ export interface ReadingLine {
   label: string
   /** 画像上に描く座標（0〜1000）。検出された線の形そのもの */
   points: Array<{ x: number; y: number }>
+  /** 線として確認できた区間ごとの座標（画像にはこれを描く。途切れの間は描かない） */
+  segments: Array<Array<{ x: number; y: number }>>
   reading: string
   /** 画面に出す根拠（測定値を言葉にしたもの） */
   evidence: string[]
@@ -177,6 +199,7 @@ export function parseReadingOutput(raw: string, detected: DetectedLine[]): Readi
         id: line.id,
         label: LINE_CRITERIA[line.id].label,
         points: line.points,
+        segments: line.segments,
         reading,
         evidence: describeFeatures(line.id, line.features).evidence,
       })
