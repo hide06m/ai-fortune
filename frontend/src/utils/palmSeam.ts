@@ -192,6 +192,11 @@ export interface PathSpec {
   /** 始点・終点の領域（この中の、どの画素からどの画素へでもよい） */
   isStart: (x: number, y: number) => boolean;
   isEnd: (x: number, y: number) => boolean;
+  /**
+   * 線らしさに足す下駄（既定0.05）。大きくするほど、しわが途切れた部分を渡る費用が安くなり、
+   * 途中で切れている線（生命線が途中で途切れて、また続く手など）でも、別の濃いしわへ逸れにくくなる
+   */
+  floor?: number;
 }
 
 /**
@@ -215,7 +220,8 @@ export function findPathBetween(ridge: Float32Array, W: number, H: number, spec:
   if (heap.size === 0) return null;
 
   // 線らしくない画素ほど高コスト。わずかな下駄で、無駄な迂回を防ぐ
-  const cost = (i: number) => 1 / (0.05 + ridge[i]);
+  const floor = spec.floor ?? 0.05;
+  const cost = (i: number) => 1 / (floor + ridge[i]);
 
   let reached = -1;
   while (heap.size > 0) {
