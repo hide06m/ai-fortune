@@ -105,6 +105,13 @@ describe('describeFeatures', () => {
     expect(r.tendencies.length).toBeGreaterThanOrEqual(4)
   })
 
+  it('生命線の途切れは「途中で一度途切れ、その先でまた続く」と書き、寿命や病気としては読まない', () => {
+    const r = describeFeatures('life', { ...features, continuity: 0.6 })
+    expect(r.evidence.join(' ')).toContain('その先でまた続いている')
+    expect(r.tendencies.join(' ')).toContain('持ち直')
+    expect(r.tendencies.join(' ')).not.toMatch(/寿命|病気/)
+  })
+
   it('感情線の終点が人差し指側のとき、その位置を根拠に含める', () => {
     const r = describeFeatures('heart', { ...features, end: { a: 0.4, d: 0.1 } })
     expect(r.evidence.join(' ')).toContain('人差し指')
