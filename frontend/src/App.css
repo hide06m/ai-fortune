@@ -99,12 +99,12 @@ body {
 /* Landing Page */
 /* 画面全体に広げる。親の #root は幅1126pxまでなので、広いPCブラウザでは、背景が左右に切れ、
    ドアのボタン（画面全体の幅で計算）と背景（1126px幅で表示）の大きさもずれていた */
+/* inset だけで大きさを決める（100vh は、スマホのブラウザで、アドレスバーの下まで含んで大きすぎるため） */
 .landing-container {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
   overflow: hidden;
+  background: #0b0d10;
 }
 
 .landing-bg {
@@ -112,8 +112,6 @@ body {
   height: 100%;
   /* ステージの大きさを、画面ではなくこの背景の大きさ（cqw/cqh）から決めるため */
   container-type: size;
-  background-size: cover;
-  background-position: center;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -259,6 +257,25 @@ body {
   transform: translate(-50%, -50%);
   z-index: 10;
   pointer-events: none;
+}
+
+/* 背景画像：ドアのボタンと同じステージの寸法で、ドアの下に置く */
+.landing-stage-bg {
+  z-index: 0;
+}
+
+.landing-bg-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+/* cqw/cqh（コンテナ単位）に未対応の古いブラウザ向け：画面全体の寸法で代用 */
+@supports not (width: 1cqw) {
+  .landing-stage {
+    width: max(100vw, calc(100vh * 2730 / 1536));
+  }
 }
 
 .landing-door-container {

@@ -1142,7 +1142,11 @@ function AppContent() {
     return (
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <div className="landing-container">
-          <div className="landing-bg" style={{ backgroundImage: 'url(/assets/index001.jpg)' }}>
+          <div className="landing-bg">
+            {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
+            <div className="landing-stage landing-stage-bg">
+              <img src="/assets/index001.jpg" alt="" className="landing-bg-image" draggable={false} />
+            </div>
             {/* 背景ビデオ */}
             <video
               className="landing-video"
