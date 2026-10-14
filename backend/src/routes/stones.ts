@@ -7,7 +7,7 @@
 
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus } from '../db/stones.js'
+import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus, getAdWatchRemaining } from '../db/stones.js'
 
 const router = Router()
 
@@ -15,7 +15,7 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any).userId
     const balance = await getStoneBalance(userId)
-    res.json({ success: true, balance })
+    res.json({ success: true, balance, adRemaining: await getAdWatchRemaining(userId) })
   } catch (error) {
     console.error('[API] Failed to get stone balance:', error)
     res.status(500).json({
@@ -29,7 +29,7 @@ router.post('/claim-daily-bonus', requireAuth, async (req: Request, res: Respons
   try {
     const userId = (req.user as any).userId
     const result = await claimDailyLoginBonus(userId)
-    res.json({ success: true, ...result })
+    res.json({ success: true, ...result, adRemaining: await getAdWatchRemaining(userId) })
   } catch (error) {
     console.error('[API] Failed to claim daily bonus:', error)
     res.status(500).json({
@@ -43,7 +43,7 @@ router.post('/watch-ad', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any).userId
     const result = await claimAdWatchBonus(userId)
-    res.json({ success: true, ...result })
+    res.json({ success: true, ...result, adRemaining: await getAdWatchRemaining(userId) })
   } catch (error) {
     console.error('[API] Failed to claim ad-watch bonus:', error)
     res.status(500).json({

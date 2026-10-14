@@ -11,6 +11,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/hamster-loading.css';
+import { pickRandomLoadingMessage } from '../data/loadingMessages';
 
 const FRAME_COUNT = 18;
 const CYCLE_DURATION_MS = 500; // 0.5秒で1周（車輪の回転と同期、1秒に2回転）
@@ -28,8 +29,18 @@ interface HamsterLoadingProps {
   hint?: string;
 }
 
-export function HamsterLoading({ message = 'AI が思考中...', isVisible = true, showEstimate = true, hint }: HamsterLoadingProps) {
+/** メッセージを切り替える間隔 */
+const MESSAGE_INTERVAL_MS = 3000;
+
+// message は後方互換のために残している。待ち受け画面のメッセージは、どの画面でも、世界観の文言からランダムに選び、3秒ごとに切り替える
+export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: HamsterLoadingProps) {
+  const [flavor, setFlavor] = useState(() => pickRandomLoadingMessage());
   const [estimatedTime, setEstimatedTime] = useState(3); // 推定時間（秒）
+
+  useEffect(() => {
+    const timer = setInterval(() => setFlavor((cur) => pickRandomLoadingMessage(cur)), MESSAGE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, []);
   const [frameIndex, setFrameIndex] = useState(0);
   const startTimeRef = useRef<number | null>(null);
 
@@ -83,7 +94,7 @@ export function HamsterLoading({ message = 'AI が思考中...', isVisible = tru
 
       {/* メッセージ */}
       <div className="loading-message">
-        <p className="main-message">✨ {message}</p>
+        <p className="main-message">✨ {flavor}</p>
         {showEstimate && <p className="estimate">推定時間：あと {estimatedTime} 秒</p>}
         {hint && <p className="estimate">{hint}</p>}
 

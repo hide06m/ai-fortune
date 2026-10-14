@@ -232,6 +232,13 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
     <div className="character-selection">
       {/* カメラ回転カルーセル */}
       <div className="carousel-container">
+        {/* 左右の矢印：クリック・タップでも占い師を切り替えられる（キー・ホイールと同じ動き） */}
+        <button type="button" className="carousel-arrow carousel-arrow-left" aria-label="前の占い師" onClick={() => setRotation((prev) => prev - 72)}>
+          ◀
+        </button>
+        <button type="button" className="carousel-arrow carousel-arrow-right" aria-label="次の占い師" onClick={() => setRotation((prev) => prev + 72)}>
+          ▶
+        </button>
         <div
           className="character-carousel"
           style={{
@@ -355,7 +362,7 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
 
       {/* ナビゲーションヒント */}
       <div className="navigation-hint">
-        ← → キーまたはマウスホイールで、占い師を切り替え
+        ◀ ▶ のクリック、← → キー、マウスホイールで、占い師を切り替え
       </div>
     </div>
   );

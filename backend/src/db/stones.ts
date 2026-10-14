@@ -97,6 +97,12 @@ async function applyStoneChange(userId: string, amount: number, reason: StoneRea
   }
 }
 
+/** 今日あと何回、広告視聴ボーナスを受け取れるか（画面で、上限に達したらボタンを押せなくするため） */
+export async function getAdWatchRemaining(userId: string): Promise<number> {
+  const countToday = await countTransactionsToday(userId, 'ad_watch')
+  return Math.max(0, AD_WATCH_DAILY_LIMIT - countToday)
+}
+
 /**
  * ログインボーナス（1日1回、+1石）を付与
  */

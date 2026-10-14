@@ -454,6 +454,7 @@ body {
 .vn-scene {
   --vn-corner: clamp(60px, 9vmin, 120px);
   --vn-text: clamp(1.05rem, 2.5vmin, 2rem);
+  --vn-box-h: clamp(200px, 32vh, 380px);
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -469,16 +470,18 @@ body {
   animation: fadeIn 0.8s ease-out;
 }
 
-/* キャラクターは、元（352px）の2倍。下半身はセリフ枠の後ろ・画面の外へ隠す。
-   スマホで左右が切れすぎないよう、画面幅の1.36倍までに抑える */
+/* キャラクターの大きさ：元（352px）の2.3倍（2倍にしたものを、さらに15%拡大）。
+   スマホで左右が切れすぎないよう、画面幅の1.56倍までに抑える */
 .vn-character-bust-wrap {
   /* 下に合わせて置く：体の2割ほどが画面の下へはみ出す位置（画面が縦に長いPCで、足元が浮いて見えないように）。
      ただし、画面が低くて頭が上に切れるときは、頭が画面の上端（2vh）に来る位置で止める。
      画像の縦横比は 900:1205（高さ＝幅×1.339） */
-  --bust-w: min(704px, 136vw);
+  --bust-w: min(810px, 156vw);
   --bust-h: calc(var(--bust-w) * 1.339);
   position: absolute;
-  top: max(2vh, calc(100% - var(--bust-h) * 0.78));
+  /* 肩（画像の高さの約5割のところ）が、セリフ枠の上端に来る位置。体はその下（枠の後ろ・画面の外）へ続くので、浮いて見えない。
+     画像の上には空きがあるので、頭が画面の上に出ない範囲（上端からのマイナス10%まで）で止める */
+  top: max(calc(var(--bust-h) * -0.1), calc(100% - 16px - var(--vn-box-h) - var(--bust-h) * 0.5));
   left: 50%;
   transform: translateX(-50%);
   width: var(--bust-w);
@@ -501,7 +504,7 @@ body {
   left: 16px;
   right: 16px;
   bottom: 16px;
-  height: clamp(200px, 32vh, 380px);
+  height: var(--vn-box-h);
   box-sizing: border-box;
   overflow-y: auto;
   padding: calc(var(--vn-corner) * 0.8) calc(var(--vn-corner) * 0.75) calc(var(--vn-corner) * 0.5) calc(var(--vn-corner) * 0.7);
@@ -1318,6 +1321,30 @@ body {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.vn-bonus-stone {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 6;
+  pointer-events: none;
+  color: #ffe9a8;
+  font-size: var(--vn-text);
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.vn-bonus-stone img {
+  width: clamp(80px, 14vmin, 160px);
+  height: auto;
+  filter: drop-shadow(0 0 18px rgba(255, 220, 130, 0.85));
 }
 
 .stone-ad-button {

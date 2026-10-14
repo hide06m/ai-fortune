@@ -73,7 +73,8 @@ function daysIn(year: number, month: number): number {
 /** 年・月・日をそれぞれリストから選ぶ入力 */
 function BirthDateSelects({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [y0, m0, d0] = value ? value.split('-') : ['', '', ''];
-  const [year, setYear] = useState(y0 || '');
+  // 年のリストは、2000年を最初に選んだ状態で開く（開いたときに、この辺りから選べるように）
+  const [year, setYear] = useState(y0 || '2000');
   const [month, setMonth] = useState(m0 || '');
   const [day, setDay] = useState(d0 || '');
   const maxDay = year && month ? daysIn(Number(year), Number(month)) : 31;

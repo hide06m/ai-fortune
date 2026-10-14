@@ -7,6 +7,8 @@ import { getToken, API_URL } from '../api';
 export interface StoneBalanceResponse {
   success: boolean;
   balance: number;
+  /** 今日あと何回、広告視聴ボーナスを受け取れるか */
+  adRemaining?: number;
 }
 
 export interface StoneClaimResponse {
@@ -14,6 +16,7 @@ export interface StoneClaimResponse {
   granted: boolean;
   balance: number;
   reason?: string;
+  adRemaining?: number;
 }
 
 function authHeaders() {

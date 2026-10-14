@@ -46,6 +46,7 @@ import { PalmCapturePage } from './pages/PalmCapturePage'
 import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
 import { isMobileDevice } from './utils/device'
 import { HamsterLoading } from './components/HamsterLoading'
+import { pickRandomLoadingMessage } from './data/loadingMessages'
 import { BirthDateInput } from './components/BirthDateInput'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import {
@@ -124,67 +125,12 @@ const GUEST_POST_RESULT_LINES = [
 ]
 
 // 鑑定中ローディング画面の世界観フレーバーメッセージ（ランダム表示）
-const LOADING_FLAVOR_MESSAGES = [
-  'ルーンストーンを静かに並べ替えている',
-  '庭の隅で、良質なミントの葉を摘んでいる',
-  '古びた索引カードの束をめくっている',
-  '水晶玉についた埃を、丁寧な手つきで拭き取っている',
-  '遠い世界の、名前のない星の配置を数えている',
-  '誰もいない部屋で、古い巻物をひも解いている',
-  '不完全な命式を、納得がいくまで並べ替えている',
-  '森の冷たい風から、使い捨ての言葉を紡いでいる',
-  '深い井戸の底に、小さな小石を落として音を聴いている',
-  '午前三時の台所で、やかんが湯気を立てるのを待っている',
-  '誰も弾かなくなった古いアップライトピアノの鍵盤を拭いている',
-  '使い古された万年筆に、新しいブルーブラックのインクを吸わせている',
-  'レコードの針を、慎重に無音の溝へと落としている',
-  '樫の木の幹に耳をあて、地下を流れる水脈の音を探している',
-  '昨夜見た夢の輪郭を、羊皮紙の上に鉛筆でなぞっている',
-  'ポケットの奥で絡まった、見えない糸を一本ずつほどいている',
-  '湿った土の匂いを嗅ぎ、季節の変わり目を確認している',
-  '誰にも宛てられなかった手紙の封蝋を、ナイフで削っている',
-  '天秤の片側に、小さな木の実を三つ乗せている',
-  '砂時計のくびれを通り抜ける、最後の一粒を見つめている',
-  '記憶の引き出しを一段ずつ開けて、埃を払っている',
-  '曇った丸眼鏡を、ネルの布で念入りに磨き上げている',
-  '乾いたパンの耳を小さくちぎり、小鳥たちの皿に置いている',
-  '古い振り子時計の重りを、少しだけ右へ巻き上げている',
-  '辞書の余白に書き残された、意味のない数字を書き写している',
-  '遠くの鉄橋を渡る、夜行列車の響きに耳を澄ませている',
-  '乾燥させたカモミールの花びらを、指先ですり潰している',
-  '窓ガラスを伝い落ちる、雨の雫の速さを比べている',
-  '引き出しの奥で見つかった、錆びた真鍮の鍵を磨いている',
-  '小さな金属の定規で、星と星のあいだの虚無を測っている',
-  'テーブルの木目に沿って、指先をゆっくり滑らせている',
-  '誰も読まない詩集のページを、風にまかせてめくっている',
-  '銅のケトルに注いだ水の重さを、手首で確かめている',
-  '影が床に落ちる角度から、太陽の傾きを計算している',
-  '乾いた松ぼっくりの隙間に詰まった、昨日の風を掻き出している',
-  '陶器のカップの縁についた、微かな欠けを指先でなぞっている',
-  '古い地下室の棚から、ラベルの剥がれかけた小瓶を取り出している',
-  '静かな廊下を渡っていく、かすかな風の通り道を見送っている',
-  '色褪せた切手の裏に、湿り気を与えている',
-  '硬い木の実の殻を、小さな万力で慎重に割っている',
-  '天井の梁に吊るされた、薬草の束の揺れを眺めている',
-  '削りたての鉛筆の芯の尖り具合を、親指の腹で確かめている',
-  '灰皿に残ったマッチの軸を、規則正しく並べている',
-  '分厚い羊毛のブランケットを、端からきっちり四つ折りにしている',
-  '沈黙の重さを、古い真鍮の分銅と引き比べている',
-  '錆びた方位磁針の針が、北を指して止まるのをじっと待っている',
-  '忘れ去られた古いノートの、白紙のページを撫でている',
-  '夜の帳が降りる瞬間の、青と黒の境目を観察している',
-  '淹れたての紅茶が、透き通った琥珀色に変わるのを見届けている',
-  '誰も通らない森の小道に、踏み固められた土の硬さを確かめている',
-  '過去と未来のちょうど真ん中に、小さな目印の小石を置いている',
-  '静かな部屋の隅で、ただ静かに息を吸い、そして吐き出している',
-]
+
+// その日の最初のログインで、ムスビが語る（石を渡す）一言
+const DAILY_BONUS_LINE = '……ああ、そうだ。忘れるところだった。今日の分のルーンストーンを渡しておこう。ほら、受け取ってくれ。'
 
 function guestLinesFor(phase: 'pre-form' | 'post-result' | 'limit'): string[] {
   return phase === 'pre-form' ? GUEST_PRE_FORM_LINES : phase === 'limit' ? GUEST_LIMIT_LINES : GUEST_POST_RESULT_LINES
-}
-
-function pickRandomLoadingMessage(): string {
-  return LOADING_FLAVOR_MESSAGES[Math.floor(Math.random() * LOADING_FLAVOR_MESSAGES.length)]
 }
 
 function AppContent() {
@@ -207,6 +153,11 @@ function AppContent() {
   const [stoneBalance, setStoneBalance] = useState<number | null>(null)
   const [stoneBonusMessage, setStoneBonusMessage] = useState('')
   const [watchingAd, setWatchingAd] = useState(false)
+  // 今日あと何回、広告視聴ボーナスを受け取れるか（0なら、ボタンを押せなくする）
+  const [adRemaining, setAdRemaining] = useState<number | null>(null)
+  // その日の最初のログインで受け取れるボーナス：ムスビとの会話の中で渡す（黙って増やさない）
+  const [pendingDailyBonus, setPendingDailyBonus] = useState(false)
+  const pendingDailyBonusRef = useRef(false)
 
   // 診断履歴
   const [readingHistory, setReadingHistory] = useState<ReadingSummary[]>([])
@@ -302,9 +253,11 @@ function AppContent() {
       try {
         const bonus = await claimDailyBonus()
         setStoneBalance(bonus.balance)
+        if (typeof bonus.adRemaining === 'number') setAdRemaining(bonus.adRemaining)
         if (bonus.granted) {
-          setStoneBonusMessage('🎁 ログインボーナス：ルーンストーン+1')
-          setTimeout(() => setStoneBonusMessage(''), 4000)
+          // 黙って増やさず、ムスビが会話の中で渡す（enterGuideConversation で語る）
+          pendingDailyBonusRef.current = true
+          setPendingDailyBonus(true)
         }
       } catch (err) {
         console.error('Failed to claim daily bonus:', err)
@@ -328,6 +281,7 @@ function AppContent() {
       await new Promise((resolve) => setTimeout(resolve, 2000)) // 広告視聴を模した待機
       const result = await watchAdForStone()
       setStoneBalance(result.balance)
+      if (typeof result.adRemaining === 'number') setAdRemaining(result.adRemaining)
       if (result.granted) {
         setStoneBonusMessage('📺 広告視聴ボーナス：ルーンストーン+1')
         setTimeout(() => setStoneBonusMessage(''), 4000)
@@ -607,7 +561,7 @@ function AppContent() {
                 // 800ms 後に案内役（ムスビ）の会話シーンへ遷移
                 setTimeout(() => {
                   setDoorExiting(false)  // ✅ リセット
-                  enterGuideConversation('form')
+                  enterGuideConversation('character-selection')
                 }, 800)
               }, 800)
             }, 1500)
@@ -638,28 +592,42 @@ function AppContent() {
   // 案内役（ムスビ）の会話シーンへ遷移（ドアが開いた直後、form/character-selection へ行く前に挟む）
   const enterGuideConversation = async (nextScreen: 'form' | 'character-selection') => {
     setGuideNextScreen(nextScreen)
+    // 前回のセリフ・表情を残さない（読み込み中に、前のセリフや別の絵が一瞬見えてしまうため）
+    setGuideDialogue('')
+    setGuideNoSplit(false)
     setScreen('guide-conversation')
     switchToRoomBGM()
+    // ムスビが出迎える（フードなし。フードをかぶった絵 ham003 は、正体を明かす前のゲスト用）
+    const hoodless = (n: number): 1 | 2 | 3 | 4 => (n === 3 ? 1 : ((n >= 1 && n <= 4 ? n : 2) as 1 | 2 | 3 | 4))
+    // その日の最初のログインなら、ムスビが、ルーンストーンを渡す一言を添える
+    const bonusTail = pendingDailyBonusRef.current
+      ? `
+
+${DAILY_BONUS_LINE}`
+      : ''
     try {
       const result = await greetGuide()
       if (result.success && result.dialogue) {
-        setGuideDialogue(result.dialogue)
-        setGuideExpression(result.expression || 2)
+        setGuideExpression(hoodless(result.expression || 2))
         setGuideNoSplit(!!result.noSplit)
+        setGuideDialogue(result.dialogue + bonusTail)
       } else {
-        setGuideDialogue('いらっしゃい。キミの運勢を見てあげようか')
         setGuideExpression(2)
         setGuideNoSplit(false)
+        setGuideDialogue('いらっしゃい。キミの運勢を見てあげようか' + bonusTail)
       }
     } catch {
-      setGuideDialogue('いらっしゃい。キミの運勢を見てあげようか')
       setGuideExpression(2)
       setGuideNoSplit(false)
+      setGuideDialogue('いらっしゃい。キミの運勢を見てあげようか' + bonusTail)
     }
   }
 
   // 会話シーンから次の画面へ進む
   const handleGuideContinue = () => {
+    // ボーナスは会話の中で渡し終えた
+    pendingDailyBonusRef.current = false
+    setPendingDailyBonus(false)
     setScreen(guideNextScreen)
   }
 
@@ -1157,13 +1125,24 @@ function AppContent() {
     const isTyping = typedLength < currentDialogueText.length
     return (
       <div className="vn-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }} onClick={() => guideDialogue && handleDialogueBoxClick(handleGuideContinue)}>
-        <div className="vn-character-bust-wrap">
-          <img
-            src={`/assets/characters/0-musubi/ham00${guideExpression}.webp`}
-            alt="ムスビ"
-            className="vn-character-bust"
-          />
-        </div>
+        {/* セリフが届くまで、立ち絵も出さない（既定の表情が先に出て、あとで別の絵に変わるのを防ぐ） */}
+        {guideDialogue && (
+          <div className="vn-character-bust-wrap">
+            <img
+              key={guideExpression}
+              src={`/assets/characters/0-musubi/ham00${guideExpression}.webp`}
+              alt="ムスビ"
+              className="vn-character-bust"
+            />
+          </div>
+        )}
+        {/* 石を渡す場面：渡すセリフに来たら、ルーンストーンを見せる */}
+        {guideDialogue && pendingDailyBonus && dialogueSentenceIndex >= currentDialogueSentences.length - 1 && (
+          <div className="vn-bonus-stone">
+            <img src="/assets/stone.webp" alt="" />
+            <span>ルーンストーン +1</span>
+          </div>
+        )}
         {guideDialogue && (
           <div className="vn-dialogue-box">
             <div className="vn-speaker-name">ムスビ</div>
@@ -1324,6 +1303,11 @@ function AppContent() {
         <div className="form-overlay">
           <div className="form-header" style={mode === 'guest' ? { justifyContent: 'flex-end' } : undefined}>
             {mode !== 'guest' && <h1>占いの館</h1>}
+            {mode !== 'guest' && authenticated && (
+              <button type="button" className="logout-button" onClick={() => setScreen('character-selection')}>
+                ← 占い師選択に戻る
+              </button>
+            )}
             <div className="form-header-actions">
               {authenticated && <span className="user-email">{userEmail}</span>}
               <button onClick={mode === 'guest' ? () => setScreen('landing') : handleLogout} className="logout-button">
@@ -1342,9 +1326,13 @@ function AppContent() {
                 type="button"
                 className="stone-ad-button"
                 onClick={handleWatchAd}
-                disabled={watchingAd}
+                disabled={watchingAd || adRemaining === 0}
               >
-                {watchingAd ? '広告再生中...' : '📺 広告でルーンストーン+1'}
+                {watchingAd
+                  ? '広告再生中...'
+                  : adRemaining === 0
+                    ? '📺 本日の広告視聴は終了しました'
+                    : `📺 広告でルーンストーン+1${adRemaining !== null ? `（あと${adRemaining}回）` : ''}`}
               </button>
               {stoneBonusMessage && <span className="stone-bonus-message">{stoneBonusMessage}</span>}
             </div>
