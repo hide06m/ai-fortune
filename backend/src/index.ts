@@ -35,6 +35,7 @@ import loveType64Routes from './routes/loveType64.js'
 import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
 import seimeiRoutes from './routes/seimei.js'
+import musubiRoutes from './routes/musubi.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -544,6 +545,7 @@ app.use('/api/fortune/love-type64', loveType64Routes)
 app.use('/api/palm-session', palmSessionRoutes)
 app.use('/api/fortune/palmistry', palmistryRoutes)
 app.use('/api/fortune/seimei', seimeiRoutes)
+app.use('/api/fortune/musubi', musubiRoutes)
 
 /**
  * キャッシュ統計

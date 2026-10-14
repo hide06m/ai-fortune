@@ -32,6 +32,7 @@ import {
   getNextUnmetCharacter,
 } from '../db/character.js';
 import { spendStoneForGift } from '../db/stones.js';
+import { ensureMusubiUnlocked } from '../db/musubi.js';
 
 function getRequiredIntimacyLevel(characterId: CharacterId): number | null {
   const unlock = INTIMACY_UNLOCKS.find((u) => u.characterId === characterId);
@@ -68,6 +69,8 @@ router.get('/intimacy', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any).userId;
 
+    // 4人の親密度がすべてMAXなら、ここで、ムスビを解放する（診断のたびに調べなくても、選択画面を開いたときに反映される）
+    await ensureMusubiUnlocked(userId);
     const intimacies = await getUserAllIntimacies(userId);
     const unlockedCharacters = await getUnlockedCharacters(userId);
 

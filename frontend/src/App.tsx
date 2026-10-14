@@ -56,6 +56,7 @@ import { CrossfadeImage } from './components/CrossfadeImage'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import { submitMBTIQuizReuseLatest } from './api/mbti'
 import { submitSeimei } from './api/seimei'
+import { submitMusubiConsult } from './api/musubi'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
 import type { KuriDiagnosisMode } from './pages/CharacterSelectionPage'
 import { submitLoveType64QuizReuseLatest } from './api/loveType64'
@@ -147,7 +148,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'musubi-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -1322,6 +1323,10 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         const mode = kuriMode === 'love64' ? 'love64' : 'mbti'
         setKuriDiagnosisMode(mode)
         setScreen(mode === 'love64' ? 'love64-quiz' : 'mbti-quiz')
+      } else if (characterId === 0) {
+        // ムスビ：総合相談（全占い師のところで得た情報をまとめて相談する）
+        setError('')
+        setScreen('musubi-consult')
       } else if (characterId === 3 && kuriMode === 'seimei') {
         // コクウ：姓名判断。名前を聞く
         setError('')
@@ -1895,6 +1900,51 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           }}
         />
       </div>
+    )
+  }
+
+  // ムスビの総合相談：全占い師のところで得た情報をまとめて、悩み・状況に答える
+  if (screen === 'musubi-consult') {
+    const submitConsult = async (values: CounselingValues) => {
+      setError('')
+      setLoadingMessage(pickRandomLoadingMessage())
+      setLoading(true)
+      try {
+        const response = await submitMusubiConsult(values.concern)
+        if (typeof response.stoneBalance === 'number') setStoneBalance(response.stoneBalance)
+        if (!response.success) {
+          setError(
+            response.error === 'INSUFFICIENT_STONES'
+              ? 'ルーンストーンが足りません。'
+              : (response.message || response.error || '総合相談に失敗しました。')
+          )
+          return
+        }
+        setReading({ analysis: response.analysis || '' })
+        setViewingHistoryReading(false)
+        setScreen('result')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '総合相談に失敗しました。通信環境をご確認ください。')
+      } finally {
+        setLoading(false)
+      }
+    }
+    return (
+      <>
+        {loading && <HamsterLoading />}
+        <CounselingScene
+          mode="concern"
+          background="/assets/room001.jpg"
+          characterImage="/assets/characters/0-musubi/ham002.webp"
+          speakerName="ムスビ"
+          busy={loading}
+          error={error}
+          concernQuestion="君が、みんなのところで話してくれたことは、全部、聞いている。そのうえで、今、いちばん気になっていることを教えてほしい。うまく言葉にならなくても、近いものを選んでくれればいい"
+          doneLine="わかった。みんなから聞いた話を、ひとつに並べてみよう。少し、時間をもらうよ"
+          onCancel={() => setScreen('character-selection')}
+          onComplete={(values) => { void submitConsult(values) }}
+        />
+      </>
     )
   }
 

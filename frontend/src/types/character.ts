@@ -42,6 +42,9 @@ export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
 /** コクウの姓名判断に必要なルーンストーン数（手相は DIAGNOSIS_STONE_COST[3]＝10 個。姓名判断は、画像を使わないので、5個） */
 export const SEIMEI_STONE_COST = 5;
 
+/** ムスビの総合相談（全占い師の情報をまとめて相談）に必要なルーンストーン数 */
+export const MUSUBI_STONE_COST = 10;
+
 /** クリへの「悩み・状況の相談」（AIを使う）に必要なルーンストーン数。診断して相談する場合は、診断1＋相談3＝4個 */
 export const KURI_CONSULT_STONE_COST = 3;
 
@@ -56,7 +59,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     id: 0,
     name: 'ムスビ',
     gender: 'male',
-    role: '総合相談役',
+    role: '総合相談役（全員の親密度MAXで解放）',
     personality: '温かみのある長男肌、優しい',
     voiceId: 11, // 玄野武宏・男性
     imageFile: 'ham0',

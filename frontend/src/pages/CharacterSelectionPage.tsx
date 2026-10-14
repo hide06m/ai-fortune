@@ -11,6 +11,7 @@ import {
   GIFT_ELIGIBLE_CHARACTERS,
   GIFT_STONE_COST,
   SEIMEI_STONE_COST,
+  MUSUBI_STONE_COST,
   INTIMACY_POINTS_PER_LEVEL,
   type CharacterId,
 } from '../types/character';
@@ -21,7 +22,7 @@ import { CHARACTER_VISUAL } from '../data/characterVisuals';
 import { HamsterLoading } from '../components/HamsterLoading';
 
 /** 占術の選び方：クリ＝性格(mbti)／ラブタイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
-export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei';
+export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei' | 'consult';
 
 interface CharacterSelectionPageProps {
   onCharacterSelected: (characterId: CharacterId, kuriMode?: KuriDiagnosisMode) => void;
@@ -300,8 +301,16 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
           <div className="action-buttons">
             {!isUnlocked && selectedCharacterId !== 1 ? (
               <button className="btn btn-locked" disabled>
-                🔒 親密度 Lv.{getUnlockLevel(selectedCharacterId)} で解放
+                {selectedCharacterId === 0
+                  ? '🔒 ナツメ・ツキ・コクウ・クリの親密度が、すべてMAXで解放'
+                  : `🔒 親密度 Lv.${getUnlockLevel(selectedCharacterId)} で解放`}
               </button>
+            ) : selectedCharacterId === 0 ? (
+              <>
+                <button className="btn btn-primary" onClick={() => handleStartDiagnosis('consult')} disabled={stoneBalance !== null && stoneBalance < MUSUBI_STONE_COST}>
+                  💬 総合相談をする（石{MUSUBI_STONE_COST}個）
+                </button>
+              </>
             ) : selectedCharacterId === 3 ? (
               <>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('palm')} disabled={!canAffordDiagnosis}>
