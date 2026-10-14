@@ -8,9 +8,8 @@ import React from 'react';
 interface QuizRetakeChoiceProps {
   quizName: string; // 例: "性格診断（16タイプ）"
   resultLabel: string; // 例: "前回の結果：ENTJ-T"
-  concern: string;
-  onConcernChange: (value: string) => void;
-  onSubmitConcernOnly: () => void;
+  /** 悩み・状況を、クリに相談する（前回のタイプのまま） */
+  onConsult: () => void;
   onStartOver: () => void;
   onCancel: () => void;
   submitting: boolean;
@@ -20,9 +19,7 @@ interface QuizRetakeChoiceProps {
 export function QuizRetakeChoice({
   quizName,
   resultLabel,
-  concern,
-  onConcernChange,
-  onSubmitConcernOnly,
+  onConsult,
   onStartOver,
   onCancel,
   submitting,
@@ -32,18 +29,7 @@ export function QuizRetakeChoice({
     <div className="mbti-quiz">
       <h2>{quizName}</h2>
       <p className="quiz-retake-result">{resultLabel}</p>
-      <p className="quiz-retake-hint">前回の診断結果はそのままに、今の悩み・状況だけ入力し直して占ってもらうこともできます。</p>
-
-      <div className="form-group">
-        <label htmlFor="retake-concern">悩み・状況（任意）</label>
-        <textarea
-          id="retake-concern"
-          placeholder="例: 転職を考えています。今の自分に向いている仕事を知りたいです。"
-          value={concern}
-          onChange={(e) => onConcernChange(e.target.value)}
-          rows={4}
-        />
-      </div>
+      <p className="quiz-retake-hint">タイプはそのままに、今の悩み・状況をクリに相談できます。タイプを診断し直すこともできます。</p>
 
       {error && <div className="error">{error}</div>}
 
@@ -51,8 +37,8 @@ export function QuizRetakeChoice({
         <button type="button" className="secondary-button" onClick={onCancel} disabled={submitting}>
           戻る
         </button>
-        <button type="button" className="primary-button" onClick={onSubmitConcernOnly} disabled={submitting}>
-          {submitting ? '診断中...' : 'この内容で占ってもらう'}
+        <button type="button" className="primary-button" onClick={onConsult} disabled={submitting}>
+          悩み・状況をクリに相談する
         </button>
       </div>
 
@@ -62,7 +48,7 @@ export function QuizRetakeChoice({
         onClick={onStartOver}
         disabled={submitting}
       >
-        最初から{quizName}をやり直す
+        タイプを最初から診断し直す（{quizName}）
       </button>
     </div>
   );

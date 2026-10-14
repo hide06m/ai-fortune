@@ -27,7 +27,7 @@ export interface LoveType64Response {
   message?: string;
 }
 
-export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: string): Promise<LoveType64Response> {
+export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: string, typeOnly = false): Promise<LoveType64Response> {
   const token = getToken();
   const response = await fetch(`${API_URL}/api/fortune/love-type64`, {
     method: 'POST',
@@ -35,7 +35,7 @@ export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: strin
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ answers, concern }),
+    body: JSON.stringify({ answers, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
   });
 
   const data = await response.json();
@@ -46,7 +46,7 @@ export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: strin
 }
 
 /** 既に外部サイトなどで診断済みのタイプを直接入力して結果を得る（例: "LCPO-VI"） */
-export async function submitLoveType64DirectType(fullType: string, concern: string): Promise<LoveType64Response> {
+export async function submitLoveType64DirectType(fullType: string, concern: string, typeOnly = false): Promise<LoveType64Response> {
   const token = getToken();
   const response = await fetch(`${API_URL}/api/fortune/love-type64`, {
     method: 'POST',
@@ -54,7 +54,7 @@ export async function submitLoveType64DirectType(fullType: string, concern: stri
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ directType: fullType, concern }),
+    body: JSON.stringify({ directType: fullType, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
   });
 
   const data = await response.json();

@@ -62,7 +62,7 @@ router.get('/latest', requireAuth, async (req: Request, res: Response) => {
 
 router.post('/', dailyLimiter, async (req: Request, res: Response) => {
   try {
-    const { answers, concern, reuseLatest, directType } = req.body
+    const { answers, concern, reuseLatest, directType, typeOnly } = req.body
     const concernText = typeof concern === 'string' ? concern : ''
 
     let quizResult: MBTIQuizResult
@@ -113,6 +113,29 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
       } catch (error) {
         console.error('Failed to update character intimacy (mbti):', error)
       }
+    }
+
+    // タイプの診断だけ（AIを使わない）：結果をすぐに返す。石は使わず、結果は保存して、
+    // あとで「悩み・状況の相談」（reuseLatest）に使えるようにする
+    if (typeOnly === true) {
+      // AIを使わない軽い処理なので、1日の診断回数には数えない
+      res.locals.skipDailyCount = true
+      await applyIntimacy()
+      if (req.isAuthenticated && req.user) {
+        try {
+          await saveReading({
+            userId: req.user.userId,
+            concern: '',
+            mbtiResult: quizResult,
+            analysis: '（タイプの診断のみ）',
+            characterId: KURI_CHARACTER_ID,
+            baziKey: diagnosisKey,
+          })
+        } catch (error) {
+          console.error('Failed to save reading (mbti type only):', error)
+        }
+      }
+      return res.json({ success: true, result: quizResult, analysis: '', typeOnly: true, intimacy: intimacyResult, stoneBalance: null })
     }
 
     // キャッシュ確認（石を使わずに結果を返せるケース）

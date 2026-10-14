@@ -32,6 +32,12 @@ interface CounselingSceneProps {
   error: string;
   /** 全部聞き終えたあと、診断を始める */
   onComplete: (values: CounselingValues) => void;
+  /** 'concern'＝悩み・状況だけを聞く（クリの相談など。生年月日などは聞かない） */
+  mode?: 'full' | 'concern';
+  /** mode='concern' のときの質問・締めのセリフ・やめる操作 */
+  concernQuestion?: string;
+  doneLine?: string;
+  onCancel?: () => void;
 }
 
 type StepId = 'birthDate' | 'birthTime' | 'birthPlace' | 'concern' | 'done';
@@ -118,8 +124,8 @@ function BirthDateSelects({ value, onChange }: { value: string; onChange: (v: st
   );
 }
 
-export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete }: CounselingSceneProps) {
-  const [step, setStep] = useState<StepId>('birthDate');
+export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, doneLine, onCancel }: CounselingSceneProps) {
+  const [step, setStep] = useState<StepId>(mode === 'concern' ? 'concern' : 'birthDate');
   const [birthDate, setBirthDate] = useState('');
   // 既定はリストから選ぶ。打ち込み・カレンダー入力に切り替えられる
   const [dateMode, setDateMode] = useState<'type' | 'list'>('list');
@@ -132,7 +138,8 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
 
   // タイプライター：どの文のものかを一緒に持つので、切り替わった瞬間に新しい文が見えてしまわない
   // セリフでは「。」を表示しない（文の切れ目は、改行にする）
-  const text = QUESTIONS[step].replace(/。/g, '\n').trim();
+  const questions: Record<StepId, string> = { ...QUESTIONS, concern: concernQuestion ?? QUESTIONS.concern, done: doneLine ?? QUESTIONS.done };
+  const text = questions[step].replace(/。/g, '\n').trim();
   const [typed, setTyped] = useState({ text: '', n: 0 });
   const shown = typed.text === text ? typed.n : 0;
   useEffect(() => {
@@ -295,8 +302,8 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
                 </label>
               )}
               <div className="counsel-actions">
-                <button type="button" className="counsel-back" onClick={() => goNext(back.concern!)}>
-                  戻る
+                <button type="button" className="counsel-back" onClick={() => (mode === 'concern' ? onCancel?.() : goNext(back.concern!))}>
+                  {mode === 'concern' ? 'やめる' : '戻る'}
                 </button>
                 <button type="button" className="counsel-next" disabled={concernChoices.length === 0 || busy} onClick={finish}>
                   これで視てもらう

@@ -27,7 +27,7 @@ export interface MBTIResponse {
   message?: string;
 }
 
-export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string): Promise<MBTIResponse> {
+export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string, typeOnly = false): Promise<MBTIResponse> {
   const token = getToken();
   const response = await fetch(`${API_URL}/api/fortune/mbti`, {
     method: 'POST',
@@ -35,7 +35,7 @@ export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string): Pr
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ answers, concern }),
+    body: JSON.stringify({ answers, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
   });
 
   const data = await response.json();
@@ -46,7 +46,7 @@ export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string): Pr
 }
 
 /** 既に外部サイトなどで診断済みのタイプを直接入力して結果を得る（例: "ENTJ-T"） */
-export async function submitMBTIDirectType(personalityType: string, concern: string): Promise<MBTIResponse> {
+export async function submitMBTIDirectType(personalityType: string, concern: string, typeOnly = false): Promise<MBTIResponse> {
   const token = getToken();
   const response = await fetch(`${API_URL}/api/fortune/mbti`, {
     method: 'POST',
@@ -54,7 +54,7 @@ export async function submitMBTIDirectType(personalityType: string, concern: str
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ directType: personalityType, concern }),
+    body: JSON.stringify({ directType: personalityType, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
   });
 
   const data = await response.json();

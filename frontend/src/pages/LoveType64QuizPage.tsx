@@ -8,7 +8,7 @@ import '../styles/mbti-quiz.css';
 import { LOVE_TYPE64_QUESTIONS, LOVE_TYPE64_QUESTIONS_PER_PAGE, LOVE_SCALE_VALUES } from '../data/loveType64Questions';
 import {
   submitLoveType64Quiz,
-  submitLoveType64QuizReuseLatest,
+  
   submitLoveType64DirectType,
   getLatestLoveType64Result,
   type LoveAnswer,
@@ -17,6 +17,7 @@ import {
 import { QuizRetakeChoice } from '../components/QuizRetakeChoice';
 
 interface LoveType64QuizPageProps {
+  onConsult: () => void;
   onComplete: (response: LoveType64Response) => void;
   onCancel: () => void;
 }
@@ -30,7 +31,7 @@ const OE_OPTIONS = ['O', 'E'] as const;
 const VN_OPTIONS = ['V', 'N'] as const;
 const DI_OPTIONS = ['D', 'I'] as const;
 
-export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageProps) {
+export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType64QuizPageProps) {
   // checking: 前回結果確認中／choice: 再診断選択／entry: 初回の入り口選択
   // direct-input: 既知のタイプをプルダウンで直接入力／quiz: 18問クイズ画面
   const [mode, setMode] = useState<'checking' | 'choice' | 'entry' | 'direct-input' | 'quiz'>('checking');
@@ -73,7 +74,7 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
     setSubmitting(true);
     try {
       const fullType = `${directLF}${directCA}${directPR}${directOE}-${directVN}${directDI}`;
-      const response = await submitLoveType64DirectType(fullType, concern);
+      const response = await submitLoveType64DirectType(fullType, '', true);
       if (response.success) {
         onComplete(response);
       } else if (response.error === 'INSUFFICIENT_STONES') {
@@ -89,26 +90,6 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
     }
   };
 
-  const handleSubmitConcernOnly = async () => {
-    setError('');
-    setSubmitting(true);
-    try {
-      const response = await submitLoveType64QuizReuseLatest(concern);
-      if (response.success) {
-        onComplete(response);
-      } else if (response.error === 'INSUFFICIENT_STONES') {
-        setError('ルーンストーンが足りません。');
-      } else {
-        setError(response.error || '診断に失敗しました。');
-      }
-    } catch (err) {
-      console.error('Failed to submit love-type64 reuse-latest quiz:', err);
-      setError('診断に失敗しました。通信環境をご確認ください。');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (mode === 'checking') {
     return <div className="mbti-quiz" />;
   }
@@ -118,9 +99,7 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
       <QuizRetakeChoice
         quizName="ラブタイプ診断64"
         resultLabel={`前回の結果：${previousType}`}
-        concern={concern}
-        onConcernChange={setConcern}
-        onSubmitConcernOnly={handleSubmitConcernOnly}
+        onConsult={onConsult}
         onStartOver={() => setMode('quiz')}
         onCancel={onCancel}
         submitting={submitting}
@@ -178,17 +157,6 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
           <div className="love-direct-preview">{directLF}{directCA}{directPR}{directOE}-{directVN}{directDI}</div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="love64-direct-concern">悩み・状況（任意）</label>
-          <textarea
-            id="love64-direct-concern"
-            placeholder="未入力の場合は、ラブタイプ診断の結果から総合的に診断します。"
-            value={concern}
-            onChange={(e) => setConcern(e.target.value)}
-            rows={4}
-          />
-        </div>
-
         {error && <div className="error">{error}</div>}
 
         <div className="mbti-nav">
@@ -196,7 +164,7 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
             戻る
           </button>
           <button type="button" className="primary-button" onClick={handleSubmitDirectType} disabled={submitting}>
-            {submitting ? '診断中...' : 'クリに占ってもらう'}
+            {submitting ? '診断中...' : '診断結果を見る'}
           </button>
         </div>
       </div>
@@ -286,19 +254,6 @@ export function LoveType64QuizPage({ onComplete, onCancel }: LoveType64QuizPageP
           </div>
         ))}
       </div>
-
-      {isLastPage && (
-        <div className="form-group">
-          <label htmlFor="love64-concern">悩み・状況（任意）</label>
-          <textarea
-            id="love64-concern"
-            placeholder="未入力の場合は、ラブタイプ診断の結果から総合的に診断します。（例: 今の恋人との関係に不安があります。）"
-            value={concern}
-            onChange={(e) => setConcern(e.target.value)}
-            rows={4}
-          />
-        </div>
-      )}
 
       {error && <div className="error">{error}</div>}
 

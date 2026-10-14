@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/mbti-quiz.css';
 import { MBTI_QUESTIONS, MBTI_QUESTIONS_PER_PAGE } from '../data/mbtiQuestions';
-import { submitMBTIQuiz, submitMBTIQuizReuseLatest, submitMBTIDirectType, getLatestMBTIResult, type MBTIAnswer, type MBTIResponse } from '../api/mbti';
+import { submitMBTIQuiz,  submitMBTIDirectType, getLatestMBTIResult, type MBTIAnswer, type MBTIResponse } from '../api/mbti';
 import { QuizRetakeChoice } from '../components/QuizRetakeChoice';
 
 const EI_OPTIONS = ['E', 'I'] as const;
@@ -16,6 +16,7 @@ const JP_OPTIONS = ['J', 'P'] as const;
 const AT_OPTIONS = ['A', 'T'] as const;
 
 interface MBTIQuizPageProps {
+  onConsult: () => void;
   onComplete: (response: MBTIResponse) => void;
   onCancel: () => void;
 }
@@ -33,7 +34,7 @@ const SCALE_LABELS: Record<number, string> = {
 
 const TOTAL_PAGES = Math.ceil(MBTI_QUESTIONS.length / MBTI_QUESTIONS_PER_PAGE);
 
-export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
+export function MBTIQuizPage({ onComplete, onConsult, onCancel }: MBTIQuizPageProps) {
   // checking: 前回結果の有無を確認中／choice: 再診断方法の選択画面／entry: 初回の入り口選択
   // direct-input: 既知のタイプをプルダウンで直接入力／quiz: 60問クイズ画面
   const [mode, setMode] = useState<'checking' | 'choice' | 'entry' | 'direct-input' | 'quiz'>('checking');
@@ -75,7 +76,7 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
     setSubmitting(true);
     try {
       const personalityType = `${directEI}${directSN}${directTF}${directJP}-${directAT}`;
-      const response = await submitMBTIDirectType(personalityType, concern);
+      const response = await submitMBTIDirectType(personalityType, '', true);
       if (response.success) {
         onComplete(response);
       } else if (response.error === 'INSUFFICIENT_STONES') {
@@ -91,26 +92,6 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
     }
   };
 
-  const handleSubmitConcernOnly = async () => {
-    setError('');
-    setSubmitting(true);
-    try {
-      const response = await submitMBTIQuizReuseLatest(concern);
-      if (response.success) {
-        onComplete(response);
-      } else if (response.error === 'INSUFFICIENT_STONES') {
-        setError('ルーンストーンが足りません。');
-      } else {
-        setError(response.error || '診断に失敗しました。');
-      }
-    } catch (err) {
-      console.error('Failed to submit MBTI reuse-latest quiz:', err);
-      setError('診断に失敗しました。通信環境をご確認ください。');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (mode === 'checking') {
     return <div className="mbti-quiz" />;
   }
@@ -120,9 +101,7 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
       <QuizRetakeChoice
         quizName="性格診断（16タイプ）"
         resultLabel={`前回の結果：${previousType}`}
-        concern={concern}
-        onConcernChange={setConcern}
-        onSubmitConcernOnly={handleSubmitConcernOnly}
+        onConsult={onConsult}
         onStartOver={() => setMode('quiz')}
         onCancel={onCancel}
         submitting={submitting}
@@ -177,17 +156,6 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
           <div className="mbti-direct-preview">{directEI}{directSN}{directTF}{directJP}-{directAT}</div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="mbti-direct-concern">悩み・状況（任意）</label>
-          <textarea
-            id="mbti-direct-concern"
-            placeholder="未入力の場合は、性格診断の結果から総合的に診断します。"
-            value={concern}
-            onChange={(e) => setConcern(e.target.value)}
-            rows={4}
-          />
-        </div>
-
         {error && <div className="error">{error}</div>}
 
         <div className="mbti-nav">
@@ -195,7 +163,7 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
             戻る
           </button>
           <button type="button" className="primary-button" onClick={handleSubmitDirectType} disabled={submitting}>
-            {submitting ? '診断中...' : 'クリに占ってもらう'}
+            {submitting ? '診断中...' : '診断結果を見る'}
           </button>
         </div>
       </div>
@@ -283,19 +251,6 @@ export function MBTIQuizPage({ onComplete, onCancel }: MBTIQuizPageProps) {
           </div>
         ))}
       </div>
-
-      {isLastPage && (
-        <div className="form-group">
-          <label htmlFor="mbti-concern">悩み・状況（任意）</label>
-          <textarea
-            id="mbti-concern"
-            placeholder="未入力の場合は、性格診断の結果から総合的に診断します。（例: キャリアチェンジを考えています。今後の方向性について知りたいです。）"
-            value={concern}
-            onChange={(e) => setConcern(e.target.value)}
-            rows={4}
-          />
-        </div>
-      )}
 
       {error && <div className="error">{error}</div>}
 

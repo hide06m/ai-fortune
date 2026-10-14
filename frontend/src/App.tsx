@@ -51,6 +51,8 @@ import { pickCharacterIntro, pickGiftGreeting, DAILY_BONUS_LINES, type IntroLine
 import { CHARACTER_VISUAL } from './data/characterVisuals'
 import { BirthDateInput } from './components/BirthDateInput'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
+import { submitMBTIQuizReuseLatest } from './api/mbti'
+import { submitLoveType64QuizReuseLatest } from './api/loveType64'
 import {
   TUTORIAL_INTRO_STEPS,
   TUTORIAL_MEETING_STEPS,
@@ -139,7 +141,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -1570,6 +1572,25 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             </div>
           )}
 
+          {!reading.analysis && (reading.mbtiResult || reading.loveTypeResult) && (
+            <div className="result-section">
+              <h2>【クリに相談する】</h2>
+              <p>タイプがわかりました。このタイプを踏まえて、今の悩み・状況をクリに相談できます（ルーンストーンを使います）。</p>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setKuriDiagnosisMode(reading.mbtiResult ? 'mbti' : 'love64')
+                  setError('')
+                  setScreen('kuri-consult')
+                }}
+              >
+                悩み・状況を相談する
+              </button>
+            </div>
+          )}
+
+          {(reading.analysis || !(reading.mbtiResult || reading.loveTypeResult)) && (
           <div className="result-section">
             <h2>【総合結論】</h2>
             <div className="analysis">
@@ -1591,6 +1612,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             </div>
             {reading.cached && <small className="cache-notice">※ キャッシュから取得</small>}
           </div>
+          )}
 
           <div className="result-section feedback-section">
             <h2>この診断の感想を教えてください</h2>
@@ -1847,12 +1869,60 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     )
   }
 
+  // クリへの悩み・状況の相談（タイプ診断のあと、または、前回のタイプのまま）。ここで初めてAIを使う
+  if (screen === 'kuri-consult') {
+    const submitConsult = async (values: CounselingValues) => {
+      setError('')
+      setLoadingMessage(pickRandomLoadingMessage())
+      setLoading(true)
+      try {
+        const response = kuriDiagnosisMode === 'love64'
+          ? await submitLoveType64QuizReuseLatest(values.concern)
+          : await submitMBTIQuizReuseLatest(values.concern)
+        if (typeof response.stoneBalance === 'number') setStoneBalance(response.stoneBalance)
+        if (!response.success) {
+          setError(response.error === 'INSUFFICIENT_STONES' ? 'ルーンストーンが足りません。' : (response.error || '相談に失敗しました。'))
+          return
+        }
+        setReading(
+          kuriDiagnosisMode === 'love64'
+            ? { loveTypeResult: (response as { result?: never }).result, analysis: response.analysis || '', cached: response.cached }
+            : { mbtiResult: (response as { result?: never }).result, analysis: response.analysis || '', cached: response.cached }
+        )
+        setViewingHistoryReading(false)
+        setScreen('result')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '相談に失敗しました。通信環境をご確認ください。')
+      } finally {
+        setLoading(false)
+      }
+    }
+    return (
+      <>
+        {loading && <HamsterLoading />}
+        <CounselingScene
+          mode="concern"
+          background="/assets/room001.jpg"
+          characterImage="/assets/characters/4-kuri/kuri001.webp"
+          speakerName="クリ"
+          busy={loading}
+          error={error}
+          concernQuestion="タイプがわかったところで、今、気になっていることはある？うまく言葉にならなくても大丈夫、近いものを選んでね"
+          doneLine="うん、ありがとう。じゃあ、あなたのタイプを踏まえて、じっくり考えてみるね"
+          onCancel={() => setScreen('character-selection')}
+          onComplete={(values) => { void submitConsult(values) }}
+        />
+      </>
+    )
+  }
+
   // 性格診断（16タイプ診断）クイズ画面（クリ専用）
   if (screen === 'mbti-quiz') {
     return (
       <div className="app-container">
         <MBTIQuizPage
           onCancel={() => setScreen('character-selection')}
+          onConsult={() => { setKuriDiagnosisMode('mbti'); setError(''); setScreen('kuri-consult') }}
           onComplete={(response) => {
             if (typeof response.stoneBalance === 'number') {
               setStoneBalance(response.stoneBalance)
@@ -1881,6 +1951,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       <div className="app-container">
         <LoveType64QuizPage
           onCancel={() => setScreen('character-selection')}
+          onConsult={() => { setKuriDiagnosisMode('love64'); setError(''); setScreen('kuri-consult') }}
           onComplete={(response) => {
             if (typeof response.stoneBalance === 'number') {
               setStoneBalance(response.stoneBalance)
