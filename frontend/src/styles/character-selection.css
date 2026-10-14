@@ -5,7 +5,7 @@
 
 /* 画面全体に固定する（#root の幅制限で、背景が左右に切れないように）。占い師の枠は、画面の高さに合わせて大きさが変わり、1画面に収まる */
 .character-selection {
-  --carousel-h: clamp(300px, 44vh, 470px);
+  --carousel-h: clamp(260px, 38vh, 470px);
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -158,14 +158,14 @@
 .selection-panel {
   width: 100%;
   max-width: 600px;
-  height: clamp(290px, 40vh, 380px);
+  height: clamp(310px, 46vh, 400px);
   flex-shrink: 0;
   box-sizing: border-box;
   overflow-y: auto;
   display: flex;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
-  padding: 2rem;
+  padding: 1rem 2rem;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
 }

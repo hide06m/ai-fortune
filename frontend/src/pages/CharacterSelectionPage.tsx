@@ -10,6 +10,7 @@ import {
   DIAGNOSIS_STONE_COST,
   GIFT_ELIGIBLE_CHARACTERS,
   GIFT_STONE_COST,
+  SEIMEI_STONE_COST,
   INTIMACY_POINTS_PER_LEVEL,
   type CharacterId,
 } from '../types/character';
@@ -19,7 +20,8 @@ import { speakGreeting, isVoiceEnabled } from '../services/textToSpeech';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
 import { HamsterLoading } from '../components/HamsterLoading';
 
-export type KuriDiagnosisMode = 'mbti' | 'love64';
+/** 占術の選び方：クリ＝性格(mbti)／ラブタイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
+export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei';
 
 interface CharacterSelectionPageProps {
   onCharacterSelected: (characterId: CharacterId, kuriMode?: KuriDiagnosisMode) => void;
@@ -300,6 +302,20 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
               <button className="btn btn-locked" disabled>
                 🔒 親密度 Lv.{getUnlockLevel(selectedCharacterId)} で解放
               </button>
+            ) : selectedCharacterId === 3 ? (
+              <>
+                <button className="btn btn-primary" onClick={() => handleStartDiagnosis('palm')} disabled={!canAffordDiagnosis}>
+                  🖐 手相を診てもらう（石{stoneCost}個）
+                </button>
+                <button className="btn btn-primary" onClick={() => handleStartDiagnosis('seimei')} disabled={stoneBalance !== null && stoneBalance < SEIMEI_STONE_COST}>
+                  ✍ 姓名判断をしてもらう（石{SEIMEI_STONE_COST}個）
+                </button>
+                {canGift && (
+                  <button className="btn btn-secondary" onClick={handleGift} disabled={!canAffordGift || giftingCharacterId !== null}>
+                    💌 ちょっとした挨拶（石{GIFT_STONE_COST}個）
+                  </button>
+                )}
+              </>
             ) : selectedCharacterId === 4 ? (
               <>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('mbti')} disabled={!canAffordDiagnosis}>

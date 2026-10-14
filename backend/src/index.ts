@@ -34,6 +34,7 @@ import mbtiRoutes from './routes/mbti.js'
 import loveType64Routes from './routes/loveType64.js'
 import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
+import seimeiRoutes from './routes/seimei.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -199,7 +200,8 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
 
 /**
  * 開発専用：テスト用アカウントでログインする（Googleのログインを通さずに、ログイン後の画面を確認するため）
- * POST /api/auth/dev-login   body: { fresh?: boolean, stones?: number }
+ * POST /api/auth/dev-login   body: { fresh?: boolean, stones?: number, intimacy?: number }
+ *   intimacy … 全キャラの親密度を 0〜10 にして、全員を解放する（解放後の画面を確認するため）
  *
  * 次の条件がすべて揃ったときだけ動く（どれか1つでも欠ければ 404）：
  *   - NODE_ENV=development で、環境変数 DEV_LOGIN=1 を付けて起動している
@@ -240,6 +242,13 @@ app.post('/api/auth/dev-login', async (req: Request, res: Response) => {
     }
     if (typeof req.body?.stones === 'number' && Number.isFinite(req.body.stones)) {
       await query('UPDATE users SET stone_balance = $1 WHERE id = $2', [Math.max(0, Math.round(req.body.stones)), user.id])
+    }
+    if (typeof req.body?.intimacy === 'number' && Number.isFinite(req.body.intimacy)) {
+      const level = Math.min(10, Math.max(0, Math.round(req.body.intimacy)))
+      await query(
+        'UPDATE character_intimacy SET intimacy_level = $1, intimacy_points = $2, unlocked_at = COALESCE(unlocked_at, NOW()) WHERE user_id = $3',
+        [level, level * 100, user.id]
+      )
     }
     const token = generateToken({ userId: user.id, email: user.email, googleId: user.google_id })
     res.json({ success: true, token, isNewUser, user: { userId: user.id, email: user.email, name: user.name } })
@@ -534,6 +543,7 @@ app.use('/api/fortune/mbti', mbtiRoutes)
 app.use('/api/fortune/love-type64', loveType64Routes)
 app.use('/api/palm-session', palmSessionRoutes)
 app.use('/api/fortune/palmistry', palmistryRoutes)
+app.use('/api/fortune/seimei', seimeiRoutes)
 
 /**
  * キャッシュ統計

@@ -68,6 +68,7 @@ export interface FortuneReading {
   westernZodiac?: WesternZodiac | null
   mbtiResult?: MBTIQuizResult | null
   loveTypeResult?: LoveType64Result | null
+  seimeiResult?: import('./api/seimei').SeimeiResult | null
   analysis: string
   tokensUsed?: number
   cached?: boolean
@@ -155,7 +156,7 @@ export interface GoogleAuthResponse {
 }
 
 /** 開発専用：テスト用アカウントでログインする（バックエンドが DEV_LOGIN=1 で起動していて、このPCの中からのときだけ成功する） */
-export async function devLogin(options: { fresh?: boolean; stones?: number } = {}): Promise<GoogleAuthResponse> {
+export async function devLogin(options: { fresh?: boolean; stones?: number; intimacy?: number } = {}): Promise<GoogleAuthResponse> {
   const response = await fetch(`${API_URL}/api/auth/dev-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

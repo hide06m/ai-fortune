@@ -39,6 +39,9 @@ export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
   4: 1, // クリ：タイプ診断（AIなし）1回あたり。悩み・状況の相談は KURI_CONSULT_STONE_COST
 };
 
+/** コクウの姓名判断に必要なルーンストーン数（手相は DIAGNOSIS_STONE_COST[3]＝10 個。姓名判断は、画像を使わないので、5個） */
+export const SEIMEI_STONE_COST = 5;
+
 /** クリへの「悩み・状況の相談」（AIを使う）に必要なルーンストーン数。診断して相談する場合は、診断1＋相談3＝4個 */
 export const KURI_CONSULT_STONE_COST = 3;
 
@@ -80,7 +83,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     id: 3,
     name: 'コクウ',
     gender: 'male',
-    role: '手相の占い師',
+    role: '手相・姓名判断の占い師',
     personality: '経験豊富な長老タイプ、厳格だが優しい',
     voiceId: 13, // 青山龍星・男性、低め
     imageFile: 'ham3',

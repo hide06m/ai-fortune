@@ -173,3 +173,27 @@
   margin: 0 0 8px;
   white-space: pre-line;
 }
+
+.counsel-name-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.counsel-name-field input {
+  width: min(220px, 36vw);
+  padding: 10px 12px;
+  font-size: 1.1em;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  box-sizing: border-box;
+}
+
+.counsel-note {
+  margin: 10px 0 0;
+  font-size: 0.75em;
+  opacity: 0.8;
+  text-align: center;
+}

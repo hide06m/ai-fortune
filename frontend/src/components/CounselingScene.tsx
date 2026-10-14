@@ -17,6 +17,9 @@ export interface CounselingValues {
   birthTime: string;
   birthPlace: string;
   concern: string;
+  /** mode='name'（姓名判断）のときだけ */
+  surname?: string;
+  givenName?: string;
 }
 
 interface CounselingSceneProps {
@@ -33,16 +36,17 @@ interface CounselingSceneProps {
   /** 全部聞き終えたあと、診断を始める */
   onComplete: (values: CounselingValues) => void;
   /** 'concern'＝悩み・状況だけを聞く（クリの相談など。生年月日などは聞かない） */
-  mode?: 'full' | 'concern';
+  mode?: 'full' | 'concern' | 'name';
   /** mode='concern' のときの質問・締めのセリフ・やめる操作 */
   concernQuestion?: string;
   doneLine?: string;
   onCancel?: () => void;
 }
 
-type StepId = 'birthDate' | 'birthTime' | 'birthPlace' | 'concern' | 'done';
+type StepId = 'name' | 'birthDate' | 'birthTime' | 'birthPlace' | 'concern' | 'done';
 
 const QUESTIONS: Record<StepId, string> = {
+  name: 'ふむ、名を聞こうか。姓と名を、分けて、漢字で書いてくれ。生まれたときの名でも、今の名でも、構わん。画数は、儂が数える。ひらがなでも、よい。',
   birthDate:
     'まず、君がこの世界に最初の息を吸い込んだ日を教えてもらえるかな。年と月と日だ。',
   birthTime:
@@ -125,7 +129,9 @@ function BirthDateSelects({ value, onChange }: { value: string; onChange: (v: st
 }
 
 export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, doneLine, onCancel }: CounselingSceneProps) {
-  const [step, setStep] = useState<StepId>(mode === 'concern' ? 'concern' : 'birthDate');
+  const [step, setStep] = useState<StepId>(mode === 'concern' ? 'concern' : mode === 'name' ? 'name' : 'birthDate');
+  const [surname, setSurname] = useState('');
+  const [givenName, setGivenName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   // 既定はリストから選ぶ。打ち込み・カレンダー入力に切り替えられる
   const [dateMode, setDateMode] = useState<'type' | 'list'>('list');
@@ -160,7 +166,7 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
     const free = concernText.trim();
     const concern = [parts.length ? parts.join('、') : '', free].filter(Boolean).join('。');
     setStep('done');
-    onComplete({ birthDate, birthTime, birthPlace: birthPlace.trim(), concern });
+    onComplete({ birthDate, birthTime, birthPlace: birthPlace.trim(), concern, surname: surname.trim(), givenName: givenName.trim() });
   };
 
   const toggleConcern = (c: string) => {
@@ -171,7 +177,7 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
     });
   };
 
-  const back: Partial<Record<StepId, StepId>> = { birthTime: 'birthDate', birthPlace: 'birthTime', concern: 'birthPlace' };
+  const back: Partial<Record<StepId, StepId>> = { birthTime: 'birthDate', birthPlace: 'birthTime', concern: mode === 'name' ? 'name' : 'birthPlace' };
   const showFree = concernChoices.some((c) => c.startsWith('その他'));
 
   return (
@@ -182,6 +188,32 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
 
       {step !== 'done' && (
         <div className="counsel-panel">
+          {step === 'name' && (
+            <>
+              <div className="counsel-row">
+                <label className="counsel-name-field">
+                  <span className="counsel-label">姓</span>
+                  <input type="text" placeholder="例: 山田" value={surname} maxLength={8} onChange={(e) => setSurname(e.target.value)} />
+                </label>
+                <label className="counsel-name-field">
+                  <span className="counsel-label">名</span>
+                  <input type="text" placeholder="例: 太郎" value={givenName} maxLength={8} onChange={(e) => setGivenName(e.target.value)} />
+                </label>
+              </div>
+              <p className="counsel-note">画数は、旧字体（康熙字典の字体）で、部首は元の形で数えます。流派によって、数え方が違うことがあります。</p>
+              <div className="counsel-actions">
+                {onCancel && (
+                  <button type="button" className="counsel-back" onClick={() => onCancel()}>
+                    やめる
+                  </button>
+                )}
+                <button type="button" className="counsel-next" disabled={!surname.trim() || !givenName.trim()} onClick={() => goNext('concern')}>
+                  次へ
+                </button>
+              </div>
+            </>
+          )}
+
           {step === 'birthDate' && (
             <>
               <div className="counsel-row">

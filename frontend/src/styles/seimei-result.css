@@ -1,0 +1,121 @@
+/* 姓名判断の結果 */
+.seimei-result {
+  text-align: left;
+}
+
+.seimei-name {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.seimei-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.seimei-char.is-given-start {
+  margin-left: 14px;
+}
+
+.seimei-char-glyph {
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.seimei-char-strokes {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.seimei-kaku-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seimei-kaku {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.seimei-kaku-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.seimei-kaku-label {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.seimei-kaku-strokes {
+  font-size: 1.05rem;
+}
+
+.seimei-level {
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1030;
+}
+
+.seimei-level.is-daikichi {
+  background: #ffd166;
+}
+
+.seimei-level.is-kichi {
+  background: #9be3a8;
+}
+
+.seimei-level.is-hankichi {
+  background: #bcd6ff;
+}
+
+.seimei-level.is-kyo {
+  background: #ffb4b4;
+}
+
+.seimei-kaku-keyword,
+.seimei-kaku-element {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.seimei-kaku-meaning {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.seimei-kaku-text {
+  margin-top: 4px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.seimei-sansai {
+  margin-top: 14px;
+  font-size: 0.95rem;
+}
+
+.seimei-note {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}

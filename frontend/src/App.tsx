@@ -55,6 +55,9 @@ import { BirthDateInput } from './components/BirthDateInput'
 import { CrossfadeImage } from './components/CrossfadeImage'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import { submitMBTIQuizReuseLatest } from './api/mbti'
+import { submitSeimei } from './api/seimei'
+import { SeimeiResultCard } from './components/SeimeiResultCard'
+import type { KuriDiagnosisMode } from './pages/CharacterSelectionPage'
 import { submitLoveType64QuizReuseLatest } from './api/loveType64'
 import {
   TUTORIAL_INTRO_STEPS,
@@ -144,7 +147,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -184,7 +187,7 @@ function AppContent() {
   const [introLines, setIntroLines] = useState<IntroLine[]>([])
   const [introStep, setIntroStep] = useState(0)
   // mode：'diagnosis'＝選んだあと、診断の入力へ進む会話／'gift'＝「ちょっとした挨拶」の一言（終わったら占い師選択へ戻る）
-  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: 'mbti' | 'love64'; mode?: 'diagnosis' | 'gift' } | null>(null)
+  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: KuriDiagnosisMode; mode?: 'diagnosis' | 'gift' } | null>(null)
   const [guideDialogue, setGuideDialogue] = useState('')
   const [guideExpression, setGuideExpression] = useState<1 | 2 | 3 | 4>(2)
   const [guideNoSplit, setGuideNoSplit] = useState(false)
@@ -578,6 +581,7 @@ function AppContent() {
   // 開発専用：URLに ?devlogin=1 を付けて開くと、テスト用アカウントで、Googleを通さずにログインする
   //   ?devlogin=fresh … テスト用アカウントを作り直す（初回ログイン＝チュートリアルから）
   //   &stones=500   … 石の数を指定する
+  //   &intimacy=10  … 全キャラの親密度を指定して、全員を解放する
   // バックエンドが DEV_LOGIN=1 で起動していて、このPCの中から開いたときだけ成功する（本番ビルドでは、この処理自体が入らない）
   const devLoginStartedRef = useRef(false)
   useEffect(() => {
@@ -587,8 +591,9 @@ function AppContent() {
     if (!flag) return
     devLoginStartedRef.current = true
     const stones = params.get('stones')
+    const intimacy = params.get('intimacy')
     ;(async () => {
-      const response = await devLogin({ fresh: flag === 'fresh', ...(stones ? { stones: Number(stones) } : {}) })
+      const response = await devLogin({ fresh: flag === 'fresh', ...(stones ? { stones: Number(stones) } : {}), ...(intimacy ? { intimacy: Number(intimacy) } : {}) })
       window.history.replaceState({}, '', window.location.pathname)
       if (response.success) handleLoginSuccess(response)
       else setError('テスト用ログインを使えませんでした（バックエンドを DEV_LOGIN=1 で起動していますか）')
@@ -1314,9 +1319,13 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       }
       if (characterId === 4) {
         // クリ：生年月日フォームではなく、選んだ方のクイズ画面へ
-        const mode = kuriMode ?? 'mbti'
+        const mode = kuriMode === 'love64' ? 'love64' : 'mbti'
         setKuriDiagnosisMode(mode)
         setScreen(mode === 'love64' ? 'love64-quiz' : 'mbti-quiz')
+      } else if (characterId === 3 && kuriMode === 'seimei') {
+        // コクウ：姓名判断。名前を聞く
+        setError('')
+        setScreen('seimei-input')
       } else if (characterId === 3) {
         // コクウ：手相診断。スマホ本体なら直接撮影、PCならQRコードでスマホに連携
         setScreen(isMobileDevice() ? 'palm-capture' : 'palm-qr-handoff')
@@ -1536,6 +1545,11 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             <div className="result-section">
               <h2>【性格診断（16タイプ）】</h2>
               <MBTIResultCard result={reading.mbtiResult} />
+            </div>
+          ) : reading.seimeiResult ? (
+            <div className="result-section">
+              <h2>【姓名判断】</h2>
+              <SeimeiResultCard result={reading.seimeiResult} />
             </div>
           ) : reading.loveTypeResult ? (
             <div className="result-section">
@@ -1881,6 +1895,56 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           }}
         />
       </div>
+    )
+  }
+
+  // コクウの姓名判断：名前（姓・名）と、悩み・状況を聞いて、診断する
+  if (screen === 'seimei-input') {
+    const submitSeimeiForm = async (values: CounselingValues) => {
+      setError('')
+      setLoadingMessage(pickRandomLoadingMessage())
+      setLoading(true)
+      try {
+        const response = await submitSeimei(values.surname ?? '', values.givenName ?? '', values.concern)
+        if (typeof response.stoneBalance === 'number') setStoneBalance(response.stoneBalance)
+        if (!response.success) {
+          setError(
+            response.error === 'INSUFFICIENT_STONES'
+              ? 'ルーンストーンが足りません。'
+              : (response.message || response.error || '姓名判断に失敗しました。')
+          )
+          return
+        }
+        setJustUnlockedCharacter(
+          response.intimacy?.justUnlocked !== null && response.intimacy?.justUnlocked !== undefined
+            ? (response.intimacy.justUnlocked as CharacterId)
+            : null
+        )
+        setReading({ seimeiResult: response.result, analysis: response.analysis || '' })
+        setViewingHistoryReading(false)
+        setScreen('result')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '姓名判断に失敗しました。通信環境をご確認ください。')
+      } finally {
+        setLoading(false)
+      }
+    }
+    return (
+      <>
+        {loading && <HamsterLoading />}
+        <CounselingScene
+          mode="name"
+          background="/assets/room001.jpg"
+          characterImage="/assets/characters/3-kokuu/kokuu001.webp"
+          speakerName="コクウ"
+          busy={loading}
+          error={error}
+          concernQuestion="ふむ、よく分かった。では、今、気になっていることはあるか。うまく言葉にならんでも、近いものを選べばよい"
+          doneLine="よし、字の画数を数えよう。しばし、待っておれ"
+          onCancel={() => setScreen('character-selection')}
+          onComplete={(values) => { void submitSeimeiForm(values) }}
+        />
+      </>
     )
   }
 
