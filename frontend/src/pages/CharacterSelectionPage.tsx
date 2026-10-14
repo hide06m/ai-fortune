@@ -13,7 +13,7 @@ import {
   INTIMACY_POINTS_PER_LEVEL,
   type CharacterId,
 } from '../types/character';
-import { getCharacterIntimacy, getUnlockedCharacters, sendCharacterGift, getCharacterGreeting } from '../api/character';
+import { getCharacterIntimacy, getUnlockedCharacters, sendCharacterGift } from '../api/character';
 import { getStoneBalance } from '../api/stones';
 import { speakGreeting, isVoiceEnabled } from '../services/textToSpeech';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
@@ -23,6 +23,8 @@ export type KuriDiagnosisMode = 'mbti' | 'love64';
 
 interface CharacterSelectionPageProps {
   onCharacterSelected: (characterId: CharacterId, kuriMode?: KuriDiagnosisMode) => void;
+  /** 「ちょっとした挨拶」を渡したあと、その占い師との会話を始める */
+  onGreeting?: (characterId: CharacterId) => void;
 }
 
 interface IntimacyState {
@@ -32,7 +34,9 @@ interface IntimacyState {
 
 function getCharacterImage(characterId: CharacterId): string {
   const { folder, prefix } = CHARACTER_VISUAL[characterId];
-  return `/assets/characters/${folder}/${prefix}001.webp`;
+  // ナツメの 001 は、フードで顔が隠れた初対面用の絵。選択画面では、顔の見える絵（002）を使う
+  const number = characterId === 1 ? '002' : '001';
+  return `/assets/characters/${folder}/${prefix}${number}.webp`;
 }
 
 // 親密度レベルによってハートの色・大きさの段階を変える（牧場物語のような見た目の変化）
@@ -61,7 +65,7 @@ function IntimacyHeart({ intimacy }: { intimacy: IntimacyState }) {
   );
 }
 
-export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelectionPageProps) {
+export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: CharacterSelectionPageProps) {
   // ナツメ（1番）が正面に来る向きから始める（5体なので 72° 毎）
   const [rotation, setRotation] = useState(72);
   // 選択中のキャラは、正面に来ているキャラ。矢印・ホイール・クリックで回すと、下の表示も同時に切り替わる
@@ -115,27 +119,6 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
       speakGreeting(selectedCharacterId);
     }
   }, [selectedCharacterId]);
-
-  // 選択中のキャラクターが変わったら、再訪問時の一言挨拶を取得（初対面イベント対象キャラのみ）
-  const [greetingText, setGreetingText] = useState<string | null>(null);
-  useEffect(() => {
-    if (selectedCharacterId === 0 || !unlockedCharacters.has(selectedCharacterId)) {
-      setGreetingText(null);
-      return;
-    }
-    let cancelled = false;
-    setGreetingText(null);
-    getCharacterGreeting(selectedCharacterId)
-      .then((res) => {
-        if (!cancelled && res.success && res.text) {
-          setGreetingText(res.text);
-        }
-      })
-      .catch((error) => console.error('Failed to fetch character greeting:', error));
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCharacterId, unlockedCharacters]);
 
   // マウス/キーボード操作で回転
   useEffect(() => {
@@ -210,7 +193,9 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
         if (response.justUnlocked !== null && response.justUnlocked !== undefined) {
           setUnlockedCharacters((prev) => new Set(prev).add(response.justUnlocked));
         }
-        setGiftMessage(`${selectedCharacter.name}に贈り物を渡した♪`);
+        setGiftMessage(null);
+        // 親密度が上がるだけでなく、その占い師との会話を始める
+        onGreeting?.(selectedCharacterId);
       } else if (response.error === 'INSUFFICIENT_STONES') {
         setGiftMessage('ルーンストーンが足りません');
       } else {
@@ -287,6 +272,7 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
                 {/* キャラクター情報 */}
                 <div className="character-info">
                   <h3>{character.name}</h3>
+                  <p className="character-role">{character.role}</p>
                   {unlockedCharacters.has(charId) && <IntimacyHeart intimacy={cardIntimacy} />}
                 </div>
               </div>
@@ -298,15 +284,7 @@ export function CharacterSelectionPage({ onCharacterSelected }: CharacterSelecti
       {/* 選択中のキャラクター情報パネル */}
       <div className="selection-panel">
         <div className="panel-content">
-          <h2>{selectedCharacter.name}</h2>
-          <p className="role">{selectedCharacter.role}</p>
           <p className="personality">{selectedCharacter.personality}</p>
-
-          {/* 再訪問時の一言挨拶 */}
-          {greetingText && <p className="character-greeting">「{greetingText}」</p>}
-
-          {/* 親密度（ハート＋%） */}
-          {isUnlocked && <IntimacyHeart intimacy={intimacy} />}
 
           {stoneBalance !== null && (
             <p className="stone-cost-hint">

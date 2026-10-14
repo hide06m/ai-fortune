@@ -47,7 +47,7 @@ import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
 import { isMobileDevice } from './utils/device'
 import { HamsterLoading } from './components/HamsterLoading'
 import { pickRandomLoadingMessage } from './data/loadingMessages'
-import { pickCharacterIntro, DAILY_BONUS_LINES, type IntroLine } from './data/characterIntros'
+import { pickCharacterIntro, pickGiftGreeting, DAILY_BONUS_LINES, type IntroLine } from './data/characterIntros'
 import { CHARACTER_VISUAL } from './data/characterVisuals'
 import { BirthDateInput } from './components/BirthDateInput'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
@@ -178,7 +178,8 @@ function AppContent() {
   // 占い師を選んだあとの、短い会話（診断の入力に入る前に挟む）
   const [introLines, setIntroLines] = useState<IntroLine[]>([])
   const [introStep, setIntroStep] = useState(0)
-  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: 'mbti' | 'love64' } | null>(null)
+  // mode：'diagnosis'＝選んだあと、診断の入力へ進む会話／'gift'＝「ちょっとした挨拶」の一言（終わったら占い師選択へ戻る）
+  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: 'mbti' | 'love64'; mode?: 'diagnosis' | 'gift' } | null>(null)
   const [guideDialogue, setGuideDialogue] = useState('')
   const [guideExpression, setGuideExpression] = useState<1 | 2 | 3 | 4>(2)
   const [guideNoSplit, setGuideNoSplit] = useState(false)
@@ -444,11 +445,15 @@ function AppContent() {
 
   // 「。」区切りで分割し、1文ずつ表示する（タップで次の文、最後の文でようやく次のステップへ）
   // noSplit指定時は全文をそのまま1つのまとまりとして表示する
-  const currentDialogueSentences = !currentStepFullText
+  // キャラクターのセリフでは、「。」は表示しない（「、」は使う）。ナレーションは、そのまま
+  const isNarrationNow = screen === 'tutorial' && currentTutorialStep?.type === 'narration'
+  const stripPeriod = (t: string) => (isNarrationNow ? t : t.replace(/。$/, '').replace(/。/g, '、'))
+  const currentDialogueSentences = (!currentStepFullText
     ? ['']
     : currentStepNoSplit
       ? [currentStepFullText]
       : splitIntoSentences(currentStepFullText)
+  ).map(stripPeriod)
   // 会話シーンで使う画像（背景・キャラの表情）を先に読み込む。切り替えのたびに読み込むと、
   // 読み込み中は前の画像が残ったり、一瞬別の絵が見えたりするため
   useEffect(() => {
@@ -1285,6 +1290,11 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     // 会話が終わったら、占い師ごとの診断の入口へ（従来どおり）
     const finishIntro = () => {
       const { characterId, kuriMode } = introTarget
+      if (introTarget.mode === 'gift') {
+        // 「ちょっとした挨拶」：一言を聞いたら、占い師選択へ戻る
+        setScreen('character-selection')
+        return
+      }
       if (characterId === 4) {
         // クリ：生年月日フォームではなく、選んだ方のクイズ画面へ
         const mode = kuriMode ?? 'mbti'
@@ -1816,10 +1826,18 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     return (
       <div className="app-container">
         <CharacterSelectionPage
+          onGreeting={(characterId) => {
+            // 「ちょっとした挨拶」を渡した：その占い師が、一言返す
+            setSelectedCharacterId(characterId)
+            setIntroTarget({ characterId, mode: 'gift' })
+            setIntroLines([pickGiftGreeting(characterId)])
+            setIntroStep(0)
+            setScreen('character-intro')
+          }}
           onCharacterSelected={(characterId, kuriMode) => {
             setSelectedCharacterId(characterId)
             // いきなり入力に入らず、まず、選んだ占い師との短い会話を挟む
-            setIntroTarget({ characterId, kuriMode })
+            setIntroTarget({ characterId, kuriMode, mode: 'diagnosis' })
             setIntroLines(pickCharacterIntro(characterId))
             setIntroStep(0)
             setScreen('character-intro')

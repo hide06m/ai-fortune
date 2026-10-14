@@ -131,7 +131,8 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
   const [concernText, setConcernText] = useState('');
 
   // タイプライター：どの文のものかを一緒に持つので、切り替わった瞬間に新しい文が見えてしまわない
-  const text = QUESTIONS[step];
+  // セリフでは「。」を表示しない（文の切れ目は、改行にする）
+  const text = QUESTIONS[step].replace(/。/g, '\n').trim();
   const [typed, setTyped] = useState({ text: '', n: 0 });
   const shown = typed.text === text ? typed.n : 0;
   useEffect(() => {

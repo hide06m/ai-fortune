@@ -374,3 +374,11 @@
 .carousel-arrow-right {
   right: 12px;
 }
+
+/* カードの名前の下に出す、占い師の分類（旧：下の枠に出していたもの） */
+.character-role {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.3;
+}

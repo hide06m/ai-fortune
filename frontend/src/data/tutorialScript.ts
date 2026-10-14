@@ -72,10 +72,10 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'natsume', image: 'natsume001', speaker: 'ムスビ', text: 'うちの占術師を紹介するよ' },
   { type: 'dialogue', character: 'natsume', image: 'natsume001', speaker: 'ムスビ', text: '彼女はナツメ' },
   { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: 'はじめまして、私はナツメ。見ての通り、ただここに身を置いているだけの小さな生き物よ' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: '古い井戸の底から、乾いた風をすくい上げるような仕事をしているわ' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: '特に古いものと、行き場をなくした靴下を扱うのは得意だから、何かあればいつでも言ってね' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: '挨拶代わりに占ってみましょうか' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: 'アナタのことを教えてくれます？' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '古い井戸の底から、乾いた風をすくい上げるような仕事をしているわ' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '特に古いものと、行き場をなくした靴下を扱うのは得意だから、何かあればいつでも言ってね' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '挨拶代わりに占ってみましょうか' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'アナタのことを教えてくれます？' },
   { type: 'handoff', action: 'gotoForm' },
 ]
 
@@ -83,11 +83,11 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
  * Segment C: 診断結果を見た後のフォロー（ナツメ→ルーンストーン表示→ムスビ）。
  */
 export const TUTORIAL_AFTER_RESULT_STEPS: TutorialStep[] = [
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: 'フフフ、どうだったかしら？いつでも相談してね' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: 'そうだ、これを' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: 'フフフ、どうだったかしら？いつでも相談してね' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'そうだ、これを' },
   { type: 'itemReveal', image: '/assets/stone.webp' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: 'それはルーンストーン、また相談したいときはその石をつかってちょうだい' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume011', speaker: 'ナツメ', text: '今日はありがとうね' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'それはルーンストーン、また相談したいときはその石をつかってちょうだい' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume003', speaker: 'ナツメ', text: '今日はありがとうね' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'どうだった？ 何かにぶつかった時は彼女に相談するといいよ。今は留守にしているけれど、この館には他にも奇妙で、少しばかり風変わりな同居人たちがいるんだ。また来る機会があれば、いずれ引き合わせるよ' },
 ]
 
