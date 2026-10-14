@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { KURI_CONSULT_STONE_COST } from '../types/character';
 
 interface QuizRetakeChoiceProps {
   quizName: string; // 例: "性格診断（16タイプ）"
@@ -38,7 +39,7 @@ export function QuizRetakeChoice({
           戻る
         </button>
         <button type="button" className="primary-button" onClick={onConsult} disabled={submitting}>
-          悩み・状況をクリに相談する
+          悩み・状況をクリに相談する（石{KURI_CONSULT_STONE_COST}個）
         </button>
       </div>
 

@@ -36,14 +36,17 @@ export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
   1: 1,
   2: 5,
   3: 10,
-  4: 3,
+  4: 1, // クリ：タイプ診断（AIなし）1回あたり。悩み・状況の相談は KURI_CONSULT_STONE_COST
 };
+
+/** クリへの「悩み・状況の相談」（AIを使う）に必要なルーンストーン数。診断して相談する場合は、診断1＋相談3＝4個 */
+export const KURI_CONSULT_STONE_COST = 3;
 
 /** 「ちょっとした挨拶（ミニ贈り物）」に必要なルーンストーン数（固定） */
 export const GIFT_STONE_COST = 1;
 
 /** 「ちょっとした挨拶」が使えるキャラ（診断コストが高いキャラのみ） */
-export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [2, 3, 4];
+export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [1, 2, 3, 4];
 
 export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
   0: {

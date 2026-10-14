@@ -12,7 +12,7 @@ import {
   setUserEmail as saveUserEmail,
   type FortuneRequest
 } from './api'
-import { CHARACTER_MASTER_DATA, DIAGNOSIS_STONE_COST, type CharacterId } from './types/character'
+import { CHARACTER_MASTER_DATA, DIAGNOSIS_STONE_COST, KURI_CONSULT_STONE_COST, type CharacterId } from './types/character'
 import { getStoneBalance, claimDailyBonus, watchAdForStone } from './api/stones'
 import { getReadingHistory, getReadingDetail, type ReadingSummary } from './api/readings'
 import { callCompatibilityAPI, type CompatibilityResponse } from './api/compatibility'
@@ -50,6 +50,7 @@ import { pickRandomLoadingMessage } from './data/loadingMessages'
 import { pickCharacterIntro, pickGiftGreeting, DAILY_BONUS_LINES, type IntroLine } from './data/characterIntros'
 import { CHARACTER_VISUAL } from './data/characterVisuals'
 import { BirthDateInput } from './components/BirthDateInput'
+import { CrossfadeImage } from './components/CrossfadeImage'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import { submitMBTIQuizReuseLatest } from './api/mbti'
 import { submitLoveType64QuizReuseLatest } from './api/loveType64'
@@ -1144,12 +1145,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         {/* セリフが届くまで、立ち絵も出さない（既定の表情が先に出て、あとで別の絵に変わるのを防ぐ） */}
         {guideDialogue && (
           <div className="vn-character-bust-wrap">
-            <img
-              key={guideExpression}
-              src={`/assets/characters/0-musubi/ham00${guideExpression}.webp`}
-              alt="ムスビ"
-              className="vn-character-bust"
-            />
+            <CrossfadeImage src={`/assets/characters/0-musubi/ham00${guideExpression}.webp`} alt="ムスビ" />
           </div>
         )}
         {/* 石を渡す場面：渡すセリフに来たら、ルーンストーンを見せる */}
@@ -1179,12 +1175,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       <div className="vn-scene" style={{ backgroundImage: 'url(/assets/index001.jpg)' }} onClick={() => handleDialogueBoxClick(handleGuestDialogueClick)}>
         <div className="vn-character-bust-wrap">
           {showCharacter && (
-            <img
-              key="guest-musubi"
-              src="/assets/characters/0-musubi/ham003.webp"
-              alt="???"
-              className="vn-character-bust"
-            />
+            <CrossfadeImage src="/assets/characters/0-musubi/ham003.webp" alt="???" />
           )}
         </div>
         <div className="vn-dialogue-box">
@@ -1268,11 +1259,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       <div className="vn-scene" style={{ backgroundImage: `url(${background})` }} onClick={() => handleDialogueBoxClick(handleTutorialAdvance)}>
         {step.image && (
           <div className="vn-character-bust-wrap">
-            <img
-              src={`/assets/characters/${folder}/${step.image}.webp`}
-              alt={step.character ?? ''}
-              className="vn-character-bust"
-            />
+            <CrossfadeImage src={`/assets/characters/${folder}/${step.image}.webp`} alt={step.character ?? ''} />
           </div>
         )}
         <div className="vn-dialogue-box">
@@ -1316,7 +1303,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     return (
       <div className="vn-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }} onClick={() => handleDialogueBoxClick(advance)}>
         <div className="vn-character-bust-wrap">
-          <img key={line.image} src={`/assets/characters/${folder}/${line.image}.webp`} alt={CHARACTER_MASTER_DATA[introTarget.characterId].name} className="vn-character-bust" />
+          <CrossfadeImage src={`/assets/characters/${folder}/${line.image}.webp`} alt={CHARACTER_MASTER_DATA[introTarget.characterId].name} />
         </div>
         <div className="vn-dialogue-box">
           <div className="vn-speaker-name">{CHARACTER_MASTER_DATA[introTarget.characterId].name}</div>
@@ -1575,7 +1562,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           {!reading.analysis && (reading.mbtiResult || reading.loveTypeResult) && (
             <div className="result-section">
               <h2>【クリに相談する】</h2>
-              <p>タイプがわかりました。このタイプを踏まえて、今の悩み・状況をクリに相談できます（ルーンストーンを使います）。</p>
+              <p>タイプがわかりました。このタイプを踏まえて、今の悩み・状況をクリに相談できます（ルーンストーン{KURI_CONSULT_STONE_COST}個）。</p>
               <button
                 type="button"
                 className="primary-button"
@@ -1585,7 +1572,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
                   setScreen('kuri-consult')
                 }}
               >
-                悩み・状況を相談する
+                {`悩み・状況を相談する（石${KURI_CONSULT_STONE_COST}個）`}
               </button>
             </div>
           )}
@@ -1852,7 +1839,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             // 「ちょっとした挨拶」を渡した：その占い師が、一言返す
             setSelectedCharacterId(characterId)
             setIntroTarget({ characterId, mode: 'gift' })
-            setIntroLines([pickGiftGreeting(characterId)])
+            setIntroLines(pickGiftGreeting(characterId))
             setIntroStep(0)
             setScreen('character-intro')
           }}

@@ -492,6 +492,32 @@ body {
   pointer-events: none;
 }
 
+.vn-bust-stack {
+  position: relative;
+  width: 100%;
+}
+
+.vn-bust-prev {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: vnCrossfadeOut 0.35s ease-out forwards !important;
+}
+
+.vn-bust-cur {
+  animation: vnCrossfadeIn 0.35s ease-in !important;
+}
+
+@keyframes vnCrossfadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes vnCrossfadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 .vn-character-bust {
   width: 100%;
   height: auto;
@@ -627,7 +653,7 @@ body {
 
 .item-reveal-item {
   position: relative;
-  width: 45%;
+  width: 60%;
   height: auto;
   filter: drop-shadow(0 0 24px rgba(255, 220, 130, 0.7));
 }
@@ -1364,7 +1390,7 @@ body {
 }
 
 .vn-bonus-stone img {
-  width: clamp(80px, 14vmin, 160px);
+  width: clamp(120px, 22vmin, 260px);
   height: auto;
   filter: drop-shadow(0 0 18px rgba(255, 220, 130, 0.85));
 }

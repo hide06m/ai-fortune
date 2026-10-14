@@ -65,8 +65,11 @@ export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
   1: 1, // ナツメ：初期キャラ、気軽に相談できる
   2: 5, // ツキ
   3: 10, // コクウ：最も解放が遅く、最も高価
-  4: 3, // クリ
+  4: 1, // クリ：タイプ診断（性格16・ラブ64。AIなし）1回あたり。悩み・状況の相談は KURI_CONSULT_STONE_COST
 };
+
+/** クリへの「悩み・状況の相談」（AIを使う）に必要なルーンストーン数。診断して相談する場合は、診断1＋相談3＝4個 */
+export const KURI_CONSULT_STONE_COST = 3;
 
 /** 「ちょっとした挨拶（ミニ贈り物）」に必要なルーンストーン数（固定） */
 export const GIFT_STONE_COST = 1;
@@ -76,7 +79,7 @@ export const GIFT_STONE_COST = 1;
  * （診断コストが高い＝会いに行く頻度が下がりがちなキャラだけを対象にする。
  * ナツメは診断自体が安く日常的な接点になるため対象外、ムスビは診断キャラではないため対象外）
  */
-export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [2, 3, 4];
+export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [1, 2, 3, 4];
 
 /**
  * 親密度レベルに基づく占術解放情報

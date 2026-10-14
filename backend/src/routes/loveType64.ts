@@ -21,7 +21,7 @@ import { generateFromPrompt } from '../llm/client.js'
 import { fortuneCache } from '../llm/cache.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
 import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
-import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../types/character.js'
+import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, KURI_CONSULT_STONE_COST, type CharacterId } from '../types/character.js'
 import { saveReading, getLatestLoveType64Result } from '../db/readings.js'
 import { requireAuth } from '../middleware/auth.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
@@ -119,6 +119,22 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
     if (typeOnly === true) {
       // AIを使わない軽い処理なので、1日の診断回数には数えない
       res.locals.skipDailyCount = true
+      // タイプ診断は、石1個（AIは使わないので、失敗して払い戻す場面はない）
+      let typeStoneBalance: number | null = null
+      if (req.isAuthenticated && req.user) {
+        try {
+          typeStoneBalance = await spendStoneForDiagnosis(req.user.userId, DIAGNOSIS_STONE_COST[KURI_CHARACTER_ID])
+        } catch (error) {
+          if (error instanceof Error && error.message === 'INSUFFICIENT_STONES') {
+            return res.status(402).json({
+              success: false,
+              error: 'INSUFFICIENT_STONES',
+              message: 'ルーンストーンが足りません。ログインボーナスや広告視聴で増やしてください。',
+            })
+          }
+          throw error
+        }
+      }
       await applyIntimacy()
       if (req.isAuthenticated && req.user) {
         try {
@@ -134,7 +150,7 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
           console.error('Failed to save reading (love64 type only):', error)
         }
       }
-      return res.json({ success: true, result: quizResult, analysis: '', typeOnly: true, intimacy: intimacyResult, stoneBalance: null })
+      return res.json({ success: true, result: quizResult, analysis: '', typeOnly: true, intimacy: intimacyResult, stoneBalance: typeStoneBalance })
     }
 
     // キャッシュ確認（石を使わずに結果を返せるケース）
@@ -168,7 +184,8 @@ router.post('/', dailyLimiter, async (req: Request, res: Response) => {
 
     // 石の消費（ログイン済みユーザーがLLMを実際に呼ぶ場合のみ）
     const shouldChargeStone = !!(req.isAuthenticated && req.user && process.env.GEMINI_API_KEY)
-    const stoneCost = DIAGNOSIS_STONE_COST[KURI_CHARACTER_ID]
+    // 悩み・状況の相談（AIを使う）は石3個
+    const stoneCost = KURI_CONSULT_STONE_COST
     let stoneBalance: number | null = null
     if (shouldChargeStone) {
       try {
