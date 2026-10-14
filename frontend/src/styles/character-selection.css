@@ -140,9 +140,14 @@
 }
 
 /* 選択パネル */
+/* 説明文の長さが占い師ごとに違っても、枠ががたつかないよう、高さを固定する（ボタンは下端に寄せる） */
 .selection-panel {
   width: 100%;
   max-width: 600px;
+  height: 520px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   padding: 2rem;
@@ -152,6 +157,13 @@
 
 .panel-content {
   text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-content .action-buttons {
+  margin-top: auto;
 }
 
 .panel-content h2 {

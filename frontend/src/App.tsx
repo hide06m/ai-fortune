@@ -47,6 +47,8 @@ import { PalmQRHandoffPage } from './pages/PalmQRHandoffPage'
 import { isMobileDevice } from './utils/device'
 import { HamsterLoading } from './components/HamsterLoading'
 import { pickRandomLoadingMessage } from './data/loadingMessages'
+import { pickCharacterIntro, DAILY_BONUS_LINES, type IntroLine } from './data/characterIntros'
+import { CHARACTER_VISUAL } from './data/characterVisuals'
 import { BirthDateInput } from './components/BirthDateInput'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import {
@@ -126,9 +128,6 @@ const GUEST_POST_RESULT_LINES = [
 
 // 鑑定中ローディング画面の世界観フレーバーメッセージ（ランダム表示）
 
-// その日の最初のログインで、ムスビが語る（石を渡す）一言
-const DAILY_BONUS_LINE = '……ああ、そうだ。忘れるところだった。今日の分のルーンストーンを渡しておこう。ほら、受け取ってくれ。'
-
 function guestLinesFor(phase: 'pre-form' | 'post-result' | 'limit'): string[] {
   return phase === 'pre-form' ? GUEST_PRE_FORM_LINES : phase === 'limit' ? GUEST_LIMIT_LINES : GUEST_POST_RESULT_LINES
 }
@@ -140,7 +139,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'form' | 'counseling' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -176,6 +175,10 @@ function AppContent() {
   const [compatResult, setCompatResult] = useState<CompatibilityResponse | null>(null)
 
   // 案内役（ムスビ）のドア挨拶
+  // 占い師を選んだあとの、短い会話（診断の入力に入る前に挟む）
+  const [introLines, setIntroLines] = useState<IntroLine[]>([])
+  const [introStep, setIntroStep] = useState(0)
+  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: 'mbti' | 'love64' } | null>(null)
   const [guideDialogue, setGuideDialogue] = useState('')
   const [guideExpression, setGuideExpression] = useState<1 | 2 | 3 | 4>(2)
   const [guideNoSplit, setGuideNoSplit] = useState(false)
@@ -423,7 +426,9 @@ function AppContent() {
       ? guestLinesFor(guestPhase)[guestStep] || ''
       : screen === 'guide-conversation'
         ? guideDialogue
-        : screen === 'tutorial' && currentTutorialStep &&
+        : screen === 'character-intro'
+          ? introLines[introStep]?.text ?? ''
+          : screen === 'tutorial' && currentTutorialStep &&
             (currentTutorialStep.type === 'narration' || currentTutorialStep.type === 'dialogue')
           ? currentTutorialStep.text
           : ''
@@ -456,14 +461,18 @@ function AppContent() {
         if (st.type === 'itemReveal' && st.image) urls.add(st.image)
       }
     }
+    if (screen === 'character-intro' && introTarget) {
+      const { folder } = CHARACTER_VISUAL[introTarget.characterId]
+      introLines.forEach((l) => urls.add(`/assets/characters/${folder}/${l.image}.webp`))
+    }
     urls.forEach((u) => {
       const img = new Image()
       img.src = u
     })
-  }, [screen, tutorialSegment, meetingCharacterId])
+  }, [screen, tutorialSegment, meetingCharacterId, introTarget, introLines])
 
   // ステップが切り替わったら、文の分割位置は自動で先頭に戻る（キーが変わるため）
-  const dialogueStepKey = `${screen}|${guestPhase}|${guestStep}|${guideDialogue}|${tutorialSegment}|${tutorialStepIndex}`
+  const dialogueStepKey = `${screen}|${guestPhase}|${guestStep}|${guideDialogue}|${tutorialSegment}|${tutorialStepIndex}|${introStep}`
   const dialogueSentenceIndex = sentenceState.key === dialogueStepKey ? sentenceState.index : 0
   const setDialogueSentenceIndex = (index: number) => setSentenceState({ key: dialogueStepKey, index })
   const currentDialogueText = currentDialogueSentences[dialogueSentenceIndex] ?? currentDialogueSentences[0] ?? ''
@@ -603,7 +612,7 @@ function AppContent() {
     const bonusTail = pendingDailyBonusRef.current
       ? `
 
-${DAILY_BONUS_LINE}`
+${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       : ''
     try {
       const result = await greetGuide()
@@ -1268,6 +1277,54 @@ ${DAILY_BONUS_LINE}`
     )
   }
 
+  // ========== 占い師との会話（選んだあと、入力に入る前） ==========
+  if (screen === 'character-intro' && introTarget && introLines.length > 0) {
+    const line = introLines[Math.min(introStep, introLines.length - 1)]
+    const { folder } = CHARACTER_VISUAL[introTarget.characterId]
+    const isTyping = typedLength < currentDialogueText.length
+    // 会話が終わったら、占い師ごとの診断の入口へ（従来どおり）
+    const finishIntro = () => {
+      const { characterId, kuriMode } = introTarget
+      if (characterId === 4) {
+        // クリ：生年月日フォームではなく、選んだ方のクイズ画面へ
+        const mode = kuriMode ?? 'mbti'
+        setKuriDiagnosisMode(mode)
+        setScreen(mode === 'love64' ? 'love64-quiz' : 'mbti-quiz')
+      } else if (characterId === 3) {
+        // コクウ：手相診断。スマホ本体なら直接撮影、PCならQRコードでスマホに連携
+        setScreen(isMobileDevice() ? 'palm-capture' : 'palm-qr-handoff')
+      } else {
+        setScreen('form')
+      }
+    }
+    const advance = () => {
+      if (introStep < introLines.length - 1) setIntroStep(introStep + 1)
+      else finishIntro()
+    }
+    return (
+      <div className="vn-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }} onClick={() => handleDialogueBoxClick(advance)}>
+        <div className="vn-character-bust-wrap">
+          <img key={line.image} src={`/assets/characters/${folder}/${line.image}.webp`} alt={CHARACTER_MASTER_DATA[introTarget.characterId].name} className="vn-character-bust" />
+        </div>
+        <div className="vn-dialogue-box">
+          <div className="vn-speaker-name">{CHARACTER_MASTER_DATA[introTarget.characterId].name}</div>
+          <p className="vn-dialogue-text">{currentDialogueText.slice(0, typedLength)}</p>
+          {!isTyping && <div className="vn-continue-hint">▼</div>}
+        </div>
+        <button
+          type="button"
+          className="vn-back-button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setScreen('character-selection')
+          }}
+        >
+          ← 占い師選択に戻る
+        </button>
+      </div>
+    )
+  }
+
   // ========== カウンセリング方式の入力（ゲスト診断・ログイン初回診断） ==========
   if (screen === 'counseling') {
     return (
@@ -1761,17 +1818,11 @@ ${DAILY_BONUS_LINE}`
         <CharacterSelectionPage
           onCharacterSelected={(characterId, kuriMode) => {
             setSelectedCharacterId(characterId)
-            if (characterId === 4) {
-              // クリ：生年月日フォームではなく、選んだ方のクイズ画面へ
-              const mode = kuriMode ?? 'mbti'
-              setKuriDiagnosisMode(mode)
-              setScreen(mode === 'love64' ? 'love64-quiz' : 'mbti-quiz')
-            } else if (characterId === 3) {
-              // コクウ：手相診断。スマホ本体なら直接撮影、PCならQRコードでスマホに連携
-              setScreen(isMobileDevice() ? 'palm-capture' : 'palm-qr-handoff')
-            } else {
-              setScreen('form')
-            }
+            // いきなり入力に入らず、まず、選んだ占い師との短い会話を挟む
+            setIntroTarget({ characterId, kuriMode })
+            setIntroLines(pickCharacterIntro(characterId))
+            setIntroStep(0)
+            setScreen('character-intro')
           }}
         />
       </div>
