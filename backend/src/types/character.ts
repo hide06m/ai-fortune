@@ -58,6 +58,15 @@ export const DIAGNOSIS_INTIMACY_POINTS = INTIMACY_POINTS_PER_LEVEL;
 export const GIFT_INTIMACY_POINTS = 20;
 
 /**
+ * 【隠し要素】ムスビの親密度が上がるほど、他の占い師の親密度が上がりやすくなる（画面では、教えない）。
+ * ムスビの親密度レベルごとの倍率：Lv1-2＝1.1倍、Lv3-4＝1.2倍、Lv5-6＝1.3倍、Lv7-8＝1.4倍、Lv9-10＝1.5倍
+ */
+export function musubiBoostMultiplier(musubiLevel: number): number {
+  const step = Math.min(5, Math.ceil(Math.max(0, musubiLevel) / 2));
+  return 1 + step * 0.1;
+}
+
+/**
  * 診断1回に必要なルーンストーン数（キャラごとに変える。解放の遅いキャラほど高価にして特別感を出す）
  */
 export const DIAGNOSIS_STONE_COST: Record<CharacterId, number> = {
@@ -85,7 +94,7 @@ export const GIFT_STONE_COST = 1;
  * （診断コストが高い＝会いに行く頻度が下がりがちなキャラだけを対象にする。
  * ナツメは診断自体が安く日常的な接点になるため対象外、ムスビは診断キャラではないため対象外）
  */
-export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [1, 2, 3, 4];
+export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [0, 1, 2, 3, 4];
 
 /**
  * 親密度レベルに基づく占術解放情報

@@ -307,7 +307,8 @@ router.post('/:characterId/gift', requireAuth, async (req: Request, res: Respons
 
     // 未解放キャラには渡せない（診断と同じくキャラ選択画面で解放済みのキャラのみが対象）
     const currentIntimacy = await getUserCharacterIntimacy(userId, characterId);
-    if (!currentIntimacy || !currentIntimacy.unlockedAt) {
+    // ムスビだけは、解放される前から、ちょっとした挨拶ができる（親密度を上げられる）
+    if (!currentIntimacy || (!currentIntimacy.unlockedAt && characterId !== 0)) {
       return res.status(403).json({
         success: false,
         error: 'まだ解放されていないキャラクターです',

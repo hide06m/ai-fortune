@@ -23,6 +23,8 @@ import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
 import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { inFlightGuard } from '../middleware/inFlightGuard.js'
+import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 
@@ -44,7 +46,14 @@ function saveDevCapture(imageBase64: string, rawLines: unknown): void {
 }
 const KOKUU_CHARACTER_ID: CharacterId = 3
 
-router.post('/', dailyLimiter, async (req: Request, res: Response) => {
+// 手相は、撮影した写真と線の座標も、最新の結果として保存する（前回の結果を、石なしで見返せるように）
+router.post('/', captureLatestResult({
+  kind: () => 'palm',
+  payload: (b) => ({
+    analysis: b.analysis ?? '',
+    palm: b.image && Array.isArray(b.lines) && b.lines.length > 0 ? { imageUrl: `data:${b.image.mimeType};base64,${b.image.base64}`, lines: b.lines } : undefined,
+  }),
+}), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { token, imageBase64: directImageBase64, mimeType: directMimeType, concern, lines: directLines } = req.body
     const concernText = typeof concern === 'string' ? concern : ''

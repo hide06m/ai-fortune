@@ -11,6 +11,7 @@ import { generateFromPrompt } from '../llm/client.js'
 import { fortuneCache } from '../llm/cache.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { inFlightGuard } from '../middleware/inFlightGuard.js'
 
 const router = Router()
 
@@ -24,7 +25,7 @@ function isValidPersonInput(value: unknown): value is PersonInput {
   return !!value && typeof value === 'object' && typeof (value as PersonInput).birthDate === 'string'
 }
 
-router.post('/', dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { personA, personB } = req.body
 

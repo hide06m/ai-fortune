@@ -52,14 +52,14 @@ export const KURI_CONSULT_STONE_COST = 3;
 export const GIFT_STONE_COST = 1;
 
 /** 「ちょっとした挨拶」が使えるキャラ（診断コストが高いキャラのみ） */
-export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [1, 2, 3, 4];
+export const GIFT_ELIGIBLE_CHARACTERS: CharacterId[] = [0, 1, 2, 3, 4];
 
 export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
   0: {
     id: 0,
     name: 'ムスビ',
     gender: 'male',
-    role: '総合相談役（全員の親密度MAXで解放）',
+    role: '館の案内人',
     personality: '温かみのある長男肌、優しい',
     voiceId: 11, // 玄野武宏・男性
     imageFile: 'ham0',

@@ -119,3 +119,150 @@
   font-size: 0.75rem;
   opacity: 0.7;
 }
+
+/* 姓名判断の図（名前を縦に並べ、五格を示す） */
+.seimei-diagram {
+  margin: 0 auto 18px;
+  padding: 16px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.sd-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sd-left {
+  display: flex;
+  align-items: center;
+}
+
+.sd-names {
+  display: flex;
+  flex-direction: column;
+}
+
+.sd-char {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  font-size: 2.4rem;
+  color: #fff;
+}
+
+.sd-right {
+  position: relative;
+}
+
+.sd-brackets {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.sd-boxes {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.sd-box {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 84px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.sd-box-label {
+  grid-column: 1 / 3;
+  font-size: 0.72rem;
+  opacity: 0.8;
+  text-align: center;
+}
+
+.sd-box-strokes {
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sd-box-level {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.sd-box-level.is-daikichi {
+  color: #ff5b5b;
+}
+
+.sd-box-level.is-kichi {
+  color: #ff8a3d;
+}
+
+.sd-box-level.is-hankichi {
+  color: #7fb4ff;
+}
+
+.sd-box-level.is-kyo {
+  color: #b58cff;
+}
+
+.sd-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.sd-sansai {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sd-sansai-title {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.sd-sansai-elements {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.sd-sansai-overall {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.sd-sansai-overall.is-kichi {
+  color: #ff8a3d;
+}
+
+.sd-sansai-overall.is-kyo {
+  color: #b58cff;
+}
+
+.sd-sansai-overall.is-mixed {
+  color: #ffd166;
+}

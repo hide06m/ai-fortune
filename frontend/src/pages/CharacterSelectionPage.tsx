@@ -20,6 +20,16 @@ import { getStoneBalance } from '../api/stones';
 import { speakGreeting, isVoiceEnabled } from '../services/textToSpeech';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
 import { HamsterLoading } from '../components/HamsterLoading';
+import { listLatestResults } from '../api/results';
+
+/** 占い師ごとの、見返せる最新の結果の種類（kind）と、ボタンに出す名前 */
+const LATEST_BY_CHARACTER: Record<number, Array<{ kind: string; label: string }>> = {
+  0: [{ kind: 'musubi', label: '総合相談' }],
+  1: [{ kind: 'fortune:1', label: '四柱推命など' }],
+  2: [{ kind: 'fortune:2', label: '西洋占星術' }, { kind: 'sukuyou', label: '宿曜占星術' }],
+  3: [{ kind: 'palm', label: '手相' }, { kind: 'seimei', label: '姓名判断' }],
+  4: [{ kind: 'mbti', label: '性格診断' }, { kind: 'love64', label: 'ラブタイプ診断' }],
+};
 
 /** 占術の選び方：クリ＝性格(mbti)／ラブタイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
 export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei' | 'consult';
@@ -28,6 +38,8 @@ interface CharacterSelectionPageProps {
   onCharacterSelected: (characterId: CharacterId, kuriMode?: KuriDiagnosisMode) => void;
   /** 「ちょっとした挨拶」を渡したあと、その占い師との会話を始める */
   onGreeting?: (characterId: CharacterId) => void;
+  /** 前回の結果を見る（ルーンストーン不要） */
+  onViewLatest?: (kind: string) => void;
 }
 
 interface IntimacyState {
@@ -68,7 +80,12 @@ function IntimacyHeart({ intimacy }: { intimacy: IntimacyState }) {
   );
 }
 
-export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: CharacterSelectionPageProps) {
+export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onViewLatest }: CharacterSelectionPageProps) {
+  // 保存されている、前回の結果の種類
+  const [latestKinds, setLatestKinds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    listLatestResults().then((list) => setLatestKinds(new Set(list.map((r) => r.kind))));
+  }, []);
   // ナツメ（1番）が正面に来る向きから始める（5体なので 72° 毎）
   const [rotation, setRotation] = useState(72);
   // 選択中のキャラは、正面に来ているキャラ。矢印・ホイール・クリックで回すと、下の表示も同時に切り替わる
@@ -277,7 +294,7 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
                 <div className="character-info">
                   <h3>{character.name}</h3>
                   <p className="character-role">{character.role}</p>
-                  {unlockedCharacters.has(charId) && <IntimacyHeart intimacy={cardIntimacy} />}
+                  {(unlockedCharacters.has(charId) || charId === 0) && <IntimacyHeart intimacy={cardIntimacy} />}
                 </div>
               </div>
             );
@@ -300,11 +317,19 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
           {/* ボタン */}
           <div className="action-buttons">
             {!isUnlocked && selectedCharacterId !== 1 ? (
+              <>
               <button className="btn btn-locked" disabled>
                 {selectedCharacterId === 0
-                  ? '🔒 ナツメ・ツキ・コクウ・クリの親密度が、すべてMAXで解放'
+                  ? '🔒 …まだ、そのときではないようだ'
                   : `🔒 親密度 Lv.${getUnlockLevel(selectedCharacterId)} で解放`}
               </button>
+              {/* ムスビだけは、解放される前から、ちょっとした挨拶ができる */}
+              {selectedCharacterId === 0 && canGift && (
+                <button className="btn btn-secondary" onClick={handleGift} disabled={!canAffordGift || giftingCharacterId !== null}>
+                  💌 ちょっとした挨拶（石{GIFT_STONE_COST}個）
+                </button>
+              )}
+              </>
             ) : selectedCharacterId === 0 ? (
               <>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('consult')} disabled={stoneBalance !== null && stoneBalance < MUSUBI_STONE_COST}>
@@ -361,6 +386,20 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
             )}
           </div>
           {giftMessage && <p className="gift-message">{giftMessage}</p>}
+
+          {/* 一度診断した結果の、最新のものは、ルーンストーンなしで見返せる */}
+          {onViewLatest && (LATEST_BY_CHARACTER[selectedCharacterId] ?? []).some((x) => latestKinds.has(x.kind)) && (
+            <div className="latest-results">
+              <span className="latest-results-title">前回の結果を見る（無料）</span>
+              {(LATEST_BY_CHARACTER[selectedCharacterId] ?? [])
+                .filter((x) => latestKinds.has(x.kind))
+                .map((x) => (
+                  <button key={x.kind} type="button" className="latest-results-button" onClick={() => onViewLatest(x.kind)}>
+                    {x.label}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -52,6 +52,14 @@ export interface UserProfileSources {
   palmAnalysis: string | null
   /** 姓名判断（コクウ）の診断文（先頭に、名前と五格の要約が付く） */
   seimeiAnalysis: string | null
+  /** 宿曜占星術（ツキ）の診断文 */
+  sukuyouAnalysis: string | null
+  /** これまでに、占い師たちに相談した、悩み・状況（新しい順。この人が、何を気にしてきたかの手がかり） */
+  pastConcerns: Array<{ concern: string; characterId: number | null; date: string }>
+  /** 占い師ごとの診断回数（どの占い師と、どれくらい関わってきたか） */
+  diagnosisCounts: Record<number, number>
+  /** 以前の、ムスビの総合相談（新しい順、最大2件）。前回からの変化を見るため */
+  previousMusubi: Array<{ date: string; analysis: string }>
 }
 
 async function latestRow(userId: string, where: string): Promise<any | null> {
@@ -65,6 +73,18 @@ export async function getUserProfileSources(userId: string): Promise<UserProfile
   const loveRow = await latestRow(userId, 'love_type_result IS NOT NULL')
   const palmRow = await latestRow(userId, "bazi_key LIKE 'palm:%'")
   const seimeiRow = await latestRow(userId, "bazi_key LIKE 'seimei:%'")
+  const sukuyouRow = await latestRow(userId, "bazi_key LIKE 'sukuyou:%'")
+  // 西洋占星術はツキの診断にだけ入る。命式の最新（ナツメ）とは、別の行から取る
+  const westernRow = await latestRow(userId, 'western_zodiac_result IS NOT NULL')
+  const concerns = await query(
+    `SELECT concern, character_id, created_at FROM readings WHERE user_id = $1 AND concern IS NOT NULL AND concern <> '' ORDER BY created_at DESC LIMIT 10`,
+    [userId]
+  )
+  const counts = await query('SELECT character_id, COUNT(*)::int AS n FROM readings WHERE user_id = $1 GROUP BY character_id', [userId])
+  const musubiPast = await query(
+    `SELECT llm_analysis, created_at FROM readings WHERE user_id = $1 AND bazi_key LIKE 'musubi:%' ORDER BY created_at DESC LIMIT 2`,
+    [userId]
+  )
   const dateOnly = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : v ? String(v).slice(0, 10) : null)
   return {
     birth: birthRow
@@ -75,12 +95,16 @@ export async function getUserProfileSources(userId: string): Promise<UserProfile
           baZi: birthRow.bazi_result,
           numerology: birthRow.numerology_result,
           kyuseiSeisun: birthRow.kyusei_result,
-          westernZodiac: birthRow.western_zodiac_result,
+          westernZodiac: westernRow?.western_zodiac_result ?? birthRow.western_zodiac_result,
         }
       : null,
     mbti: mbtiRow?.mbti_result ?? null,
     loveType: loveRow?.love_type_result ?? null,
     palmAnalysis: palmRow?.llm_analysis ?? null,
     seimeiAnalysis: seimeiRow?.llm_analysis ?? null,
+    sukuyouAnalysis: sukuyouRow?.llm_analysis ?? null,
+    pastConcerns: concerns.rows.map((r) => ({ concern: String(r.concern).slice(0, 200), characterId: r.character_id ?? null, date: dateOnly(r.created_at) ?? '' })),
+    diagnosisCounts: Object.fromEntries(counts.rows.filter((r) => r.character_id !== null).map((r) => [r.character_id, r.n])),
+    previousMusubi: musubiPast.rows.map((r) => ({ date: dateOnly(r.created_at) ?? '', analysis: String(r.llm_analysis ?? '') })),
   }
 }

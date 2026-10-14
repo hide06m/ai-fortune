@@ -3,6 +3,7 @@
  */
 
 import '../styles/seimei-result.css';
+import { SeimeiDiagram } from './SeimeiDiagram';
 import type { SeimeiResult } from '../api/seimei';
 
 const LEVEL_CLASS: Record<string, string> = {
@@ -16,6 +17,10 @@ export function SeimeiResultCard({ result }: { result: SeimeiResult }) {
   const [t, j, c] = result.sansai.elements;
   return (
     <div className="seimei-result">
+      {/* 名前を縦に並べ、五格の画数と吉凶を示す図 */}
+      <SeimeiDiagram result={result} />
+
+      {/* 各字の画数 */}
       <div className="seimei-name">
         {[...result.surname, ...result.givenName].map((ch, i) => (
           <span key={i} className={`seimei-char${i === result.surname.length ? ' is-given-start' : ''}`}>

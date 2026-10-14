@@ -11,6 +11,12 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+// 安全装置：本番では、開発専用のテスト用ログイン（DEV_LOGIN）を、設定されていても、必ず無効にする
+if (process.env.NODE_ENV === 'production' && process.env.DEV_LOGIN) {
+  console.error('❌ 本番環境で DEV_LOGIN が設定されています。無効にして起動します（設定を外してください）')
+  delete process.env.DEV_LOGIN
+}
+
 import { calculateBaZi, calculateLifePathNumber, calculateKyuseiSeisun, calculateWesternZodiac } from './fortune/index.js'
 import { generateFortuneAnalysis } from './llm/client.js'
 import { buildLLMPrompt } from './llm/prompt.js'
@@ -36,6 +42,10 @@ import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
 import seimeiRoutes from './routes/seimei.js'
 import musubiRoutes from './routes/musubi.js'
+import resultsRoutes from './routes/results.js'
+import { captureLatestResult } from './middleware/latestResult.js'
+import { inFlightGuard } from './middleware/inFlightGuard.js'
+import { llmConcurrencyState } from './llm/concurrency.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -73,8 +83,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /**
  * ヘルスチェック
  */
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+app.get('/health', async (req: Request, res: Response) => {
+  // データベースにつながるかも確認する（つながらないときは 503。監視・自動復旧の目印になる）
+  let db: 'ok' | 'down' = 'ok'
+  try {
+    await query('SELECT 1')
+  } catch {
+    db = 'down'
+  }
+  res.status(db === 'ok' ? 200 : 503).json({ status: db === 'ok' ? 'ok' : 'degraded', db, llm: llmConcurrencyState(), timestamp: new Date().toISOString() })
 })
 
 // ========== Authentication Routes ==========
@@ -286,7 +303,11 @@ app.get('/api/auth/me', requireAuth, (req: Request, res: Response) => {
  * 占い診断エンドポイント
  * POST /api/fortune
  */
-app.post('/api/fortune', dailyLimiter, async (req: Request, res: Response) => {
+app.post('/api/fortune', captureLatestResult({
+  // ナツメ（1）とツキ（2）の結果を、別々に保存する
+  kind: (req) => (req.body?.characterId === 1 ? 'fortune:1' : req.body?.characterId === 2 ? 'fortune:2' : null),
+  payload: (b) => b.reading ?? null,
+}), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { birthDate, birthTime, birthPlace, concern, characterId } = req.body
 
@@ -546,6 +567,7 @@ app.use('/api/palm-session', palmSessionRoutes)
 app.use('/api/fortune/palmistry', palmistryRoutes)
 app.use('/api/fortune/seimei', seimeiRoutes)
 app.use('/api/fortune/musubi', musubiRoutes)
+app.use('/api/results', resultsRoutes)
 
 /**
  * キャッシュ統計

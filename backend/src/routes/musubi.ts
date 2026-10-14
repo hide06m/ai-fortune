@@ -10,17 +10,19 @@ import { Router, Request, Response } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '../middleware/auth.js'
 import { ensureMusubiUnlocked, getUserProfileSources } from '../db/musubi.js'
-import { buildMusubiPrompt, hasAnyProfile } from '../llm/musubiPrompt.js'
+import { buildMusubiPrompt, buildMusubiProfilePrompt, hasAnyProfile } from '../llm/musubiPrompt.js'
 import { generateFromPrompt } from '../llm/client.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
 import { incrementCharacterIntimacy } from '../db/character.js'
 import { MUSUBI_STONE_COST } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { inFlightGuard } from '../middleware/inFlightGuard.js'
+import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 
-router.post('/', requireAuth, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', requireAuth, captureLatestResult({ kind: () => 'musubi', payload: (b) => ({ analysis: b.analysis ?? '' }) }), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId
     const concernText = typeof req.body?.concern === 'string' ? req.body.concern.slice(0, 1000) : ''
@@ -66,7 +68,15 @@ router.post('/', requireAuth, dailyLimiter, async (req: Request, res: Response) 
     let llmSucceeded = false
     if (process.env.GEMINI_API_KEY) {
       try {
-        const llm = await generateFromPrompt(buildMusubiPrompt(profile, concernText))
+        // 1段階目：すべての診断結果から、人となりを解析する。失敗しても、2段階目は、元の情報だけで続ける
+        let profileText: string | null = null
+        try {
+          profileText = (await generateFromPrompt(buildMusubiProfilePrompt(profile))).analysis
+        } catch (error) {
+          console.warn('[musubi] 人となりの解析（1段階目）に失敗しました。元の情報だけで続けます:', error)
+        }
+        // 2段階目：人となりの解析と、元の情報をもとに、悩み・状況に答える
+        const llm = await generateFromPrompt(buildMusubiPrompt(profile, concernText, profileText))
         analysis = llm.analysis
         llmSucceeded = true
       } catch (error) {

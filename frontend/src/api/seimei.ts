@@ -31,6 +31,8 @@ export interface SeimeiResult {
     elements: [SeimeiElement, SeimeiElement, SeimeiElement];
     tenJin: '相生' | '比和' | '相剋';
     jinChi: '相生' | '比和' | '相剋';
+    /** 三才配置の総合判定 */
+    overall?: '吉' | '凶' | '吉凶混合';
   };
 }
 

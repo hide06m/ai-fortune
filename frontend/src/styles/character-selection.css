@@ -412,3 +412,33 @@
 .selection-panel .btn {
   padding: 0.7rem 1.2rem;
 }
+
+/* 前回の結果を見る（無料） */
+.latest-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.latest-results-title {
+  color: #666;
+}
+
+.latest-results-button {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #667eea;
+  background: transparent;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.latest-results-button:hover {
+  background: #667eea;
+  color: #fff;
+}

@@ -18,12 +18,14 @@ import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
 import { INTIMACY_UNLOCKS, SEIMEI_STONE_COST, type CharacterId } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { inFlightGuard } from '../middleware/inFlightGuard.js'
+import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 const KOKUU_CHARACTER_ID: CharacterId = 3
 const MAX_NAME_LENGTH = 8
 
-router.post('/', dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', captureLatestResult({ kind: () => 'seimei', payload: (b) => (b.result ? { seimeiResult: b.result, analysis: b.analysis ?? '' } : null) }), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { surname, givenName, concern } = req.body
     const concernText = typeof concern === 'string' ? concern.slice(0, 1000) : ''

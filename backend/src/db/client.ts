@@ -191,6 +191,17 @@ export async function initializeDatabase() {
         ON stone_transactions(user_id, reason, created_at);
     `);
 
+    // latest_results テーブル：各診断の「最新の結果」（ルーンストーンなしで見返せる。種類ごとに、ユーザーあたり1件）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS latest_results (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind VARCHAR(30) NOT NULL,
+        payload JSONB NOT NULL,
+        saved_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, kind)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

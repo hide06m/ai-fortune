@@ -98,6 +98,16 @@ const OVERCOMES: Record<Element, Element> = { 木: '土', 土: '水', 水: '火'
 
 export type ElementRelation = '相生' | '比和' | '相剋'
 
+/** 三才配置の総合判定：2つの関係が、どちらも良い（相生・比和）なら吉、どちらも相剋なら凶、混ざれば吉凶混合 */
+export type SansaiOverall = '吉' | '凶' | '吉凶混合'
+
+export function sansaiOverallOf(tenJin: ElementRelation, jinChi: ElementRelation): SansaiOverall {
+  const good = (r: ElementRelation) => r !== '相剋'
+  if (good(tenJin) && good(jinChi)) return '吉'
+  if (!good(tenJin) && !good(jinChi)) return '凶'
+  return '吉凶混合'
+}
+
 export function relationOf(a: Element, b: Element): ElementRelation {
   if (a === b) return '比和'
   if (GENERATES[a] === b || GENERATES[b] === a) return '相生'
@@ -125,6 +135,7 @@ export interface SeimeiResult {
     elements: [Element, Element, Element]
     tenJin: ElementRelation
     jinChi: ElementRelation
+    overall: SansaiOverall
   }
 }
 
@@ -159,6 +170,10 @@ export function computeSeimei(surname: NameChar[], givenName: NameChar[]): Seime
     surname,
     givenName,
     kaku,
-    sansai: { elements, tenJin: relationOf(elements[0], elements[1]), jinChi: relationOf(elements[1], elements[2]) },
+    sansai: (() => {
+      const tenJin = relationOf(elements[0], elements[1])
+      const jinChi = relationOf(elements[1], elements[2])
+      return { elements, tenJin, jinChi, overall: sansaiOverallOf(tenJin, jinChi) }
+    })(),
   }
 }

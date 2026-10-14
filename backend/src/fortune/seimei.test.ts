@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSeimei, strokesOfName, strokesOfChar, elementOf, relationOf } from './seimei'
+import { computeSeimei, strokesOfName, strokesOfChar, elementOf, relationOf, sansaiOverallOf } from './seimei'
 import { seimeiNumberOf, normalizeStrokeNumber, SEIMEI_NUMBERS } from './data/seimeiNumbers'
 
 function chars(name: string) {
@@ -72,6 +72,12 @@ describe('三才・五行', () => {
     expect(elementOf(15)).toBe('土')
     expect(elementOf(18)).toBe('金')
     expect(elementOf(20)).toBe('水')
+  })
+  it('三才配置の総合判定', () => {
+    expect(sansaiOverallOf('相生', '相生')).toBe('吉')
+    expect(sansaiOverallOf('比和', '相生')).toBe('吉')
+    expect(sansaiOverallOf('相剋', '相剋')).toBe('凶')
+    expect(sansaiOverallOf('相生', '相剋')).toBe('吉凶混合')
   })
   it('相生・比和・相剋', () => {
     expect(relationOf('木', '火')).toBe('相生')

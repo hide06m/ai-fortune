@@ -57,6 +57,7 @@ import { CounselingScene, type CounselingValues } from './components/CounselingS
 import { submitMBTIQuizReuseLatest } from './api/mbti'
 import { submitSeimei } from './api/seimei'
 import { submitMusubiConsult } from './api/musubi'
+import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
 import type { KuriDiagnosisMode } from './pages/CharacterSelectionPage'
 import { submitLoveType64QuizReuseLatest } from './api/loveType64'
@@ -171,6 +172,8 @@ function AppContent() {
   const [readingHistory, setReadingHistory] = useState<ReadingSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [viewingHistoryReading, setViewingHistoryReading] = useState(false)
+  // 前回の結果（保存済み）を見ているとき。ルーンストーンは使わない。戻ると、占い師選択へ
+  const [viewingLatestSavedAt, setViewingLatestSavedAt] = useState<string | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
 
   // 相性診断
@@ -993,7 +996,10 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   }
 
   const handleBack = () => {
-    if (mode === 'guest' && !viewingHistoryReading) {
+    if (viewingLatestSavedAt) {
+      setViewingLatestSavedAt(null)
+      setScreen('character-selection')
+    } else if (mode === 'guest' && !viewingHistoryReading) {
       // ゲストは診断フォームに戻さず、ムスビとのお別れの会話へ
       enterGuestPostResultConversation()
     } else if (tutorialSegment === 'meeting' && !viewingHistoryReading) {
@@ -1001,6 +1007,9 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       enterTutorialAfterResult()
     } else if (viewingHistoryReading) {
       setScreen('history')
+    } else if (reading?.seimeiResult || selectedCharacterId === 0) {
+      // 姓名判断・ムスビの総合相談の結果からは、占い師選択に戻る（手相の入口に飛ばさない）
+      setScreen('character-selection')
     } else {
       setScreen(getDiagnosisEntryScreen(selectedCharacterId, kuriDiagnosisMode))
     }
@@ -1529,6 +1538,12 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             </button>
           </div>
 
+          {viewingLatestSavedAt && (
+            <div className="unlock-notice">
+              保存されている、前回の結果です{viewingLatestSavedAt ? `（${new Date(viewingLatestSavedAt).toLocaleString('ja-JP')}）` : ''}。ルーンストーンは使っていません。
+            </div>
+          )}
+
           {justUnlockedCharacter !== null && (
             <div className="unlock-notice">
               🎉 {CHARACTER_MASTER_DATA[justUnlockedCharacter].name} が解放されました！
@@ -1882,6 +1897,17 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     return (
       <div className="app-container">
         <CharacterSelectionPage
+          onViewLatest={async (kind) => {
+            const r = await getLatestResult(kind)
+            if (!r.success || !r.reading) {
+              alert(r.message || '前回の結果を読み込めませんでした')
+              return
+            }
+            setReading(r.reading)
+            setViewingHistoryReading(false)
+            setViewingLatestSavedAt(r.savedAt ?? '')
+            setScreen('result')
+          }}
           onGreeting={(characterId) => {
             // 「ちょっとした挨拶」を渡した：その占い師が、一言返す
             setSelectedCharacterId(characterId)

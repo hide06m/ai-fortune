@@ -25,6 +25,8 @@ import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, KURI_CONSULT_STONE_COST, type C
 import { saveReading, getLatestMBTIResult } from '../db/readings.js'
 import { requireAuth } from '../middleware/auth.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { inFlightGuard } from '../middleware/inFlightGuard.js'
+import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 const KURI_CHARACTER_ID: CharacterId = 4
@@ -60,7 +62,7 @@ router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   }
 })
 
-router.post('/', dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.result ? { mbtiResult: b.result, analysis: b.analysis ?? '' } : null) }), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { answers, concern, reuseLatest, directType, typeOnly } = req.body
     const concernText = typeof concern === 'string' ? concern : ''

@@ -5,6 +5,7 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
+import { withLlmSlot } from './concurrency.js'
 import { GoogleGenerativeAI, SchemaType, type GenerateContentRequest, type GenerateContentResult, type ModelParams } from '@google/generative-ai'
 
 const apiKey = process.env.GEMINI_API_KEY
@@ -99,46 +100,54 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = MAX_ATTEMPTS, de
  */
 // 先頭のモデルが混雑（503）のとき、次のモデルへ切り替える。2026-10-13 に、画像入力とJSON出力（responseSchema）で応答することを確認した flash 系を並べている。
 // 先頭の2つが同時に混雑して全滅した日があったので、系統の違うモデルを後ろに足してある
-const MODEL_CHAIN = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3-flash-preview']
+// 最後の2つは、混雑で上が全滅したときの、最後の手段（応答は軽いモデル）
+const MODEL_CHAIN = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3-flash-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
 
 /** 混雑で失敗したら次のモデルに切り替えながら generateContent する、簡易のモデル */
+type GenerateRequest = string | GenerateContentRequest | Array<string | { text: string } | { inlineData: { data: string; mimeType: string } }>
+
 function fallbackModel(config: Omit<ModelParams, 'model'>) {
   return {
-    async generateContent(request: string | GenerateContentRequest | Array<string | { text: string } | { inlineData: { data: string; mimeType: string } }>): Promise<GenerateContentResult> {
-      // 最初のモデルで起きた本来のエラーを覚えておく。切り替え先が 404 などで失敗しても、利用者には本来の理由を返す
-      let firstError: unknown
-      const deadline = Date.now() + OVERALL_DEADLINE_MS
-      for (let i = 0; i < MODEL_CHAIN.length; i++) {
-        const name = MODEL_CHAIN[i]
-        // 診断全体の時間の上限に達していたら、切り替え先も試さず、最初のエラーを返す
-        if (i > 0 && Date.now() + REQUEST_TIMEOUT_MS > deadline) break
-        const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
-        try {
-          // 先頭のモデルは通常どおり再試行する。切り替え先は、待ち時間を抑えるため再試行を減らす
-          const startedAt = Date.now()
-          const result = await withRetry(
-            () => withHardTimeout(model.generateContent(request as never), REQUEST_TIMEOUT_MS + 5_000),
-            MAX_ATTEMPTS,
-            deadline
-          )
-          console.log(`[Gemini] ${name} 成功（${Math.round((Date.now() - startedAt) / 1000)}秒）`)
-          return result
-        } catch (error) {
-          if (i === 0) {
-            firstError = error
-            // 混雑などの一時エラーでなければ（入力の誤りなど）、別のモデルでも直らないので、切り替えずに終える
-            if (!isTransientError(error)) throw error
-          } else {
-            console.warn(`[Gemini] 切り替え先の ${name} も失敗しました:`, error instanceof Error ? error.message.slice(-100) : error)
-          }
-          if (i < MODEL_CHAIN.length - 1) {
-            console.warn(`[Gemini] ${i === 0 ? '先頭の' : ''}${name} が使えないため、${MODEL_CHAIN[i + 1]} に切り替えます`)
-          }
-        }
-      }
-      throw firstError
+    // 同時実行数の上限のもとで呼び出す（順番待ちが長すぎたら、失敗として返す。石は払い戻される）
+    generateContent(request: GenerateRequest): Promise<GenerateContentResult> {
+      return withLlmSlot(() => generateWithFallback(config, request))
     },
   }
+}
+
+async function generateWithFallback(config: Omit<ModelParams, 'model'>, request: GenerateRequest): Promise<GenerateContentResult> {
+  // 最初のモデルで起きた本来のエラーを覚えておく。切り替え先が 404 などで失敗しても、利用者には本来の理由を返す
+  let firstError: unknown
+  const deadline = Date.now() + OVERALL_DEADLINE_MS
+  for (let i = 0; i < MODEL_CHAIN.length; i++) {
+    const name = MODEL_CHAIN[i]
+    // 診断全体の時間の上限に達していたら、切り替え先も試さず、最初のエラーを返す
+    if (i > 0 && Date.now() + REQUEST_TIMEOUT_MS > deadline) break
+    const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
+    try {
+      // 先頭のモデルは通常どおり再試行する。切り替え先は、待ち時間を抑えるため再試行を減らす
+      const startedAt = Date.now()
+      const result = await withRetry(
+        () => withHardTimeout(model.generateContent(request as never), REQUEST_TIMEOUT_MS + 5_000),
+        MAX_ATTEMPTS,
+        deadline
+      )
+      console.log(`[Gemini] ${name} 成功（${Math.round((Date.now() - startedAt) / 1000)}秒）`)
+      return result
+    } catch (error) {
+      if (i === 0) {
+        firstError = error
+        // 混雑などの一時エラーでなければ（入力の誤りなど）、別のモデルでも直らないので、切り替えずに終える
+        if (!isTransientError(error)) throw error
+      } else {
+        console.warn(`[Gemini] 切り替え先の ${name} も失敗しました:`, error instanceof Error ? error.message.slice(-100) : error)
+      }
+      if (i < MODEL_CHAIN.length - 1) {
+        console.warn(`[Gemini] ${i === 0 ? '先頭の' : ''}${name} が使えないため、${MODEL_CHAIN[i + 1]} に切り替えます`)
+      }
+    }
+  }
+  throw firstError
 }
 
 export interface FortuneAnalysisResult {

@@ -3,7 +3,7 @@
  */
 
 import { query } from './client.js';
-import { CharacterId, CharacterIntimacy, INTIMACY_POINTS_PER_LEVEL, MAX_INTIMACY_POINTS } from '../types/character.js';
+import { CharacterId, CharacterIntimacy, INTIMACY_POINTS_PER_LEVEL, MAX_INTIMACY_POINTS, musubiBoostMultiplier } from '../types/character.js';
 
 /**
  * DBの行（snake_case）を CharacterIntimacy（camelCase）へ変換
@@ -131,6 +131,17 @@ export async function incrementCharacterIntimacy(
 ): Promise<CharacterIntimacy> {
   try {
     const diagnosisCount = countsAsDiagnosis ? 1 : 0;
+    // 【隠し要素】ムスビの親密度が高いほど、ほかの占い師の親密度が上がりやすい（ムスビ自身には、かからない）
+    if (characterId !== 0) {
+      try {
+        const musubi = await query('SELECT intimacy_level FROM character_intimacy WHERE user_id = $1 AND character_id = 0', [userId]);
+        const level = musubi.rows[0]?.intimacy_level ?? 0;
+        points = Math.round(points * musubiBoostMultiplier(level));
+      } catch (error) {
+        // ムスビの親密度を読めなくても、通常の加算は続ける
+        console.warn('[DB] Failed to read musubi intimacy for boost:', error);
+      }
+    }
     const result = await query(
       `UPDATE character_intimacy
        SET intimacy_points = LEAST(intimacy_points + $3, ${MAX_INTIMACY_POINTS}),
