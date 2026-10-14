@@ -32,7 +32,7 @@ const LATEST_BY_CHARACTER: Record<number, Array<{ kind: string; label: string }>
 };
 
 /** 占術の選び方：クリ＝性格(mbti)／ラブタイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
-export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei' | 'consult';
+export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei' | 'sukuyou' | 'consult';
 
 interface CharacterSelectionPageProps {
   onCharacterSelected: (characterId: CharacterId, kuriMode?: KuriDiagnosisMode) => void;
@@ -343,6 +343,20 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
                 </button>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('seimei')} disabled={stoneBalance !== null && stoneBalance < SEIMEI_STONE_COST}>
                   ✍ 姓名判断をしてもらう（石{SEIMEI_STONE_COST}個）
+                </button>
+                {canGift && (
+                  <button className="btn btn-secondary" onClick={handleGift} disabled={!canAffordGift || giftingCharacterId !== null}>
+                    💌 ちょっとした挨拶（石{GIFT_STONE_COST}個）
+                  </button>
+                )}
+              </>
+            ) : selectedCharacterId === 2 ? (
+              <>
+                <button className="btn btn-primary" onClick={() => handleStartDiagnosis()} disabled={!canAffordDiagnosis}>
+                  ♌ 西洋占星術で占ってもらう（石{stoneCost}個）
+                </button>
+                <button className="btn btn-primary" onClick={() => handleStartDiagnosis('sukuyou')} disabled={!canAffordDiagnosis}>
+                  🌙 宿曜占星術で占ってもらう（石{stoneCost}個）
                 </button>
                 {canGift && (
                   <button className="btn btn-secondary" onClick={handleGift} disabled={!canAffordGift || giftingCharacterId !== null}>

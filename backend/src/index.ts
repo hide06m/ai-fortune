@@ -42,6 +42,7 @@ import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
 import seimeiRoutes from './routes/seimei.js'
 import musubiRoutes from './routes/musubi.js'
+import sukuyouRoutes from './routes/sukuyou.js'
 import resultsRoutes from './routes/results.js'
 import { captureLatestResult } from './middleware/latestResult.js'
 import { inFlightGuard } from './middleware/inFlightGuard.js'
@@ -567,6 +568,7 @@ app.use('/api/palm-session', palmSessionRoutes)
 app.use('/api/fortune/palmistry', palmistryRoutes)
 app.use('/api/fortune/seimei', seimeiRoutes)
 app.use('/api/fortune/musubi', musubiRoutes)
+app.use('/api/fortune/sukuyou', sukuyouRoutes)
 app.use('/api/results', resultsRoutes)
 
 /**

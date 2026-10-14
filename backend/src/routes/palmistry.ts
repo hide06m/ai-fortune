@@ -15,7 +15,7 @@ import { Router, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { consumePalmSessionImage } from '../palm/sessionStore.js'
+import { consumePalmSessionImage, peekPalmSession } from '../palm/sessionStore.js'
 import { generatePalmistryReadingJson } from '../llm/client.js'
 import { sanitizeDetectedLines, buildReadingPrompt, parseReadingOutput, type ReadingLine } from '../llm/palmistryReading.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
@@ -23,6 +23,7 @@ import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
 import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { llmFailed } from './llmFailure.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -61,9 +62,12 @@ router.post('/', captureLatestResult({
     let imageBase64: string | null = null
     let mimeType: string | null = null
     let rawLines: unknown = null
+    let sessionToken: string | null = null
 
     if (typeof token === 'string' && token) {
-      const consumed = consumePalmSessionImage(token)
+      // まだ消費しない（AIの生成に失敗したとき、同じ写真で、やり直せるように）。成功したときに、消費する
+      const consumed = peekPalmSession(token)
+      sessionToken = token
       if (!consumed) {
         return res.status(404).json({ success: false, error: '画像がまだアップロードされていないか、セッションが期限切れです' })
       }
@@ -173,6 +177,11 @@ router.post('/', captureLatestResult({
     console.log(
       `[palmistry] 診断${llmSucceeded ? '成功' : '失敗（払い戻し）'}：${Math.round((Date.now() - startedAt) / 1000)}秒、検出された線${detected.length}本、返す線${lines.length}本`
     )
+
+    // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）。写真は残すので、同じ写真で、もう一度診断できる
+    if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
+    // 成功したので、写真を、サーバーのセッションから破棄する（保存するのは、最新の結果としての1件だけ）
+    if (sessionToken) consumePalmSessionImage(sessionToken)
 
     res.json({
       success: true,

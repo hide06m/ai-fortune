@@ -68,7 +68,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     id: 1,
     name: 'ナツメ',
     gender: 'female',
-    role: '生年月日の占い師（四柱推命ほか）',
+    role: '四柱推命・数秘術・九星気学の占い師',
     personality: 'ふんわり癒しタイプ、親しみやすい、躊躇がない',
     voiceId: 2, // 四国めたん ノーマル・女性
     imageFile: 'ham1',
@@ -77,7 +77,7 @@ export const CHARACTER_MASTER_DATA: Record<CharacterId, Character> = {
     id: 2,
     name: 'ツキ',
     gender: 'female',
-    role: '星占い系の占い師',
+    role: '西洋占星術・宿曜占星術の占い師',
     personality: '神秘的、落ち着いた雰囲気、知識豊富',
     voiceId: 9, // 波音リツ・女性
     imageFile: 'ham2',

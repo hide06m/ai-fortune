@@ -17,6 +17,7 @@ import { incrementCharacterIntimacy } from '../db/character.js'
 import { MUSUBI_STONE_COST } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { llmFailed } from './llmFailure.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -105,6 +106,9 @@ router.post('/', requireAuth, captureLatestResult({ kind: () => 'musubi', payloa
         console.error('Failed to save reading (musubi):', error)
       }
     }
+
+    // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）
+    if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
 
     res.json({
       success: true,

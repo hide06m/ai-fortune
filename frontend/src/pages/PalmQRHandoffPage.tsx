@@ -50,6 +50,9 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
   onCompleteRef.current = onComplete;
   // 診断の送信は一度だけ（問い合わせが重なって、同じ画像を二重に送らないように）
   const submittedRef = useRef(false);
+  // 解析した線を覚えておく（AIの生成に失敗したとき、同じ写真・同じ線で、もう一度診断するため）
+  const linesRef = useRef<unknown[] | undefined>(undefined);
+  const [canRetry, setCanRetry] = useState(false);
   // 撮り直しの後に、ポーリングをやり直すための番号
   const [pollKey, setPollKey] = useState(0);
 
@@ -83,6 +86,31 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
     QRCode.toCanvas(canvasRef.current, qrUrl, { width: 240 }).catch((err) => console.error('Failed to render QR code:', err));
   }, [qrUrl, analyzingPhoto, diagnosing, error]);
 
+  // 診断を実行する（失敗したときは、同じ写真（サーバーに残してある）で、もう一度できる）
+  const runDiagnosis = async (sessionToken: string) => {
+    setError('');
+    setCanRetry(false);
+    setDiagnosing(true);
+    setElapsed(0);
+    try {
+      const response = await submitPalmistry({ token: sessionToken, concern: '', lines: linesRef.current });
+      if (response.success) {
+        onCompleteRef.current(response);
+      } else {
+        setError(response.message || response.error || '診断に失敗しました。');
+        // AIの混雑などで失敗した（石は返却済み）ときと、通信が切れたときは、同じ写真で、もう一度できる
+        setCanRetry(response.error === 'LLM_FAILED' || response.error === 'TIMEOUT' || response.error === 'NETWORK');
+        setDiagnosing(false);
+      }
+    } catch (err) {
+      // 診断の呼び出しが例外で終わっても、「読み解いています」のまま固まらないようにする
+      console.error('Palmistry diagnosis failed:', err);
+      setError('診断に失敗しました。もう一度お試しください。');
+      setCanRetry(true);
+      setDiagnosing(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -114,22 +142,8 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
             console.error('Palm analysis on PC failed (continuing without lines):', err);
           }
           setAnalyzingPhoto(false);
-          setDiagnosing(true);
-          setElapsed(0);
-          try {
-            const response = await submitPalmistry({ token, concern: '', lines });
-            if (response.success) {
-              onCompleteRef.current(response);
-            } else {
-              setError(response.message || response.error || '診断に失敗しました。');
-              setDiagnosing(false);
-            }
-          } catch (err) {
-            // 診断の呼び出しが例外で終わっても、「読み解いています」のまま固まらないようにする
-            console.error('Palmistry diagnosis failed:', err);
-            setError('診断に失敗しました。もう一度お試しください。');
-            setDiagnosing(false);
-          }
+          linesRef.current = lines;
+          await runDiagnosis(token);
         }
       } catch (err) {
         console.error('Failed to poll palm session status:', err);
@@ -169,6 +183,11 @@ export function PalmQRHandoffPage({ onComplete, onCancel }: PalmQRHandoffPagePro
     return (
       <div className="palm-qr-handoff">
         <div className="error">{error}</div>
+        {canRetry && token && (
+          <button type="button" className="primary-button" onClick={() => void runDiagnosis(token)}>
+            同じ写真で、もう一度診断する
+          </button>
+        )}
         <button type="button" className="secondary-button" onClick={onCancel}>
           戻る
         </button>

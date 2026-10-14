@@ -25,6 +25,7 @@ import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, KURI_CONSULT_STONE_COST, type C
 import { saveReading, getLatestMBTIResult } from '../db/readings.js'
 import { requireAuth } from '../middleware/auth.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { llmFailed } from './llmFailure.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -249,6 +250,9 @@ router.post('/', captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.re
         console.error('Failed to save reading (mbti):', error)
       }
     }
+
+    // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）
+    if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
 
     res.json({
       success: true,

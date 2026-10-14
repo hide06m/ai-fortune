@@ -18,6 +18,7 @@ import { incrementCharacterIntimacy, unlockCharacter } from '../db/character.js'
 import { INTIMACY_UNLOCKS, SEIMEI_STONE_COST, type CharacterId } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { llmFailed } from './llmFailure.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -121,6 +122,9 @@ router.post('/', captureLatestResult({ kind: () => 'seimei', payload: (b) => (b.
         console.error('Failed to save reading (seimei):', error)
       }
     }
+
+    // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）
+    if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
 
     res.json({ success: true, result, analysis, intimacy: intimacyResult, stoneBalance })
   } catch (error) {

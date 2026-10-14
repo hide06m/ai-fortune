@@ -36,9 +36,11 @@ interface CounselingSceneProps {
   /** 全部聞き終えたあと、診断を始める */
   onComplete: (values: CounselingValues) => void;
   /** 'concern'＝悩み・状況だけを聞く（クリの相談など。生年月日などは聞かない） */
-  mode?: 'full' | 'concern' | 'name';
+  mode?: 'full' | 'concern' | 'name' | 'birthdate';
   /** mode='concern' のときの質問・締めのセリフ・やめる操作 */
   concernQuestion?: string;
+  /** mode='birthdate' のときの、生年月日の質問 */
+  birthDateQuestion?: string;
   doneLine?: string;
   onCancel?: () => void;
 }
@@ -128,7 +130,7 @@ function BirthDateSelects({ value, onChange }: { value: string; onChange: (v: st
   );
 }
 
-export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, doneLine, onCancel }: CounselingSceneProps) {
+export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, birthDateQuestion, doneLine, onCancel }: CounselingSceneProps) {
   const [step, setStep] = useState<StepId>(mode === 'concern' ? 'concern' : mode === 'name' ? 'name' : 'birthDate');
   const [surname, setSurname] = useState('');
   const [givenName, setGivenName] = useState('');
@@ -144,7 +146,7 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
 
   // タイプライター：どの文のものかを一緒に持つので、切り替わった瞬間に新しい文が見えてしまわない
   // セリフでは「。」を表示しない（文の切れ目は、改行にする）
-  const questions: Record<StepId, string> = { ...QUESTIONS, concern: concernQuestion ?? QUESTIONS.concern, done: doneLine ?? QUESTIONS.done };
+  const questions: Record<StepId, string> = { ...QUESTIONS, concern: concernQuestion ?? QUESTIONS.concern, birthDate: birthDateQuestion ?? QUESTIONS.birthDate, done: doneLine ?? QUESTIONS.done };
   const text = questions[step].replace(/。/g, '\n').trim();
   const [typed, setTyped] = useState({ text: '', n: 0 });
   const shown = typed.text === text ? typed.n : 0;
@@ -177,7 +179,7 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
     });
   };
 
-  const back: Partial<Record<StepId, StepId>> = { birthTime: 'birthDate', birthPlace: 'birthTime', concern: mode === 'name' ? 'name' : 'birthPlace' };
+  const back: Partial<Record<StepId, StepId>> = { birthTime: 'birthDate', birthPlace: 'birthTime', concern: mode === 'name' ? 'name' : mode === 'birthdate' ? 'birthDate' : 'birthPlace' };
   const showFree = concernChoices.some((c) => c.startsWith('その他'));
 
   return (
@@ -228,7 +230,12 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
                 {dateMode === 'type' ? 'リストから選ぶ' : '打ち込み・カレンダーで入力する'}
               </button>
               <div className="counsel-actions">
-                <button type="button" className="counsel-next" disabled={!birthDate} onClick={() => goNext('birthTime')}>
+                {mode === 'birthdate' && onCancel && (
+                  <button type="button" className="counsel-back" onClick={() => onCancel()}>
+                    やめる
+                  </button>
+                )}
+                <button type="button" className="counsel-next" disabled={!birthDate} onClick={() => goNext(mode === 'birthdate' ? 'concern' : 'birthTime')}>
                   次へ
                 </button>
               </div>

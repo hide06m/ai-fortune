@@ -101,6 +101,13 @@ export function setPalmSessionImage(
   return true
 }
 
+/** 診断のために、画像と線を見る（消費しない）。AIの生成に失敗しても、同じ写真で、もう一度診断できるようにするため */
+export function peekPalmSession(token: string): { imageBase64: string; mimeType: string; lines: unknown } | null {
+  const session = sessions.get(token)
+  if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) return null
+  return { imageBase64: session.imageBase64, mimeType: session.mimeType, lines: session.lines }
+}
+
 /** PC側が診断のために画像を取得する。取得後はセッションを消費済みにして画像データを破棄する */
 export function consumePalmSessionImage(
   token: string

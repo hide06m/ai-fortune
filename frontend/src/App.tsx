@@ -59,6 +59,8 @@ import { submitSeimei } from './api/seimei'
 import { submitMusubiConsult } from './api/musubi'
 import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
+import { SukuyouResultCard } from './components/SukuyouResultCard'
+import { submitSukuyou } from './api/sukuyou'
 import type { KuriDiagnosisMode } from './pages/CharacterSelectionPage'
 import { submitLoveType64QuizReuseLatest } from './api/loveType64'
 import {
@@ -149,7 +151,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'musubi-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'sukuyou-input' | 'musubi-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -1007,7 +1009,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       enterTutorialAfterResult()
     } else if (viewingHistoryReading) {
       setScreen('history')
-    } else if (reading?.seimeiResult || selectedCharacterId === 0) {
+    } else if (reading?.seimeiResult || reading?.sukuyouResult || selectedCharacterId === 0) {
       // 姓名判断・ムスビの総合相談の結果からは、占い師選択に戻る（手相の入口に飛ばさない）
       setScreen('character-selection')
     } else {
@@ -1336,6 +1338,10 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         // ムスビ：総合相談（全占い師のところで得た情報をまとめて相談する）
         setError('')
         setScreen('musubi-consult')
+      } else if (characterId === 2 && kuriMode === 'sukuyou') {
+        // ツキ：宿曜占星術。生年月日と、悩みを聞く
+        setError('')
+        setScreen('sukuyou-input')
       } else if (characterId === 3 && kuriMode === 'seimei') {
         // コクウ：姓名判断。名前を聞く
         setError('')
@@ -1565,6 +1571,11 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             <div className="result-section">
               <h2>【性格診断（16タイプ）】</h2>
               <MBTIResultCard result={reading.mbtiResult} />
+            </div>
+          ) : reading.sukuyouResult ? (
+            <div className="result-section">
+              <h2>【宿曜占星術】</h2>
+              <SukuyouResultCard result={reading.sukuyouResult} />
             </div>
           ) : reading.seimeiResult ? (
             <div className="result-section">
@@ -1969,6 +1980,57 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           doneLine="わかった。みんなから聞いた話を、ひとつに並べてみよう。少し、時間をもらうよ"
           onCancel={() => setScreen('character-selection')}
           onComplete={(values) => { void submitConsult(values) }}
+        />
+      </>
+    )
+  }
+
+  // ツキの宿曜占星術：生年月日と、悩み・状況を聞いて、診断する
+  if (screen === 'sukuyou-input') {
+    const submitSukuyouForm = async (values: CounselingValues) => {
+      setError('')
+      setLoadingMessage(pickRandomLoadingMessage())
+      setLoading(true)
+      try {
+        const response = await submitSukuyou(values.birthDate, values.concern)
+        if (typeof response.stoneBalance === 'number') setStoneBalance(response.stoneBalance)
+        if (!response.success) {
+          setError(
+            response.error === 'INSUFFICIENT_STONES'
+              ? 'ルーンストーンが足りません。'
+              : (response.message || response.error || '宿曜占星術に失敗しました。')
+          )
+          return
+        }
+        setJustUnlockedCharacter(
+          response.intimacy?.justUnlocked !== null && response.intimacy?.justUnlocked !== undefined
+            ? (response.intimacy.justUnlocked as CharacterId)
+            : null
+        )
+        setReading({ sukuyouResult: response.result, analysis: response.analysis || '' })
+        setViewingHistoryReading(false)
+        setScreen('result')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '宿曜占星術に失敗しました。通信環境をご確認ください。')
+      } finally {
+        setLoading(false)
+      }
+    }
+    return (
+      <>
+        {loading && <HamsterLoading />}
+        <CounselingScene
+          mode="birthdate"
+          background="/assets/room001.jpg"
+          characterImage={`/assets/characters/${CHARACTER_VISUAL[2].folder}/${CHARACTER_VISUAL[2].prefix}001.webp`}
+          speakerName="ツキ"
+          busy={loading}
+          error={error}
+          birthDateQuestion="…ふふ、月の満ち欠けは、生まれた日の旧い暦に、刻まれているの。あなたの生まれた年と月と日を、教えてくれる"
+          concernQuestion="ありがとう。では、今、心にかかっていることはある。うまく言葉にならなくても、近いものを選んでくれればいいわ"
+          doneLine="…ええ。月の宿りを、そっと数えてみるわね。少しだけ、待っていて"
+          onCancel={() => setScreen('character-selection')}
+          onComplete={(values) => { void submitSukuyouForm(values) }}
         />
       </>
     )
