@@ -227,7 +227,8 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting }: Char
         <div
           className="character-carousel"
           style={{
-            perspective: '1200px',
+            // 奥行きの強さ。小さいと、手前のカードが画面いっぱいに拡大されてしまう（1200px では、約2倍になり、枠をはみ出した）
+            perspective: '3200px',
             transformStyle: 'preserve-3d',
           }}
         >

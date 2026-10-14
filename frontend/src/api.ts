@@ -154,6 +154,22 @@ export interface GoogleAuthResponse {
   error?: string
 }
 
+/** 開発専用：テスト用アカウントでログインする（バックエンドが DEV_LOGIN=1 で起動していて、このPCの中からのときだけ成功する） */
+export async function devLogin(options: { fresh?: boolean; stones?: number } = {}): Promise<GoogleAuthResponse> {
+  const response = await fetch(`${API_URL}/api/auth/dev-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options)
+  })
+  if (!response.ok) return { success: false, error: 'dev login unavailable' }
+  const data = await response.json()
+  if (data.success && data.token) {
+    setToken(data.token)
+    if (data.user?.email) setUserEmail(data.user.email)
+  }
+  return data
+}
+
 export async function authenticateWithGoogle(idToken: string): Promise<GoogleAuthResponse> {
   const response = await fetch(`${API_URL}/api/auth/google`, {
     method: 'POST',

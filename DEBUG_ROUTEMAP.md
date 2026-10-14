@@ -14,6 +14,7 @@
 - [ ] フロントが動いている：`http://localhost:5173/` が開く
 - [ ] ターミナルに赤いエラーが出ていない（バックエンドは `Database connection successful` が出ている）
 - [ ] テスト用アカウント（`hide06m@gmail.com`）のルーンストーン残高を確認（足りなければ付与を依頼）
+- **テスト用ログイン（開発専用）**：ログイン後の画面を、Googleを通さずに確認できる。ブラウザで `http://localhost:5173/?devlogin=1`（石を指定：`&stones=300`、初回ログイン＝チュートリアルからやり直す：`?devlogin=fresh`）。専用のテスト用アカウント（`dev-tester@localhost.invalid`）を使うので、本人のアカウントの石・履歴には触れない。バックエンドの `.env` に `DEV_LOGIN=1` がある開発環境で、このPCの中からだけ動く（トンネル経由・本番では動かない）
 - 手相のスマホ実機確認をするときだけ：トンネル（`cloudflared tunnel --url http://localhost:5173`）と、フロントを `VITE_QR_ORIGIN=<トンネルのURL>` で起動。**終わったら必ずトンネルを閉じる**
 
 ---

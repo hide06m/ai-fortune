@@ -1371,10 +1371,11 @@ body {
   background: rgba(0, 0, 0, 0.75);
 }
 
+/* 石は、顔にかからないよう、セリフ枠のすぐ上（キャラの手元のあたり）に出す */
 .vn-bonus-stone {
   position: absolute;
   left: 50%;
-  top: 14%;
+  bottom: calc(var(--vn-box-h) + 28px);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;

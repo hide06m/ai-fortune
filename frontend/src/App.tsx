@@ -6,6 +6,8 @@ import {
   callFortuneAPI,
   submitFeedback,
   authenticateWithGoogle,
+  devLogin,
+  type GoogleAuthResponse,
   logout,
   isAuthenticated,
   getUserEmail,
@@ -535,6 +537,65 @@ function AppContent() {
     onAdvance()
   }
 
+  // ログインできたあとの流れ（Googleログイン・開発用のテストログインの両方で使う）
+  const handleLoginSuccess = (response: GoogleAuthResponse) => {
+    setAuthenticated(true)
+    setUserEmail(response.user?.email || '')
+    saveUserEmail(response.user?.email || '')  // localStorage に保存
+    setMode('authenticated')
+
+    if (response.isNewUser) {
+      // ✅ 初回ログイン（サインアップ）：チュートリアルを開始
+      console.log('✅ New user — starting tutorial')
+      startTutorial()
+    } else {
+      // ✅ ドアモーションを表示させるため、door 画面に遷移
+      setScreen('door')
+      setDoorState('knocking')
+      setDoorExiting(false)  // ✅ 初期化
+      playKnock()
+      console.log('✅ Logged in successfully, showing door animation')
+
+      // ✅ ドアモーション自動進行：1.5秒後にドアを開く
+      setTimeout(() => {
+        setDoorState('open')
+        playDoorOpen()
+
+        // 800ms 後にズームアップ＋フェード開始
+        setTimeout(() => {
+          setDoorExiting(true)  // ✅ ズームアップ＋フェード開始
+
+          // 800ms 後に案内役（ムスビ）の会話シーンへ遷移
+          setTimeout(() => {
+            setDoorExiting(false)  // ✅ リセット
+            enterGuideConversation('character-selection')
+          }, 800)
+        }, 800)
+      }, 1500)
+    }
+  }
+
+  // 開発専用：URLに ?devlogin=1 を付けて開くと、テスト用アカウントで、Googleを通さずにログインする
+  //   ?devlogin=fresh … テスト用アカウントを作り直す（初回ログイン＝チュートリアルから）
+  //   &stones=500   … 石の数を指定する
+  // バックエンドが DEV_LOGIN=1 で起動していて、このPCの中から開いたときだけ成功する（本番ビルドでは、この処理自体が入らない）
+  const devLoginStartedRef = useRef(false)
+  useEffect(() => {
+    if (!import.meta.env.DEV || devLoginStartedRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    const flag = params.get('devlogin')
+    if (!flag) return
+    devLoginStartedRef.current = true
+    const stones = params.get('stones')
+    ;(async () => {
+      const response = await devLogin({ fresh: flag === 'fresh', ...(stones ? { stones: Number(stones) } : {}) })
+      window.history.replaceState({}, '', window.location.pathname)
+      if (response.success) handleLoginSuccess(response)
+      else setError('テスト用ログインを使えませんでした（バックエンドを DEV_LOGIN=1 で起動していますか）')
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Google OAuth ハンドラ
   const login = useGoogleLogin({
     onSuccess: async (codeResponse: any) => {
@@ -549,40 +610,7 @@ function AppContent() {
         // code をバックエンドに送信して、id_token に交換
         const response = await authenticateWithGoogle(code)
         if (response.success) {
-          setAuthenticated(true)
-          setUserEmail(response.user?.email || '')
-          saveUserEmail(response.user?.email || '')  // localStorage に保存
-          setMode('authenticated')
-
-          if (response.isNewUser) {
-            // ✅ 初回ログイン（サインアップ）：チュートリアルを開始
-            console.log('✅ New user — starting tutorial')
-            startTutorial()
-          } else {
-            // ✅ ドアモーションを表示させるため、door 画面に遷移
-            setScreen('door')
-            setDoorState('knocking')
-            setDoorExiting(false)  // ✅ 初期化
-            playKnock()
-            console.log('✅ Logged in successfully, showing door animation')
-
-            // ✅ ドアモーション自動進行：1.5秒後にドアを開く
-            setTimeout(() => {
-              setDoorState('open')
-              playDoorOpen()
-
-              // 800ms 後にズームアップ＋フェード開始
-              setTimeout(() => {
-                setDoorExiting(true)  // ✅ ズームアップ＋フェード開始
-
-                // 800ms 後に案内役（ムスビ）の会話シーンへ遷移
-                setTimeout(() => {
-                  setDoorExiting(false)  // ✅ リセット
-                  enterGuideConversation('character-selection')
-                }, 800)
-              }, 800)
-            }, 1500)
-          }
+          handleLoginSuccess(response)
         } else {
           setError(response.error || 'Authentication failed')
         }

@@ -3,17 +3,21 @@
  * クラッシュバンディクー2 風カメラ回転 UI
  */
 
+/* 画面全体に固定する（#root の幅制限で、背景が左右に切れないように）。占い師の枠は、画面の高さに合わせて大きさが変わり、1画面に収まる */
 .character-selection {
-  width: 100%;
-  min-height: 100vh;
+  --carousel-h: clamp(300px, 44vh, 470px);
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  box-sizing: border-box;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  gap: 1rem;
+  padding: 1rem 2rem;
   font-family: 'Arial', sans-serif;
-  perspective: 1200px;
 }
 
 .character-selection.loading {
@@ -28,11 +32,12 @@
 .carousel-container {
   width: 100%;
   max-width: 900px;
-  height: 470px;
+  height: var(--carousel-h);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .character-carousel {
@@ -49,8 +54,8 @@
 /* キャラクターカード */
 .character-card {
   position: absolute;
-  width: 280px;
-  height: 430px;
+  height: calc(var(--carousel-h) * 0.94);
+  width: calc(var(--carousel-h) * 0.94 * 0.78);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -90,8 +95,9 @@
 /* キャラクター画像（背景透過ビジュアル） */
 .character-image {
   width: 100%;
-  height: 235px;
-  flex-shrink: 0;
+  height: 0;
+  flex: 1 1 0;
+  min-height: 0;
   object-fit: contain;
   margin-bottom: 0.5rem;
 }
@@ -99,8 +105,7 @@
 /* キャラクター情報 */
 .character-info {
   text-align: center;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -153,7 +158,8 @@
 .selection-panel {
   width: 100%;
   max-width: 600px;
-  height: 380px;
+  height: clamp(290px, 40vh, 380px);
+  flex-shrink: 0;
   box-sizing: border-box;
   overflow-y: auto;
   display: flex;
@@ -289,10 +295,8 @@
 
 /* ナビゲーションヒント */
 .navigation-hint {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  flex-shrink: 0;
   color: white;
   font-size: 0.9rem;
   opacity: 0.8;
@@ -311,23 +315,16 @@
 
 /* レスポンシブ */
 @media (max-width: 768px) {
-  .carousel-container {
-    height: 400px;
-    margin-bottom: 1rem;
+  .character-selection {
+    padding: 0.75rem 1rem;
   }
 
   .character-card {
-    width: 220px;
-    height: 370px;
-    padding: 1rem;
-  }
-
-  .character-image {
-    height: 185px;
+    padding: 0.8rem;
   }
 
   .selection-panel {
-    height: 420px;
+    padding: 1rem;
   }
 
   .panel-content h2 {
@@ -394,4 +391,24 @@
   font-size: 0.78rem;
   color: #666;
   line-height: 1.3;
+}
+
+/* カード内のハートは、1行にまとめて、絵の場所を広くとる */
+.character-card .intimacy-heart-row {
+  margin-top: 0.2rem;
+  gap: 0.3rem;
+}
+
+.character-card .intimacy-heart-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.character-card .intimacy-heart-percent {
+  font-size: 0.68rem;
+}
+
+.selection-panel .btn {
+  padding: 0.7rem 1.2rem;
 }

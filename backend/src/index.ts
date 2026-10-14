@@ -20,7 +20,7 @@ import { dailyLimiter } from './middleware/rateLimit.js'
 import { authMiddleware, requireAuth } from './middleware/auth.js'
 import { verifyGoogleToken } from './auth/googleAuth.js'
 import { generateToken, generateUserId } from './auth/jwt.js'
-import { getUserByGoogleId, createUser, initializeDatabase, testConnection } from './db/client.js'
+import { getUserByGoogleId, createUser, initializeDatabase, testConnection, query } from './db/client.js'
 import characterRoutes from './routes/character.js'
 import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCharacter } from './db/character.js'
 import { INTIMACY_UNLOCKS, CharacterId, DIAGNOSIS_STONE_COST } from './types/character.js'
@@ -194,6 +194,58 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       success: false,
       error: error instanceof Error ? error.message : 'Authentication failed'
     })
+  }
+})
+
+/**
+ * 開発専用：テスト用アカウントでログインする（Googleのログインを通さずに、ログイン後の画面を確認するため）
+ * POST /api/auth/dev-login   body: { fresh?: boolean, stones?: number }
+ *
+ * 次の条件がすべて揃ったときだけ動く（どれか1つでも欠ければ 404）：
+ *   - NODE_ENV=development で、環境変数 DEV_LOGIN=1 を付けて起動している
+ *   - このPCの中からの直接アクセス（トンネル・プロキシ経由のヘッダー、localhost以外のHostは拒否）
+ * 使うのは専用のテスト用アカウント（本人のGoogleアカウントとは別。石や履歴も別）。
+ *   fresh=true なら、テスト用アカウントを作り直す（初回ログイン＝チュートリアルから確認できる）
+ */
+function isLocalDevRequest(req: Request): boolean {
+  if (process.env.NODE_ENV !== 'development' || process.env.DEV_LOGIN !== '1') return false
+  const h = req.headers
+  // トンネル（Cloudflare）やプロキシを通ったリクエストには、これらのヘッダーが付く
+  // （Vite の中継は Host を書き換えるので、Host だけでは、トンネル経由かどうかを見分けられない。ヘッダーで見分ける）
+  const viaProxy = Object.keys(h).some(
+    (name) => name.startsWith('cf-') || name.startsWith('x-forwarded') || name === 'forwarded' || name === 'cdn-loop' || name === 'true-client-ip' || name === 'x-real-ip'
+  )
+  if (viaProxy) return false
+  const host = String(h.host || '').replace(/:\d+$/, '')
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) return false
+  const addr = req.socket.remoteAddress || ''
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1'
+}
+
+app.post('/api/auth/dev-login', async (req: Request, res: Response) => {
+  if (!isLocalDevRequest(req)) return res.status(404).json({ error: 'Not found' })
+  try {
+    const DEV_GOOGLE_ID = 'dev-tester-local'
+    const DEV_EMAIL = 'dev-tester@localhost.invalid'
+    if (req.body?.fresh === true) {
+      // テスト用アカウントだけを消す（診断履歴・親密度・石の履歴は ON DELETE CASCADE で一緒に消える）
+      await query('DELETE FROM users WHERE google_id = $1', [DEV_GOOGLE_ID])
+    }
+    let user = await getUserByGoogleId(DEV_GOOGLE_ID)
+    const isNewUser = !user
+    if (!user) {
+      user = await createUser(generateUserId(), DEV_GOOGLE_ID, DEV_EMAIL, 'テスト用アカウント', '')
+      await initializeUserCharacterIntimacies(user.id)
+      await grantSignupBonus(user.id)
+    }
+    if (typeof req.body?.stones === 'number' && Number.isFinite(req.body.stones)) {
+      await query('UPDATE users SET stone_balance = $1 WHERE id = $2', [Math.max(0, Math.round(req.body.stones)), user.id])
+    }
+    const token = generateToken({ userId: user.id, email: user.email, googleId: user.google_id })
+    res.json({ success: true, token, isNewUser, user: { userId: user.id, email: user.email, name: user.name } })
+  } catch (error) {
+    console.error('Dev login error:', error)
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'dev login failed' })
   }
 })
 
