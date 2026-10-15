@@ -42,6 +42,7 @@ import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
 import seimeiRoutes from './routes/seimei.js'
 import musubiRoutes from './routes/musubi.js'
+import { requireUnlocked } from './middleware/requireUnlocked.js'
 import sukuyouRoutes from './routes/sukuyou.js'
 import resultsRoutes from './routes/results.js'
 import { captureLatestResult } from './middleware/latestResult.js'
@@ -308,7 +309,7 @@ app.post('/api/fortune', captureLatestResult({
   // ナツメ（1）とツキ（2）の結果を、別々に保存する
   kind: (req) => (req.body?.characterId === 1 ? 'fortune:1' : req.body?.characterId === 2 ? 'fortune:2' : null),
   payload: (b) => b.reading ?? null,
-}), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+}), requireUnlocked((req) => (req.body?.characterId === 2 ? 2 : 1)), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { birthDate, birthTime, birthPlace, concern, characterId } = req.body
 

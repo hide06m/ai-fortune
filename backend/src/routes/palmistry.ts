@@ -24,6 +24,7 @@ import { INTIMACY_UNLOCKS, DIAGNOSIS_STONE_COST, type CharacterId } from '../typ
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
+import { requireUnlocked } from '../middleware/requireUnlocked.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -54,7 +55,7 @@ router.post('/', captureLatestResult({
     analysis: b.analysis ?? '',
     palm: b.image && Array.isArray(b.lines) && b.lines.length > 0 ? { imageUrl: `data:${b.image.mimeType};base64,${b.image.base64}`, lines: b.lines } : undefined,
   }),
-}), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+}), requireUnlocked(3), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { token, imageBase64: directImageBase64, mimeType: directMimeType, concern, lines: directLines } = req.body
     const concernText = typeof concern === 'string' ? concern : ''
