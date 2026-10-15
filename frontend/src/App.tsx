@@ -126,6 +126,12 @@ function getTutorialSteps(
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
+/** 日本時間で、18:00〜翌4:00 なら夜（トップページの背景を夜にする） */
+export function isNightInJapan(now: Date = new Date()): boolean {
+  const hour = new Date(now.getTime() + 9 * 3600 * 1000).getUTCHours()
+  return hour >= 18 || hour < 4
+}
+
 // ゲスト体験フローの固定シナリオ（占いの館前で、フードをかぶったムスビとたまたま出会う）
 const GUEST_PRE_FORM_LINES = [
   'ここで何を考えているんだい？',
@@ -217,6 +223,12 @@ function AppContent() {
   // 新キャラクターとの「初対面イベント」（解放後、次のキャラ選択画面アクセス時に一度だけ再生）
   // ログイン後、最初に占い師選択へ入ったときだけ、全キャラの初対面を確認する（以降は、ムスビの解放イベントだけ）
   const loginMeetingCheckedRef = useRef(false)
+  // トップページの背景：日本時間の18:00〜4:00は夜の絵。1分ごとに確かめる
+  const [night, setNight] = useState(() => isNightInJapan())
+  useEffect(() => {
+    const t = setInterval(() => setNight(isNightInJapan()), 60_000)
+    return () => clearInterval(t)
+  }, [])
   const lastMeetingScopeRef = useRef<'login' | 'return'>('login')
 
   // 前回の結果（ルーンストーン不要）を開く。占い師選択画面のボタンと、診断ができたときのお知らせから使う
@@ -518,7 +530,7 @@ function AppContent() {
   // 会話シーンで使う画像（背景・キャラの表情）を先に読み込む。切り替えのたびに読み込むと、
   // 読み込み中は前の画像が残ったり、一瞬別の絵が見えたりするため
   useEffect(() => {
-    const urls = new Set<string>(['/assets/room001.jpg', '/assets/index001.jpg'])
+    const urls = new Set<string>(['/assets/room001.jpg', night ? '/assets/indexNight001.jpg' : '/assets/index001.jpg'])
     for (let i = 1; i <= 4; i++) urls.add(`/assets/characters/0-musubi/ham00${i}.webp`)
     if (screen === 'tutorial' && tutorialSegment) {
       const folders: Record<string, string> = { musubi: '0-musubi', natsume: '1-natsume', tsuki: '2-tsuki', kokuu: '3-kokuu', kuri: '4-kuri' }
@@ -1153,10 +1165,10 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           <div className="landing-bg">
             {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
             <div className="landing-stage landing-stage-bg">
-              <img src="/assets/index001.jpg" alt="" className="landing-bg-image" draggable={false} />
+              <img src={night ? '/assets/indexNight001.jpg' : '/assets/index001.jpg'} alt="" className="landing-bg-image" draggable={false} />
             </div>
-            {/* 背景ビデオ */}
-            <video
+            {/* 背景ビデオ（昼の木漏れ日。夜は出さない） */}
+            {!night && <video
               className="landing-video"
               autoPlay
               loop
@@ -1164,7 +1176,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
               playsInline
             >
               <source src="/assets/sunlight001.mp4" type="video/mp4" />
-            </video>
+            </video>}
 
             {/* ヘッダー */}
             <div className="landing-header">
