@@ -59,6 +59,7 @@ import { submitSeimei } from './api/seimei'
 import { submitMusubiConsult } from './api/musubi'
 import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
+import { MBTI_TYPES } from './data/mbtiTypes'
 import { ResultCharacter } from './components/ResultCharacter'
 import { SukuyouResultCard } from './components/SukuyouResultCard'
 import { submitSukuyou } from './api/sukuyou'
@@ -968,7 +969,13 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     if (!reading) return ''
     // ゲスト診断はムスビが担当だが、ゲストには正体を明かさないためキャラ名は出さない
     const characterName = mode === 'guest' ? '' : (CHARACTER_MASTER_DATA[selectedCharacterId as CharacterId]?.name ?? '')
-    const plain = reading.analysis
+    // 診断ごとの見出し（タイプ名など）。AIの文章が無い結果（タイプだけの診断）でも、中身のある投稿にする
+    const headline =
+      reading.mbtiResult ? `性格タイプは「${MBTI_TYPES[String(reading.mbtiResult.personalityType).split('-')[0]]?.name ?? reading.mbtiResult.personalityType}」でした。` :
+      reading.loveTypeResult ? `恋愛タイプは「${reading.loveTypeResult.characterName}」でした。` :
+      reading.sukuyouResult ? `宿曜占星術の本命宿は「${reading.sukuyouResult.mei.name}」でした。` :
+      ''
+    const plain = String(reading.analysis ?? '')
       .replace(/[#*_`>\-]/g, '')
       .replace(/\s+/g, ' ')
       .trim()
@@ -976,7 +983,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     const characterLine = mode === 'guest'
       ? '占いの森で占ってもらいました。\n'
       : (characterName ? `${characterName}に占ってもらいました。\n` : '')
-    return `${characterLine}「${excerpt}」\n#占いの森`
+    return `${characterLine}${headline ? `${headline}\n` : ''}${excerpt ? `「${excerpt}」\n` : ''}#占いの森`
   }
 
   const handleShareToX = () => {
@@ -1926,6 +1933,8 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
               alert(r.message || '前回の結果を読み込めませんでした')
               return
             }
+            const kindOwner: Record<string, CharacterId> = { musubi: 0, 'fortune:1': 1, 'fortune:2': 2, sukuyou: 2, palm: 3, seimei: 3, mbti: 4, love64: 4 }
+            if (kind in kindOwner) setSelectedCharacterId(kindOwner[kind])
             setReading(r.reading)
             setViewingHistoryReading(false)
             setViewingLatestSavedAt(r.savedAt ?? '')
