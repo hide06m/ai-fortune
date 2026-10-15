@@ -60,8 +60,15 @@ function withHardTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   })
 }
 
-/** 1回の診断（再試行・モデルの切り替えを含む）にかけてよい時間の上限 */
-const OVERALL_DEADLINE_MS = 100_000
+/**
+ * 1回の診断（再試行・モデルの切り替えを含む）にかけてよい時間の上限。
+ * 短くすると、混雑の最中に「失敗」が増える。時間がかかるほうが、失敗よりましなので、長めに取り、
+ * 全モデルが混雑していても、少し待ってから、もう一巡する（診断を、成功させることを優先する）。
+ * 利用者の画面は、この間、待ち続ける（失敗が確定したときだけ、石を払い戻して失敗を返す）
+ */
+const OVERALL_DEADLINE_MS = Math.max(30_000, Number(process.env.LLM_DEADLINE_MS) || 300_000)
+/** 全モデルを試して、どれも混雑していたときの、次の一巡までの待ち（回を重ねるごとに延ばす） */
+const ROUND_BACKOFF_MS = [4_000, 8_000, 15_000, 20_000]
 
 const TRANSIENT_STATUS_CODES = [429, 500, 502, 503, 504]
 
@@ -119,35 +126,38 @@ async function generateWithFallback(config: Omit<ModelParams, 'model'>, request:
   // 最初のモデルで起きた本来のエラーを覚えておく。切り替え先が 404 などで失敗しても、利用者には本来の理由を返す
   let firstError: unknown
   const deadline = Date.now() + OVERALL_DEADLINE_MS
-  for (let i = 0; i < MODEL_CHAIN.length; i++) {
-    const name = MODEL_CHAIN[i]
-    // 診断全体の時間の上限に達していたら、切り替え先も試さず、最初のエラーを返す
-    if (i > 0 && Date.now() + REQUEST_TIMEOUT_MS > deadline) break
-    const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
-    try {
-      // 先頭のモデルは通常どおり再試行する。切り替え先は、待ち時間を抑えるため再試行を減らす
-      const startedAt = Date.now()
-      const result = await withRetry(
-        () => withHardTimeout(model.generateContent(request as never), REQUEST_TIMEOUT_MS + 5_000),
-        MAX_ATTEMPTS,
-        deadline
-      )
-      console.log(`[Gemini] ${name} 成功（${Math.round((Date.now() - startedAt) / 1000)}秒）`)
-      return result
-    } catch (error) {
-      if (i === 0) {
-        firstError = error
-        // 混雑などの一時エラーでなければ（入力の誤りなど）、別のモデルでも直らないので、切り替えずに終える
-        if (!isTransientError(error)) throw error
-      } else {
-        console.warn(`[Gemini] 切り替え先の ${name} も失敗しました:`, error instanceof Error ? error.message.slice(-100) : error)
-      }
-      if (i < MODEL_CHAIN.length - 1) {
-        console.warn(`[Gemini] ${i === 0 ? '先頭の' : ''}${name} が使えないため、${MODEL_CHAIN[i + 1]} に切り替えます`)
+  for (let round = 0; ; round++) {
+    for (let i = 0; i < MODEL_CHAIN.length; i++) {
+      const name = MODEL_CHAIN[i]
+      // 時間の上限に達していたら、これ以上は試さず、最初のエラーを返す
+      if ((round > 0 || i > 0) && Date.now() + REQUEST_TIMEOUT_MS > deadline) throw firstError
+      const model = genAI.getGenerativeModel({ ...config, model: name }, { timeout: REQUEST_TIMEOUT_MS })
+      try {
+        const startedAt = Date.now()
+        const result = await withRetry(
+          () => withHardTimeout(model.generateContent(request as never), REQUEST_TIMEOUT_MS + 5_000),
+          MAX_ATTEMPTS,
+          deadline
+        )
+        console.log(`[Gemini] ${name} 成功（${Math.round((Date.now() - startedAt) / 1000)}秒${round > 0 ? `、${round + 1}巡目` : ''}）`)
+        return result
+      } catch (error) {
+        if (firstError === undefined) {
+          firstError = error
+          // 混雑などの一時エラーでなければ（入力の誤りなど）、別のモデルでも直らないので、切り替えずに終える
+          if (!isTransientError(error)) throw error
+        } else {
+          console.warn(`[Gemini] ${name} も失敗しました:`, error instanceof Error ? error.message.slice(-100) : error)
+        }
+        if (i < MODEL_CHAIN.length - 1) console.warn(`[Gemini] ${name} が使えないため、${MODEL_CHAIN[i + 1]} に切り替えます`)
       }
     }
+    // 全モデルが使えなかった：少し待って、もう一巡する
+    const wait = ROUND_BACKOFF_MS[Math.min(round, ROUND_BACKOFF_MS.length - 1)]
+    if (Date.now() + wait + REQUEST_TIMEOUT_MS > deadline) throw firstError
+    console.warn(`[Gemini] 全モデルが混雑しています。${wait / 1000}秒待って、もう一度試します（${round + 1}巡目が終わり）`)
+    await new Promise((resolve) => setTimeout(resolve, wait))
   }
-  throw firstError
 }
 
 export interface FortuneAnalysisResult {

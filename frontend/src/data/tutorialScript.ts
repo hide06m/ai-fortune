@@ -127,7 +127,7 @@ export const KURI_MEETING_STEPS: TutorialStep[] = [
   { type: 'narration', text: '廊下を歩いていると、明るい声に呼び止められた。' },
   { type: 'dialogue', character: 'kuri', image: 'kuri001', speaker: 'クリ', text: 'あ、もしかして……はじめまして？' },
   { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: 'わたしはクリ。ここでみんなの話を聞くのが得意なんだ。なんでも話してね、ちゃんと最後まで聞くから' },
-  { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: 'わたしがやるのは、性格診断と、ラブタイプ診断。どっちも、質問に答えていくだけだよ' },
+  { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: 'わたしがやるのは、性格タイプ診断と、恋愛タイプ診断。どっちも、質問に答えていくだけだよ' },
   { type: 'dialogue', character: 'kuri', image: 'kuri001', speaker: 'クリ', text: '生まれた日とかは、いらないの。思ったままに答えてくれればいいからね' },
   { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: '診断のあとは、悩みや今の状況を聞かせてくれたら、タイプに合わせてお話しするよ。こっちは、ちょっとだけ石を使うけど' },
   { type: 'dialogue', character: 'kuri', image: 'kuri003', speaker: 'クリ', text: 'みんな最初はちょっと緊張するみたいだけど、すぐ慣れると思うよ。これからよろしくね！' },

@@ -76,7 +76,7 @@ import {
 } from './data/tutorialScript'
 
 // キャラごとに「もう一度診断する」で戻るべき画面（診断方式がキャラごとに異なるため）。
-// クリだけは性格診断／ラブタイプ診断のどちらを最後に使ったかで戻り先が変わる
+// クリだけは性格タイプ診断／恋愛タイプ診断のどちらを最後に使ったかで戻り先が変わる
 function getDiagnosisEntryScreen(
   characterId: number,
   kuriMode: 'mbti' | 'love64' = 'mbti'
@@ -161,7 +161,7 @@ function AppContent() {
 
   // Character state
   const [selectedCharacterId, setSelectedCharacterId] = useState<number>(1) // デフォルト：ナツメ
-  const [kuriDiagnosisMode, setKuriDiagnosisMode] = useState<'mbti' | 'love64'>('mbti') // クリのみ：性格診断/ラブタイプ診断のどちらを使うか
+  const [kuriDiagnosisMode, setKuriDiagnosisMode] = useState<'mbti' | 'love64'>('mbti') // クリのみ：性格タイプ診断/恋愛タイプ診断のどちらを使うか
 
   // 石（診断に使う仮想通貨）
   const [stoneBalance, setStoneBalance] = useState<number | null>(null)
@@ -1580,7 +1580,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             </div>
           ) : reading.mbtiResult ? (
             <div className="result-section">
-              <h2>【性格診断（16タイプ）】</h2>
+              <h2>【性格タイプ診断（16タイプ）】</h2>
               <MBTIResultCard result={reading.mbtiResult} />
             </div>
           ) : reading.sukuyouResult ? (
@@ -1595,7 +1595,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             </div>
           ) : reading.loveTypeResult ? (
             <div className="result-section">
-              <h2>【ラブタイプ診断64】</h2>
+              <h2>【恋愛タイプ診断64】</h2>
               <div className="bazi-result">
                 <ResultCharacter src={`/assets/results/lovetype/${String(reading.loveTypeResult.fullType).split('-')[0]}.webp`} alt={reading.loveTypeResult.characterName} />
                 <div>タイプ: <strong>{reading.loveTypeResult.fullType}</strong>（{reading.loveTypeResult.characterName} × {reading.loveTypeResult.subTypeName}）</div>
@@ -2145,7 +2145,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     )
   }
 
-  // 性格診断（16タイプ診断）クイズ画面（クリ専用）
+  // 性格タイプ診断（16タイプ）クイズ画面（クリ専用）
   if (screen === 'mbti-quiz') {
     return (
       <div className="app-container">
@@ -2174,7 +2174,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     )
   }
 
-  // ラブタイプ診断64 クイズ画面（クリ専用）
+  // 恋愛タイプ診断64 クイズ画面（クリ専用）
   if (screen === 'love64-quiz') {
     return (
       <div className="app-container">

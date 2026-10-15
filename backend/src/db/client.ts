@@ -87,7 +87,7 @@ export async function initializeDatabase() {
       ALTER TABLE readings ADD COLUMN IF NOT EXISTS mbti_result JSONB;
     `);
 
-    // 既存DB向け: love_type_result カラム（クリ＝ラブタイプ診断64専用）
+    // 既存DB向け: love_type_result カラム（クリ＝恋愛タイプ診断64専用）
     await client.query(`
       ALTER TABLE readings ADD COLUMN IF NOT EXISTS love_type_result JSONB;
     `);

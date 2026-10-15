@@ -27,10 +27,10 @@ const LATEST_BY_CHARACTER: Record<number, Array<{ kind: string; label: string }>
   1: [{ kind: 'fortune:1', label: '四柱推命など' }],
   2: [{ kind: 'fortune:2', label: '西洋占星術' }, { kind: 'sukuyou', label: '宿曜占星術' }],
   3: [{ kind: 'palm', label: '手相' }, { kind: 'seimei', label: '姓名判断' }],
-  4: [{ kind: 'mbti', label: '性格診断' }, { kind: 'love64', label: 'ラブタイプ診断' }],
+  4: [{ kind: 'mbti', label: '性格タイプ診断' }, { kind: 'love64', label: '恋愛タイプ診断' }],
 };
 
-/** 占術の選び方：クリ＝性格(mbti)／ラブタイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
+/** 占術の選び方：クリ＝性格(mbti)／恋愛タイプ(love64)、コクウ＝手相(palm)／姓名判断(seimei) */
 export type KuriDiagnosisMode = 'mbti' | 'love64' | 'palm' | 'seimei' | 'sukuyou' | 'consult';
 
 interface CharacterSelectionPageProps {
@@ -170,7 +170,7 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
   const canGift = GIFT_ELIGIBLE_CHARACTERS.includes(selectedCharacterId);
   const canAffordGift = stoneBalance === null || stoneBalance >= GIFT_STONE_COST;
 
-  // 診断開始（クリのみ、性格診断かラブタイプ診断かを選べる）
+  // 診断開始（クリのみ、性格タイプ診断か恋愛タイプ診断かを選べる）
   const handleStartDiagnosis = (kuriMode?: KuriDiagnosisMode) => {
     if (!isUnlocked && selectedCharacterId !== 1) {
       alert(`${selectedCharacter.name}は親密度 Lv.${getUnlockLevel(selectedCharacterId)} で解放されます`);
@@ -359,10 +359,10 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
             ) : selectedCharacterId === 4 ? (
               <>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('mbti')} disabled={!canAffordDiagnosis}>
-                  🔮 性格診断で占ってもらう（石{stoneCost}個）
+                  🔮 性格タイプ診断で占ってもらう（石{stoneCost}個）
                 </button>
                 <button className="btn btn-primary" onClick={() => handleStartDiagnosis('love64')} disabled={!canAffordDiagnosis}>
-                  💕 ラブタイプ診断で占ってもらう（石{stoneCost}個）
+                  💕 恋愛タイプ診断で占ってもらう（石{stoneCost}個）
                 </button>
                 {canGift && (
                   <button

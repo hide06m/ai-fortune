@@ -1,5 +1,5 @@
 /**
- * 性格診断（16タイプ診断）API クライアント（クリ専用）
+ * 性格タイプ診断（16タイプ）API クライアント（クリ専用）
  */
 
 import { getToken, API_URL } from '../api';
@@ -83,7 +83,7 @@ export async function submitMBTIQuizReuseLatest(concern: string): Promise<MBTIRe
   return data;
 }
 
-/** 直近のMBTI診断結果があるか確認する（無ければnull） */
+/** 直近の性格タイプ診断結果があるか確認する（無ければnull） */
 export async function getLatestMBTIResult(): Promise<{ success: boolean; result: MBTIQuizResult | null; error?: string }> {
   const token = getToken();
   if (!token) {

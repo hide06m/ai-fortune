@@ -36,6 +36,12 @@ const MESSAGE_INTERVAL_MS = 3000;
 export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: HamsterLoadingProps) {
   const [flavor, setFlavor] = useState(() => pickRandomLoadingMessage());
   const [estimatedTime, setEstimatedTime] = useState(3); // 推定時間（秒）
+  // 長くかかっているとき（AIの混雑など）は、止まったと思われないよう、待っていてよいことを伝える
+  const [elapsedSec, setElapsedSec] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setFlavor((cur) => pickRandomLoadingMessage(cur)), MESSAGE_INTERVAL_MS);
@@ -95,7 +101,10 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
       {/* メッセージ */}
       <div className="loading-message">
         <p className="main-message">✨ {flavor}</p>
-        {showEstimate && <p className="estimate">推定時間：あと {estimatedTime} 秒</p>}
+        {showEstimate && elapsedSec < 20 && <p className="estimate">推定時間：あと {estimatedTime} 秒</p>}
+        {elapsedSec >= 20 && (
+          <p className="estimate">いま、占いの依頼が混み合っています。順番に試していますので、画面を閉じずに、このままお待ちください（{elapsedSec}秒）</p>
+        )}
         {hint && <p className="estimate">{hint}</p>}
 
         {/* ドット animation */}

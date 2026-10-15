@@ -1,5 +1,5 @@
 /**
- * ラブタイプ診断64 クイズ画面（クリ専用）
+ * 恋愛タイプ診断64 クイズ画面（クリ専用）
  * 18問を1ページ6問・全3ページで表示し、4段階のハート（ピンク/グリーン）で回答する
  */
 
@@ -97,7 +97,7 @@ export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType
   if (mode === 'choice') {
     return (
       <QuizRetakeChoice
-        quizName="ラブタイプ診断64"
+        quizName="恋愛タイプ診断64"
         resultLabel={`前回の結果：${previousType}`}
         onConsult={onConsult}
         onStartOver={() => setMode('quiz')}
@@ -111,7 +111,7 @@ export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType
   if (mode === 'entry') {
     return (
       <div className="mbti-quiz">
-        <h2 className="mbti-entry-title">ラブタイプ診断64</h2>
+        <h2 className="mbti-entry-title">恋愛タイプ診断64</h2>
         <p className="mbti-entry-desc">18問の質問に答えて診断するか、他サイトで診断済みのタイプを直接入力できます。</p>
         <div className="mbti-entry-options">
           <button type="button" className="primary-button" onClick={() => setMode('quiz')}>

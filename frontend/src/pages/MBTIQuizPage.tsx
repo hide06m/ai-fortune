@@ -1,5 +1,5 @@
 /**
- * 性格診断（16タイプ診断）クイズ画面（クリ専用）
+ * 性格タイプ診断（16タイプ）クイズ画面（クリ専用）
  * 60問を1ページ6問・全10ページで表示し、7段階のリッカート尺度で回答する
  */
 
@@ -99,7 +99,7 @@ export function MBTIQuizPage({ onComplete, onConsult, onCancel }: MBTIQuizPagePr
   if (mode === 'choice') {
     return (
       <QuizRetakeChoice
-        quizName="性格診断（16タイプ）"
+        quizName="性格タイプ診断（16タイプ）"
         resultLabel={`前回の結果：${previousType}`}
         onConsult={onConsult}
         onStartOver={() => setMode('quiz')}
@@ -113,7 +113,7 @@ export function MBTIQuizPage({ onComplete, onConsult, onCancel }: MBTIQuizPagePr
   if (mode === 'entry') {
     return (
       <div className="mbti-quiz">
-        <h2 className="mbti-entry-title">性格診断（16タイプ）</h2>
+        <h2 className="mbti-entry-title">性格タイプ診断（16タイプ）</h2>
         <p className="mbti-entry-desc">60問の質問に答えて診断するか、他サイトで診断済みのタイプを直接入力できます。</p>
         <div className="mbti-entry-options">
           <button type="button" className="primary-button" onClick={() => setMode('quiz')}>

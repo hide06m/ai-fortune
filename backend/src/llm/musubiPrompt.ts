@@ -31,11 +31,11 @@ function sectionMbti(m: any): string {
         .map((d: any) => `${d.traitA}${d.percentageA}%対${d.traitB}${d.percentageB}%`)
         .join('、')
     : ''
-  return `## 性格診断・16タイプ（クリのところで得た情報）\n- タイプ：${m.personalityType}${dims ? `\n- 各軸の割合：${dims}` : ''}`
+  return `## 性格タイプ診断・16タイプ（クリのところで得た情報）\n- タイプ：${m.personalityType}${dims ? `\n- 各軸の割合：${dims}` : ''}`
 }
 
 function sectionLove(l: any): string {
-  return `## ラブタイプ診断64（クリのところで得た情報）\n- タイプ：${l.fullType}（${l.characterName} × ${l.subTypeName}）\n- ${l.subTypeTagline}\n- 特徴：${(l.subTypeTraits ?? []).join('、')}`
+  return `## 恋愛タイプ診断64（クリのところで得た情報）\n- タイプ：${l.fullType}（${l.characterName} × ${l.subTypeName}）\n- ${l.subTypeTagline}\n- 特徴：${(l.subTypeTraits ?? []).join('、')}`
 }
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s)

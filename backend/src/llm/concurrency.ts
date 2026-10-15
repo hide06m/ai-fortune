@@ -6,7 +6,8 @@
  */
 
 const MAX_CONCURRENCY = Math.max(1, Number(process.env.LLM_MAX_CONCURRENCY) || 6)
-const MAX_WAIT_MS = 60_000
+// 順番待ちも、診断の待ち時間（llm/client.ts の OVERALL_DEADLINE_MS）に合わせて長く取る。待たせすぎて失敗にするより、待たせて成功させる
+const MAX_WAIT_MS = Math.max(60_000, Number(process.env.LLM_QUEUE_WAIT_MS) || 300_000)
 
 let active = 0
 const queue: Array<{ resolve: () => void; timer: NodeJS.Timeout }> = []

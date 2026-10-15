@@ -15,7 +15,7 @@ export interface SaveReadingParams {
   birthTime?: string | null
   birthPlace?: string | null
   concern: string
-  // 生年月日ベースの占術（ナツメ・ツキ等）でのみ使う。MBTI/ラブタイプ診断では省略する
+  // 生年月日ベースの占術（ナツメ・ツキ等）でのみ使う。性格タイプ診断/恋愛タイプ診断では省略する
   baZi?: BaZiChart | null
   numerology?: NumerologyResult | null
   kyuseiSeisun?: KyuseiSeisun | null
@@ -99,7 +99,7 @@ export async function saveReading(params: SaveReadingParams): Promise<string> {
 }
 
 /**
- * ユーザーが直近に受けたMBTI診断の結果を取得する（「悩みだけ入力し直す」再診断用）
+ * ユーザーが直近に受けた性格タイプ診断の結果を取得する（「悩みだけ入力し直す」再診断用）
  */
 export async function getLatestMBTIResult(userId: string): Promise<MBTIQuizResult | null> {
   const result = await query(
@@ -112,7 +112,7 @@ export async function getLatestMBTIResult(userId: string): Promise<MBTIQuizResul
 }
 
 /**
- * ユーザーが直近に受けたラブタイプ診断64の結果を取得する（「悩みだけ入力し直す」再診断用）
+ * ユーザーが直近に受けた恋愛タイプ診断64の結果を取得する（「悩みだけ入力し直す」再診断用）
  */
 export async function getLatestLoveType64Result(userId: string): Promise<LoveType64Result | null> {
   const result = await query(

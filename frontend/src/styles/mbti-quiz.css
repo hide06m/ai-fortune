@@ -217,7 +217,7 @@
   margin-top: 0.75rem;
 }
 
-/* ラブタイプ診断のハート4段階（ピンク=左側／グリーン=右側）。border円ではなく♥グリフそのものを着色する */
+/* 恋愛タイプ診断のハート4段階（ピンク=左側／グリーン=右側）。border円ではなく♥グリフそのものを着色する */
 .mbti-scale.love-heart-scale {
   align-items: center;
 }

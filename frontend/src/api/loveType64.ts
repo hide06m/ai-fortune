@@ -1,5 +1,5 @@
 /**
- * ラブタイプ診断64 API クライアント（クリ専用）
+ * 恋愛タイプ診断64 API クライアント（クリ専用）
  */
 
 import { getToken, API_URL } from '../api';
@@ -83,7 +83,7 @@ export async function submitLoveType64QuizReuseLatest(concern: string): Promise<
   return data;
 }
 
-/** 直近のラブタイプ診断結果があるか確認する（無ければnull） */
+/** 直近の恋愛タイプ診断結果があるか確認する（無ければnull） */
 export async function getLatestLoveType64Result(): Promise<{ success: boolean; result: LoveType64Result | null; error?: string }> {
   const token = getToken();
   if (!token) {

@@ -1,5 +1,5 @@
 /**
- * LLM用プロンプトテンプレート（ラブタイプ診断64版。クリ専用）
+ * LLM用プロンプトテンプレート（恋愛タイプ診断64版。クリ専用）
  * 他の診断と同じ構成・トーンで、6軸の判定結果を根拠に恋愛傾向を診断する
  */
 
@@ -18,7 +18,7 @@ export function buildLoveType64Prompt(result: LoveType64Result, concernText: str
   const hasConcern = !!concernText && concernText.trim().length > 0
   const situationBlock = hasConcern
     ? `**あなたの状況：**\n${concernText}`
-    : `**あなたの状況：**\n特定の悩みの入力はなし。ラブタイプ診断の結果から、総合的な恋愛傾向を診断してほしい。`
+    : `**あなたの状況：**\n特定の悩みの入力はなし。恋愛タイプ診断の結果から、総合的な恋愛傾向を診断してほしい。`
 
   const anchorBlock = `**この人のベースキャラクター「${result.characterName}」（必ずこの人物像を軸に、具体的な文章へ展開すること。設定文をそのまま引用するのではなく、自然な文章に落とし込む）：**
 - ${result.characterDesc}
@@ -46,7 +46,7 @@ export function buildLoveType64Prompt(result: LoveType64Result, concernText: str
 
 # 📊 あなたの基本情報
 
-**ラブタイプ診断64**
+**恋愛タイプ診断64**
 - タイプ：${result.fullType}
 
 **6軸の内訳**

@@ -30,7 +30,7 @@ describe('ムスビの総合相談のプロンプト', () => {
     expect(prompt).toContain('INTJ-A')
     expect(prompt).toContain('姓名判断')
     expect(prompt).toContain('転職で迷っている')
-    expect(prompt).not.toContain('## ラブタイプ診断64')
+    expect(prompt).not.toContain('## 恋愛タイプ診断64')
     expect(prompt).not.toContain('## 手相')
     expect(prompt).not.toContain('## 生年月日の占い')
   })

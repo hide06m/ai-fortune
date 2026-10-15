@@ -1,5 +1,5 @@
 /**
- * 性格診断（16タイプ診断）エンドポイント
+ * 性格タイプ診断（16タイプ）エンドポイント
  * GET  /api/fortune/mbti/latest - 直近の診断結果があるか確認（再診断の選択肢を出すため）
  * POST /api/fortune/mbti        - 診断を実行
  * クリ（キャラID4）専用の占術。生年月日ではなく60問の回答を使う。
@@ -48,7 +48,7 @@ function isValidAnswers(value: unknown): value is MBTIAnswer[] {
 
 /**
  * GET /api/fortune/mbti/latest
- * 直近のMBTI診断結果があるかどうかを返す（あれば再診断の選択肢をフロントに出す）
+ * 直近の性格タイプ診断結果があるかどうかを返す（あれば再診断の選択肢をフロントに出す）
  */
 router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   try {

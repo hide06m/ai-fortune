@@ -18,7 +18,7 @@ export function buildMBTIPrompt(result: MBTIQuizResult, concernText: string): st
   const hasConcern = !!concernText && concernText.trim().length > 0
   const situationBlock = hasConcern
     ? `**あなたの状況：**\n${concernText}`
-    : `**あなたの状況：**\n特定の悩みの入力はなし。性格診断の結果から、総合的な人物像と人生の傾向を診断してほしい。`
+    : `**あなたの状況：**\n特定の悩みの入力はなし。性格タイプ診断の結果から、総合的な人物像と人生の傾向を診断してほしい。`
 
   const coreType = result.personalityType.slice(0, 4)
   const identity = result.personalityType.slice(5) // A or T
@@ -56,11 +56,11 @@ export function buildMBTIPrompt(result: MBTIQuizResult, concernText: string): st
 - **人間関係**：相性が良い相手の条件、危険なタイプ
 - **恋愛**：向いているパートナー像、注意点`
 
-  return `あなたは、その人の本質と可能性を正確に見抜く性格診断の専門家です。ChatGPT占い師のように、診断の根拠を具体的に示しながら、その人個人に向けたアドバイスを提供します。抽象的な励ましではなく、観察力に基づいた分析と、実行可能なキャリア・人生アドバイスが得意です。
+  return `あなたは、その人の本質と可能性を正確に見抜く性格タイプ診断の専門家です。ChatGPT占い師のように、診断の根拠を具体的に示しながら、その人個人に向けたアドバイスを提供します。抽象的な励ましではなく、観察力に基づいた分析と、実行可能なキャリア・人生アドバイスが得意です。
 
 # 📊 あなたの基本情報
 
-**性格診断（16タイプ診断）**
+**性格タイプ診断（16タイプ）**
 - タイプ：${result.personalityType}
 - ${identityLabel}
 

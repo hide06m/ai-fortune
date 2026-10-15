@@ -64,7 +64,7 @@ function loadLoveAll() {
 function toBlocks(text: string): TextBlock[] {
   return text
     .split('\n')
-    .map((l) => l.trim())
+    .map((l) => l.trim().replace(/ラブタイプ/g, '恋愛タイプ'))
     .filter((l) => l.length > 0)
     .map((l) => ({
       kind: l.length <= 24 && !/[。、！？]/.test(l) ? ('heading' as const) : ('paragraph' as const),
@@ -72,14 +72,14 @@ function toBlocks(text: string): TextBlock[] {
     }))
 }
 
-/** 性格診断：4文字タイプ（例 "INTJ"）の長文解説 */
+/** 性格タイプ診断：4文字タイプ（例 "INTJ"）の長文解説 */
 export async function loadMBTIFullContent(coreType: string): Promise<TextBlock[] | null> {
   const all = await loadMBTIAll()
   const entry = all?.[coreType.toUpperCase()]
   return entry ? toBlocks(entry.text) : null
 }
 
-/** ラブタイプ診断：ベース4文字（例 "LCPO"）の「どんなアプローチに弱い？」解説 */
+/** 恋愛タイプ診断：ベース4文字（例 "LCPO"）の「どんなアプローチに弱い？」解説 */
 export async function loadLoveApproach(baseType: string): Promise<TextBlock[] | null> {
   const all = await loadLoveAll()
   const raw = all?.approachDescriptions?.[baseType]
@@ -90,7 +90,7 @@ export async function loadLoveApproach(baseType: string): Promise<TextBlock[] | 
   return toBlocks(lines.join('\n'))
 }
 
-/** ラブタイプ診断：64タイプ同士の相性（フルタイプ同士、例 "FAPE-ND" × "LCRO-VI"） */
+/** 恋愛タイプ診断：64タイプ同士の相性（フルタイプ同士、例 "FAPE-ND" × "LCRO-VI"） */
 export async function loadLoveCompatibility(a: string, b: string): Promise<LoveCompatibilityEntry | null> {
   const all = await loadLoveAll()
   // 2,080件 = 64×65/2 の片方向のみの収録なので、順序を入れ替えても検索する

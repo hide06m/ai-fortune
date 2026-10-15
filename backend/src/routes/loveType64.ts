@@ -1,9 +1,9 @@
 /**
- * ラブタイプ診断64エンドポイント
+ * 恋愛タイプ診断64エンドポイント
  * GET  /api/fortune/love-type64/latest - 直近の診断結果があるか確認（再診断の選択肢を出すため）
  * POST /api/fortune/love-type64        - 診断を実行
  * クリ（キャラID4）専用の占術その2。生年月日ではなく18問の回答を使う。
- * MBTIと同様、2回目以降は「前回の結果のまま悩みだけ入力し直す」再診断も選べる
+ * 性格タイプ診断と同様、2回目以降は「前回の結果のまま悩みだけ入力し直す」再診断も選べる
  * （body に answers の代わりに reuseLatest: true を渡す）
  */
 
@@ -48,7 +48,7 @@ function isValidAnswers(value: unknown): value is LoveAnswer[] {
 
 /**
  * GET /api/fortune/love-type64/latest
- * 直近のラブタイプ診断結果があるかどうかを返す
+ * 直近の恋愛タイプ診断結果があるかどうかを返す
  */
 router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   try {

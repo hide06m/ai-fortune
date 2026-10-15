@@ -1,5 +1,5 @@
 /**
- * 性格診断（16タイプ診断）の結果カード
+ * 性格タイプ診断（16タイプ）の結果カード
  * 役割グループのテーマカラーでタイプ名と5軸のパーセンテージバーを表示する
  */
 
@@ -41,7 +41,7 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
       <div className="mbti-result-header">
         <ResultCharacter src={`/assets/results/mbti/${coreType}.webp`} alt={info?.name ?? coreType} fallback={coreType} />
         <h3 className="mbti-result-name">
-          {info?.name ?? '性格診断'}
+          {info?.name ?? '性格タイプ診断'}
           <span className="mbti-result-code">（{result.personalityType}）</span>
         </h3>
         {identity && <div className="mbti-result-identity">{MBTI_IDENTITY_LABELS[identity] ?? identity}</div>}

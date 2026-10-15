@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { calculateLoveType64, LOVE_TYPE64_QUESTIONS, type LoveAnswer } from './loveType64.js'
 
-describe('ラブタイプ診断64 計算', () => {
+describe('恋愛タイプ診断64 計算', () => {
   it('質問データは18問、idは1-18が重複なく揃っている', () => {
     expect(LOVE_TYPE64_QUESTIONS).toHaveLength(18)
     const ids = new Set(LOVE_TYPE64_QUESTIONS.map((q) => q.id))

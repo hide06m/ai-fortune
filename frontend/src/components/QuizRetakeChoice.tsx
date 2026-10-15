@@ -1,5 +1,5 @@
 /**
- * 2回目以降のクイズ系診断（MBTI・ラブタイプ診断64）向け：
+ * 2回目以降のクイズ系診断（性格タイプ・恋愛タイプ診断64）向け：
  * 「前回の結果のまま悩みだけ入力し直す」か「最初からやり直す」かを選ぶ画面
  */
 
@@ -7,7 +7,7 @@ import React from 'react';
 import { KURI_CONSULT_STONE_COST } from '../types/character';
 
 interface QuizRetakeChoiceProps {
-  quizName: string; // 例: "性格診断（16タイプ）"
+  quizName: string; // 例: "性格タイプ診断（16タイプ）"
   resultLabel: string; // 例: "前回の結果：ENTJ-T"
   /** 悩み・状況を、クリに相談する（前回のタイプのまま） */
   onConsult: () => void;

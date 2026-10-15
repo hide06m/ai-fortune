@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { calculatePersonalityType, MBTI_QUESTIONS, type MBTIAnswer } from './mbti.js'
 
-describe('16タイプ診断（MBTI風）計算', () => {
+describe('性格タイプ診断（16タイプ）計算', () => {
   it('質問データは60問ちょうど、idは0-59が重複なく揃っている', () => {
     expect(MBTI_QUESTIONS).toHaveLength(60)
     const ids = new Set(MBTI_QUESTIONS.map((q) => q.id))
