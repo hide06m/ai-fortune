@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
 import Markdown from 'react-markdown'
+import remarkCjkFriendly from 'remark-cjk-friendly'
 import './App.css'
 import {
   callFortuneAPI,
@@ -1710,6 +1711,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             <h2>【総合結論】</h2>
             <div className="analysis">
               <Markdown
+                remarkPlugins={[remarkCjkFriendly]}
                 components={{
                   h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
                   h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
@@ -1921,6 +1923,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
               <h2>【AI相性診断】</h2>
               <div className="analysis">
                 <Markdown
+                remarkPlugins={[remarkCjkFriendly]}
                   components={{
                     h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
                     h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
