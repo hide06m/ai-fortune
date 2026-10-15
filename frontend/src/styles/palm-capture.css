@@ -109,3 +109,30 @@
   opacity: 0.6;
   word-break: break-all;
 }
+
+/* ライトの切り替え（映像の右上） */
+.palm-capture-viewport { position: relative; }
+.palm-capture-torch {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.95rem;
+  z-index: 2;
+}
+.palm-capture-torch.is-on { background: rgba(255, 214, 102, 0.9); color: #222; border-color: #ffd666; }
+
+/* 撮影した写真を確かめる段階の、ボタン */
+.palm-capture-review-actions { display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+.palm-capture-retake {
+  padding: 0.8rem 1.4rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+}
