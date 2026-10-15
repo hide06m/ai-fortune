@@ -183,7 +183,10 @@ router.post('/:characterId/unlock', requireAuth, async (req: Request, res: Respo
 router.get('/next-unmet', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any).userId;
-    const characterId = await getNextUnmetCharacter(userId);
+    // ムスビは、条件が揃ったかをここで確かめる（揃っていれば、解放イベントの対象になる）
+    await ensureMusubiUnlocked(userId);
+    const scope = req.query.scope === 'return' ? 'return' : 'login';
+    const characterId = await getNextUnmetCharacter(userId, scope);
     res.json({ success: true, characterId });
   } catch (error) {
     console.error('[API] Failed to get next unmet character:', error);

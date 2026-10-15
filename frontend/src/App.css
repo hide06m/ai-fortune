@@ -1606,3 +1606,26 @@ h1 {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* 診断結果などの枠：セリフウィンドウ以外の枠の四隅に、flamecorner2 の飾りを原寸比で重ねる */
+.result-section {
+  position: relative;
+  background-image:
+    url('/assets/ui/flame-corner2-tl.webp'),
+    url('/assets/ui/flame-corner2-tr.webp'),
+    url('/assets/ui/flame-corner2-bl.webp'),
+    url('/assets/ui/flame-corner2-br.webp');
+  background-repeat: no-repeat;
+  background-size: 56px auto, 56px auto, 56px auto, 56px auto;
+  background-position: top left, top right, bottom left, bottom right;
+}
+
+/* 診断結果のキャラクター画像 */
+.result-character {
+  grid-column: 1 / -1;
+  display: block;
+  width: min(60%, 260px);
+  height: auto;
+  margin: 8px auto;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}

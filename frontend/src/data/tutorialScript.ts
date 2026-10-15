@@ -75,6 +75,11 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '古い井戸の底から、乾いた風をすくい上げるような仕事をしているわ' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '特に古いものと、行き場をなくした靴下を扱うのは得意だから、何かあればいつでも言ってね' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '挨拶代わりに占ってみましょうか' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: 'はじめまして、ナツメよ。ふんわりした占いだけれど、ちゃんと根拠はあるの' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '私が使うのは、四柱推命と、数秘術と、九星気学。どれも、アナタが生まれた日から読むのよ' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '知りたいのは、生まれた年と月と日。それから、わかれば、生まれた時間と、生まれた場所ね' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume003', speaker: 'ナツメ', text: '時間は、朝か夜かくらいの目安で大丈夫。わからなければ、わからないと言ってくれればいいわ' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'それと、いま気になっていることがあれば、それも聞かせてちょうだい' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'アナタのことを教えてくれます？' },
   { type: 'handoff', action: 'gotoForm' },
 ]
@@ -101,7 +106,10 @@ export const TSUKI_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'tsuki', image: 'tsuki001', speaker: 'ツキ', text: 'あら' },
   { type: 'dialogue', character: 'tsuki', image: 'tsuki002', speaker: 'ツキ', text: '新しい来訪者の気配がすると思ったら、当たっていたようね' },
   { type: 'dialogue', character: 'tsuki', image: 'tsuki001', speaker: 'ツキ', text: 'わたしはツキ。星の巡りを読む占い師よ。この館にはずいぶん長く住んでいるけれど、顔を合わせるのは意外と久しぶりね' },
-  { type: 'dialogue', character: 'tsuki', image: 'tsuki003', speaker: 'ツキ', text: 'あなたが生まれた瞬間、空にはどんな星が瞬いていたのかしら。よかったら、今度聞かせてちょうだい' },
+  { type: 'dialogue', character: 'tsuki', image: 'tsuki002', speaker: 'ツキ', text: 'わたしの占いは二つ。ひとつは、西洋占星術。生まれた日と、時刻と、場所から、星の配置を読むの' },
+  { type: 'dialogue', character: 'tsuki', image: 'tsuki001', speaker: 'ツキ', text: 'もうひとつは、宿曜占星術。こちらは、生まれた日だけでいいわ。旧い暦に直して、月の宿りを見るの' },
+  { type: 'dialogue', character: 'tsuki', image: 'tsuki001', speaker: 'ツキ', text: '時刻や場所は、わからなければ、わからないでいいのよ。星は、急かさないもの' },
+  { type: 'dialogue', character: 'tsuki', image: 'tsuki003', speaker: 'ツキ', text: 'あなたが生まれた日の空を、いつか聞かせてちょうだい' },
 ]
 
 export const KOKUU_MEETING_STEPS: TutorialStep[] = [
@@ -109,6 +117,9 @@ export const KOKUU_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'kokuu', image: 'kokuu001', speaker: 'コクウ', text: 'ほう……' },
   { type: 'dialogue', character: 'kokuu', image: 'kokuu002', speaker: 'コクウ', text: '珍しい気配だ。この館に長く暮らしているが、新しい顔を見るのは久方ぶりでな' },
   { type: 'dialogue', character: 'kokuu', image: 'kokuu001', speaker: 'コクウ', text: '儂はコクウ。古くからの占術を扱う者だ。伊達に長く生きてはおらんつもりだが、まあそれは追い追い分かるだろう' },
+  { type: 'dialogue', character: 'kokuu', image: 'kokuu002', speaker: 'コクウ', text: '儂の占いは二つある。ひとつは手相。見せてもらうのは、左の手のひらだ。写真に撮ってもらうことになる' },
+  { type: 'dialogue', character: 'kokuu', image: 'kokuu001', speaker: 'コクウ', text: '明るい所で、手のひらを開いて、線がはっきり写るようにな。写真から、確かに読み取れた線しか、儂は語らん' },
+  { type: 'dialogue', character: 'kokuu', image: 'kokuu002', speaker: 'コクウ', text: 'もうひとつは姓名判断。姓と名を、漢字で聞かせてもらう。ひらがなでも構わん。画数は、儂が数える' },
   { type: 'dialogue', character: 'kokuu', image: 'kokuu003', speaker: 'コクウ', text: '厳しいことも言うかもしれんが、悪気はない。困ったことがあれば、いつでも訪ねてくるといい' },
 ]
 
@@ -116,5 +127,21 @@ export const KURI_MEETING_STEPS: TutorialStep[] = [
   { type: 'narration', text: '廊下を歩いていると、明るい声に呼び止められた。' },
   { type: 'dialogue', character: 'kuri', image: 'kuri001', speaker: 'クリ', text: 'あ、もしかして……はじめまして？' },
   { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: 'わたしはクリ。ここでみんなの話を聞くのが得意なんだ。なんでも話してね、ちゃんと最後まで聞くから' },
+  { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: 'わたしがやるのは、性格診断と、ラブタイプ診断。どっちも、質問に答えていくだけだよ' },
+  { type: 'dialogue', character: 'kuri', image: 'kuri001', speaker: 'クリ', text: '生まれた日とかは、いらないの。思ったままに答えてくれればいいからね' },
+  { type: 'dialogue', character: 'kuri', image: 'kuri002', speaker: 'クリ', text: '診断のあとは、悩みや今の状況を聞かせてくれたら、タイプに合わせてお話しするよ。こっちは、ちょっとだけ石を使うけど' },
   { type: 'dialogue', character: 'kuri', image: 'kuri003', speaker: 'クリ', text: 'みんな最初はちょっと緊張するみたいだけど、すぐ慣れると思うよ。これからよろしくね！' },
+]
+
+/**
+ * ムスビの解放イベント：解放条件が揃った直後（占い師選択に戻ったとき）に再生する。
+ * 条件そのものは明かさず、匂わせるだけにする。
+ */
+export const MUSUBI_MEETING_STEPS: TutorialStep[] = [
+  { type: 'narration', text: '館の奥の机で、ムスビが、積まれた紙の束を、ゆっくりとめくっていた。' },
+  { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ああ、君か。ちょうどいい' },
+  { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: 'ムスビ', text: 'みんなの話を聞いていたら、君の輪郭が、だいぶ見えてきてね。ボクの出番が、来たみたいだ' },
+  { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ボクがするのは、総合相談。これまでに君が視てもらった結果を、すべて読んだうえで、君の悩みや状況に、答えるんだ' },
+  { type: 'dialogue', character: 'musubi', image: 'ham004', speaker: 'ムスビ', text: '知りたいのは、いま気になっていること。それだけでいい。あとは、君が集めてきた結果が、語ってくれる' },
+  { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: '視てもらった占いが多いほど、ボクの答えは、深くなる。ゆっくり、好きなだけ、みんなのところへ寄っていくといい' },
 ]

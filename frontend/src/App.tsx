@@ -59,6 +59,7 @@ import { submitSeimei } from './api/seimei'
 import { submitMusubiConsult } from './api/musubi'
 import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
+import { ResultCharacter } from './components/ResultCharacter'
 import { SukuyouResultCard } from './components/SukuyouResultCard'
 import { submitSukuyou } from './api/sukuyou'
 import type { KuriDiagnosisMode } from './pages/CharacterSelectionPage'
@@ -68,6 +69,7 @@ import {
   TUTORIAL_MEETING_STEPS,
   TUTORIAL_AFTER_RESULT_STEPS,
   TSUKI_MEETING_STEPS,
+  MUSUBI_MEETING_STEPS,
   KOKUU_MEETING_STEPS,
   KURI_MEETING_STEPS,
   type TutorialStep,
@@ -86,6 +88,7 @@ function getDiagnosisEntryScreen(
 
 // キャラごとの「初対面イベント」台本（ナツメ・ムスビはチュートリアル内で完結するため対象外）
 function getMeetingSteps(characterId: CharacterId): TutorialStep[] {
+  if (characterId === 0) return MUSUBI_MEETING_STEPS
   if (characterId === 2) return TSUKI_MEETING_STEPS
   if (characterId === 3) return KOKUU_MEETING_STEPS
   return KURI_MEETING_STEPS
@@ -208,6 +211,9 @@ function AppContent() {
   const [tutorialStepIndex, setTutorialStepIndex] = useState(0)
 
   // 新キャラクターとの「初対面イベント」（解放後、次のキャラ選択画面アクセス時に一度だけ再生）
+  // ログイン後、最初に占い師選択へ入ったときだけ、全キャラの初対面を確認する（以降は、ムスビの解放イベントだけ）
+  const loginMeetingCheckedRef = useRef(false)
+  const lastMeetingScopeRef = useRef<'login' | 'return'>('login')
   const [meetingCharacterId, setMeetingCharacterId] = useState<CharacterId | null>(null)
   const [pendingMeetingCheck, setPendingMeetingCheck] = useState(false)
 
@@ -412,7 +418,10 @@ function AppContent() {
     let cancelled = false
     ;(async () => {
       try {
-        const result = await getNextUnmetCharacter()
+        const scope = loginMeetingCheckedRef.current ? 'return' : 'login'
+        loginMeetingCheckedRef.current = true
+        lastMeetingScopeRef.current = scope
+        const result = await getNextUnmetCharacter(scope)
         if (cancelled) return
         if (result.success && result.characterId !== null) {
           enterCharacterMeeting(result.characterId as CharacterId)
@@ -778,6 +787,8 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     const metCharacterId = meetingCharacterId
     setTutorialSegment(null)
     setMeetingCharacterId(null)
+    // ログイン時の初対面が続けて解放されているときは、続けて再生する（ムスビの解放イベントは、この限りでない）
+    if (metCharacterId !== null && lastMeetingScopeRef.current === 'login') loginMeetingCheckedRef.current = false
     if (metCharacterId !== null) {
       try {
         await markCharacterMet(metCharacterId)
@@ -1586,6 +1597,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             <div className="result-section">
               <h2>【ラブタイプ診断64】</h2>
               <div className="bazi-result">
+                <ResultCharacter src={`/assets/results/lovetype/${String(reading.loveTypeResult.fullType).split('-')[0]}.webp`} alt={reading.loveTypeResult.characterName} />
                 <div>タイプ: <strong>{reading.loveTypeResult.fullType}</strong>（{reading.loveTypeResult.characterName} × {reading.loveTypeResult.subTypeName}）</div>
                 <div>{reading.loveTypeResult.characterDesc}</div>
                 <div className="love-subtype-tagline">{reading.loveTypeResult.subTypeTagline}</div>

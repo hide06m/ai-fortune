@@ -172,14 +172,14 @@ export async function sendCharacterGift(characterId: number) {
 /**
  * 解放済みだが初対面イベント未再生のキャラを1件取得（無ければ characterId: null）
  */
-export async function getNextUnmetCharacter(): Promise<{ success: boolean; characterId: number | null; error?: string }> {
+export async function getNextUnmetCharacter(scope: 'login' | 'return' = 'login'): Promise<{ success: boolean; characterId: number | null; error?: string }> {
   try {
     const token = getToken();
     if (!token) {
       return { success: true, characterId: null };
     }
 
-    const response = await fetch(`${API_URL}/api/character/next-unmet`, {
+    const response = await fetch(`${API_URL}/api/character/next-unmet?scope=${scope}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

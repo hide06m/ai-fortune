@@ -234,11 +234,13 @@ export async function markCharacterMet(
  * 解放済みだが「初対面イベント」がまだの最若ID順のキャラクターを1件取得する（無ければnull）
  * ムスビ（0）・ナツメ（1）は初期化時点でmet_atを済にしてあるため対象外になる
  */
-export async function getNextUnmetCharacter(userId: string): Promise<CharacterId | null> {
+export async function getNextUnmetCharacter(userId: string, scope: 'login' | 'return' = 'login'): Promise<CharacterId | null> {
   try {
+    // 'return'＝占い師選択へ戻ったとき：ムスビの解放イベントだけ（条件が揃った直後に見せる）。
+    // 'login'＝ログイン後の最初：ほかの占い師との初対面も含める（解放された次のログイン時）
     const result = await query(
       `SELECT character_id FROM character_intimacy
-       WHERE user_id = $1 AND unlocked_at IS NOT NULL AND met_at IS NULL
+       WHERE user_id = $1 AND unlocked_at IS NOT NULL AND met_at IS NULL${scope === 'return' ? ' AND character_id = 0' : ''}
        ORDER BY character_id ASC LIMIT 1`,
       [userId]
     );

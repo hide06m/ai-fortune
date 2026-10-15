@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import '../styles/mbti-result.css';
 import { loadMBTIFullContent, type TextBlock } from '../data/privateData';
+import { ResultCharacter } from './ResultCharacter';
 import { LongTextSection } from './LongTextSection';
 import { MBTI_TYPES, MBTI_ROLE_THEMES, MBTI_IDENTITY_LABELS } from '../data/mbtiTypes';
 
@@ -39,7 +40,7 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
     <div className="mbti-result-card" style={{ ['--mbti-color' as string]: color }}>
       <div className="mbti-result-header">
         {role && <span className="mbti-result-role">{role.name}</span>}
-        <div className="mbti-result-emblem" aria-hidden="true">{coreType}</div>
+        <ResultCharacter src={`/assets/results/mbti/${coreType}.webp`} alt={info?.name ?? coreType} fallback={coreType} />
         <h3 className="mbti-result-name">
           {info?.name ?? '性格診断'}
           <span className="mbti-result-code">（{result.personalityType}）</span>
