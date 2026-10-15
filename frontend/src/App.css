@@ -186,7 +186,7 @@ body {
 }
 
 .landing-logo {
-  width: 700px;
+  width: min(490px, 66vw); /* 従来の700pxの70%。狭い画面でも、画面幅の約3分の2に収める */
   height: auto;
   filter: drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7));
 }
