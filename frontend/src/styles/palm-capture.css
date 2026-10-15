@@ -136,3 +136,53 @@
   color: #fff;
   font-size: 1rem;
 }
+
+/* スマホで、スクロールなしで、1画面に収める（映像の高さを、残りの高さに合わせる） */
+.palm-relay-container {
+  box-sizing: border-box;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0.5rem 0.75rem;
+  gap: 0.4rem;
+  overflow: hidden;
+}
+.palm-relay-container h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.palm-relay-container .palm-capture {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  gap: 0.4rem;
+}
+.palm-relay-container .palm-capture-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.palm-relay-container .palm-capture-instruction,
+.palm-relay-container .palm-capture-hint-line {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.palm-relay-container .palm-capture-shutter { flex: 0 0 auto; }
+.palm-relay-container .palm-capture-done {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.palm-relay-container .palm-capture-done h2 { font-size: 1.05rem; margin: 0; }
+.palm-relay-container .palm-capture-done-image {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  object-fit: contain;
+}
+.palm-relay-container .palm-capture-review-actions { margin-top: 0; flex: 0 0 auto; }
+.palm-relay-container .palm-capture-trace { display: none; }
