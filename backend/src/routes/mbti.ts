@@ -27,6 +27,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
 import { requireUnlocked } from '../middleware/requireUnlocked.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -64,7 +65,7 @@ router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   }
 })
 
-router.post('/', captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.result ? { mbtiResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'mbti'), captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.result ? { mbtiResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { answers, concern, reuseLatest, directType, typeOnly } = req.body
     const concernText = typeof concern === 'string' ? concern : ''

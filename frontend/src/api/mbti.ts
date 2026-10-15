@@ -4,6 +4,7 @@
 
 import { getToken, API_URL } from '../api';
 import type { MBTIQuizResult } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export interface MBTIAnswer {
   id: number;
@@ -29,14 +30,14 @@ export interface MBTIResponse {
 
 export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string, typeOnly = false): Promise<MBTIResponse> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/mbti`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/mbti`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ answers, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
-  });
+  }, { kind: 'mbti', label: '性格タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {
@@ -48,14 +49,14 @@ export async function submitMBTIQuiz(answers: MBTIAnswer[], concern: string, typ
 /** 既に外部サイトなどで診断済みのタイプを直接入力して結果を得る（例: "ENTJ-T"） */
 export async function submitMBTIDirectType(personalityType: string, concern: string, typeOnly = false): Promise<MBTIResponse> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/mbti`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/mbti`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ directType: personalityType, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
-  });
+  }, { kind: 'mbti', label: '性格タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {
@@ -67,14 +68,14 @@ export async function submitMBTIDirectType(personalityType: string, concern: str
 /** 前回の診断結果のまま、悩みだけ入力し直して再診断する */
 export async function submitMBTIQuizReuseLatest(concern: string): Promise<MBTIResponse> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/mbti`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/mbti`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ reuseLatest: true, concern }),
-  });
+  }, { kind: 'mbti', label: '性格タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {

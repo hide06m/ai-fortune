@@ -4,6 +4,7 @@
 
 import { getToken, API_URL } from '../api';
 import type { LoveType64Result } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export interface LoveAnswer {
   id: number;
@@ -29,14 +30,14 @@ export interface LoveType64Response {
 
 export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: string, typeOnly = false): Promise<LoveType64Response> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/love-type64`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/love-type64`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ answers, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
-  });
+  }, { kind: 'love64', label: '恋愛タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {
@@ -48,14 +49,14 @@ export async function submitLoveType64Quiz(answers: LoveAnswer[], concern: strin
 /** 既に外部サイトなどで診断済みのタイプを直接入力して結果を得る（例: "LCPO-VI"） */
 export async function submitLoveType64DirectType(fullType: string, concern: string, typeOnly = false): Promise<LoveType64Response> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/love-type64`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/love-type64`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ directType: fullType, concern, ...(typeOnly ? { typeOnly: true } : {}) }),
-  });
+  }, { kind: 'love64', label: '恋愛タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {
@@ -67,14 +68,14 @@ export async function submitLoveType64DirectType(fullType: string, concern: stri
 /** 前回の診断結果のまま、悩みだけ入力し直して再診断する */
 export async function submitLoveType64QuizReuseLatest(concern: string): Promise<LoveType64Response> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/love-type64`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/love-type64`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ reuseLatest: true, concern }),
-  });
+  }, { kind: 'love64', label: '恋愛タイプ診断' });
 
   const data = await response.json();
   if (!response.ok) {

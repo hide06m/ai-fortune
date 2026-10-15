@@ -3,6 +3,7 @@
  */
 
 import { getToken, API_URL } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export type SeimeiLevel = '大吉' | '吉' | '半吉' | '凶';
 export type SeimeiElement = '木' | '火' | '土' | '金' | '水';
@@ -48,14 +49,14 @@ export interface SeimeiResponse {
 
 export async function submitSeimei(surname: string, givenName: string, concern: string): Promise<SeimeiResponse> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/seimei`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/seimei`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ surname, givenName, concern }),
-  });
+  }, { kind: 'seimei', label: '姓名判断' });
   const data = await response.json();
   if (!response.ok) {
     return { success: false, error: data.error || `API error: ${response.status}`, message: data.message };

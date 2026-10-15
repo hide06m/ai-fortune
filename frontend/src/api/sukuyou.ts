@@ -3,6 +3,7 @@
  */
 
 import { getToken, API_URL } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export interface SukuyouShuku {
   name: string;
@@ -33,14 +34,14 @@ export interface SukuyouResponse {
 
 export async function submitSukuyou(birthDate: string, concern: string): Promise<SukuyouResponse> {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/fortune/sukuyou`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune/sukuyou`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ birthDate, concern }),
-  });
+  }, { kind: 'sukuyou', label: '宿曜占星術' });
   const data = await response.json();
   if (!response.ok) {
     return { success: false, error: data.error || `API error: ${response.status}`, message: data.message };

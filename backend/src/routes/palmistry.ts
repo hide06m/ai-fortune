@@ -25,6 +25,7 @@ import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
 import { requireUnlocked } from '../middleware/requireUnlocked.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -49,7 +50,7 @@ function saveDevCapture(imageBase64: string, rawLines: unknown): void {
 const KOKUU_CHARACTER_ID: CharacterId = 3
 
 // 手相は、撮影した写真と線の座標も、最新の結果として保存する（前回の結果を、石なしで見返せるように）
-router.post('/', captureLatestResult({
+router.post('/', asyncJob(() => 'palm'), captureLatestResult({
   kind: () => 'palm',
   payload: (b) => ({
     analysis: b.analysis ?? '',

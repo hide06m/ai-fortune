@@ -2,6 +2,8 @@
  * Backend API クライアント
  */
 
+import { fetchDiagnosis } from './api/asyncJob'
+
 export interface FortuneRequest {
   birthDate: string
   birthTime?: string
@@ -215,11 +217,11 @@ export async function logout(): Promise<{ success: boolean }> {
 }
 
 export async function callFortuneAPI(request: FortuneRequest): Promise<FortuneResponse> {
-  const response = await fetch(`${API_URL}/api/fortune`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/fortune`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request)
-  })
+  }, request.characterId === 2 ? { kind: 'fortune:2', label: '西洋占星術' } : { kind: 'fortune:1', label: '四柱推命などの診断' })
 
   if (!response.ok) {
     // 429: レート制限エラー

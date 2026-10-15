@@ -49,6 +49,9 @@ import sukuyouRoutes from './routes/sukuyou.js'
 import resultsRoutes from './routes/results.js'
 import { captureLatestResult } from './middleware/latestResult.js'
 import { inFlightGuard } from './middleware/inFlightGuard.js'
+import { asyncJob } from './middleware/asyncJob.js'
+import jobsRoutes from './routes/jobs.js'
+import { closeStaleJobs } from './db/jobs.js'
 import { llmConcurrencyState } from './llm/concurrency.js'
 
 const app = express()
@@ -307,7 +310,7 @@ app.get('/api/auth/me', requireAuth, (req: Request, res: Response) => {
  * 占い診断エンドポイント
  * POST /api/fortune
  */
-app.post('/api/fortune', captureLatestResult({
+app.post('/api/fortune', asyncJob((req) => (req.body?.characterId === 2 ? 'fortune:2' : 'fortune:1')), captureLatestResult({
   // ナツメ（1）とツキ（2）の結果を、別々に保存する
   kind: (req) => (req.body?.characterId === 1 ? 'fortune:1' : req.body?.characterId === 2 ? 'fortune:2' : null),
   payload: (b) => b.reading ?? null,
@@ -581,6 +584,7 @@ app.use('/api/fortune/seimei', seimeiRoutes)
 app.use('/api/fortune/musubi', musubiRoutes)
 app.use('/api/fortune/sukuyou', sukuyouRoutes)
 app.use('/api/results', resultsRoutes)
+app.use('/api/jobs', jobsRoutes)
 
 /**
  * キャッシュ統計
@@ -611,6 +615,8 @@ async function startServer() {
     const connected = await testConnection()
     if (connected) {
       await initializeDatabase()
+      // 前回、サーバーが止まったときに、途中だった診断の受付を閉じる
+      await closeStaleJobs().catch((e) => console.error('closeStaleJobs failed:', e))
     } else {
       console.warn('⚠️  Database connection failed. Some features may be unavailable.')
     }

@@ -60,6 +60,8 @@ import { submitMusubiConsult } from './api/musubi'
 import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
 import { MBTI_TYPES } from './data/mbtiTypes'
+import { startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
+import { JobToast } from './components/JobToast'
 import { ResultCharacter } from './components/ResultCharacter'
 import { SukuyouResultCard } from './components/SukuyouResultCard'
 import { submitSukuyou } from './api/sukuyou'
@@ -215,6 +217,40 @@ function AppContent() {
   // ログイン後、最初に占い師選択へ入ったときだけ、全キャラの初対面を確認する（以降は、ムスビの解放イベントだけ）
   const loginMeetingCheckedRef = useRef(false)
   const lastMeetingScopeRef = useRef<'login' | 'return'>('login')
+
+  // 前回の結果（ルーンストーン不要）を開く。占い師選択画面のボタンと、診断ができたときのお知らせから使う
+  const openLatestResult = async (kind: string) => {
+    const r = await getLatestResult(kind)
+    if (!r.success || !r.reading) {
+      alert(r.message || '前回の結果を読み込めませんでした')
+      return
+    }
+    const kindOwner: Record<string, CharacterId> = { musubi: 0, 'fortune:1': 1, 'fortune:2': 2, sukuyou: 2, palm: 3, seimei: 3, mbti: 4, love64: 4 }
+    if (kind in kindOwner) setSelectedCharacterId(kindOwner[kind])
+    setReading(r.reading)
+    setViewingHistoryReading(false)
+    setViewingLatestSavedAt(r.savedAt ?? '')
+    setScreen('result')
+  }
+
+  // 「待たずに、他のことをする」：占い師選択へ戻る（診断は、サーバーで続き、できたらお知らせが出る）
+  useEffect(
+    () =>
+      subscribeDetach(() => {
+        setLoading(false)
+        setError('')
+        setScreen('character-selection')
+      }),
+    []
+  )
+  // 背景で、受け付けた診断の結果を見守る（画面を開き直したあとも、続きから）
+  useEffect(() => startBackgroundJobWatcher(), [])
+  // お知らせの「結果を見る」
+  useEffect(() => {
+    const handler = (e: Event) => void openLatestResult(String((e as CustomEvent).detail))
+    window.addEventListener('open-latest', handler)
+    return () => window.removeEventListener('open-latest', handler)
+  }, [])
   const [meetingCharacterId, setMeetingCharacterId] = useState<CharacterId | null>(null)
   const [pendingMeetingCheck, setPendingMeetingCheck] = useState(false)
 
@@ -1927,19 +1963,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     return (
       <div className="app-container">
         <CharacterSelectionPage
-          onViewLatest={async (kind) => {
-            const r = await getLatestResult(kind)
-            if (!r.success || !r.reading) {
-              alert(r.message || '前回の結果を読み込めませんでした')
-              return
-            }
-            const kindOwner: Record<string, CharacterId> = { musubi: 0, 'fortune:1': 1, 'fortune:2': 2, sukuyou: 2, palm: 3, seimei: 3, mbti: 4, love64: 4 }
-            if (kind in kindOwner) setSelectedCharacterId(kindOwner[kind])
-            setReading(r.reading)
-            setViewingHistoryReading(false)
-            setViewingLatestSavedAt(r.savedAt ?? '')
-            setScreen('result')
-          }}
+          onViewLatest={(kind) => { void openLatestResult(kind) }}
           onGreeting={(characterId) => {
             // 「ちょっとした挨拶」を渡した：その占い師が、一言返す
             setSelectedCharacterId(characterId)
@@ -2363,6 +2387,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AppContent />
+      <JobToast onView={(kind) => window.dispatchEvent(new CustomEvent('open-latest', { detail: kind }))} />
       <SettingsButton />
     </GoogleOAuthProvider>
   )

@@ -3,6 +3,7 @@
  */
 
 import { getToken, API_URL } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export interface PalmIntimacyResult {
   characterId: number;
@@ -103,6 +104,7 @@ export async function uploadPalmImage(
 
 /** 手相診断を実行する（token指定＝PC側フロー／imageBase64直接指定＝スマホ直接フロー） */
 /** サーバー側の診断全体の上限（約100秒）より少し長く待つ。これを超えて応答がなければ、固まったとみなして中断する */
+// 受付（ジョブ番号が返るまで）の待ちの上限。結果を待つ時間（混雑で数分かかることがある）には、かけない
 const SUBMIT_TIMEOUT_MS = 130_000;
 
 export async function submitPalmistry(params: {
@@ -116,12 +118,12 @@ export async function submitPalmistry(params: {
   const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
   let response: Response;
   try {
-    response = await fetch(`${API_URL}/api/fortune/palmistry`, {
+    response = await fetchDiagnosis(`${API_URL}/api/fortune/palmistry`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(params),
       signal: controller.signal,
-    });
+    }, { kind: 'palm', label: '手相診断' });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return { success: false, error: 'TIMEOUT', message: '診断に時間がかかりすぎました。しばらくしてから、もう一度お試しください。' };

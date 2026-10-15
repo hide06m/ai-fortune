@@ -19,13 +19,14 @@ import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
 import { requireUnlocked } from '../middleware/requireUnlocked.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 const TSUKI_CHARACTER_ID: CharacterId = 2
 
-router.post('/', captureLatestResult({ kind: () => 'sukuyou', payload: (b) => (b.result ? { sukuyouResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(2), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'sukuyou'), captureLatestResult({ kind: () => 'sukuyou', payload: (b) => (b.result ? { sukuyouResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(2), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { birthDate, concern } = req.body
     const concernText = typeof concern === 'string' ? concern.slice(0, 1000) : ''

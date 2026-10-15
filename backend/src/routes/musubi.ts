@@ -18,12 +18,13 @@ import { MUSUBI_STONE_COST } from '../types/character.js'
 import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
 const router = Router()
 
-router.post('/', requireAuth, captureLatestResult({ kind: () => 'musubi', payload: (b) => ({ analysis: b.analysis ?? '' }) }), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', requireAuth, asyncJob(() => 'musubi'), captureLatestResult({ kind: () => 'musubi', payload: (b) => ({ analysis: b.analysis ?? '' }) }), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId
     const concernText = typeof req.body?.concern === 'string' ? req.body.concern.slice(0, 1000) : ''

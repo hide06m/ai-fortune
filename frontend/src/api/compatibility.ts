@@ -4,6 +4,7 @@
 
 import { getToken, API_URL } from '../api';
 import type { BaZiChart, NumerologyResult } from '../api';
+import { fetchDiagnosis } from './asyncJob';
 
 export interface CompatibilityPersonInput {
   name?: string;
@@ -41,11 +42,11 @@ export async function callCompatibilityAPI(
   personA: CompatibilityPersonInput,
   personB: CompatibilityPersonInput
 ): Promise<CompatibilityResponse> {
-  const response = await fetch(`${API_URL}/api/compatibility`, {
+  const response = await fetchDiagnosis(`${API_URL}/api/compatibility`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ personA, personB }),
-  });
+  }, { kind: 'compat', label: '相性診断' });
 
   if (!response.ok) {
     if (response.status === 429) {

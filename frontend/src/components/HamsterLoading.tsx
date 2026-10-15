@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/hamster-loading.css';
 import { pickRandomLoadingMessage } from '../data/loadingMessages';
+import { detachWaitingJobs, hasDetachableWaiting, subscribeWaiting } from '../api/asyncJob';
 
 const FRAME_COUNT = 18;
 const CYCLE_DURATION_MS = 500; // 0.5秒で1周（車輪の回転と同期、1秒に2回転）
@@ -38,6 +39,8 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
   const [estimatedTime, setEstimatedTime] = useState(3); // 推定時間（秒）
   // 長くかかっているとき（AIの混雑など）は、止まったと思われないよう、待っていてよいことを伝える
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [detachable, setDetachable] = useState(() => hasDetachableWaiting());
+  useEffect(() => subscribeWaiting(() => setDetachable(hasDetachableWaiting())), []);
   useEffect(() => {
     const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => clearInterval(t);
@@ -106,6 +109,11 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
           <p className="estimate">いま、占いの依頼が混み合っています。順番に試していますので、画面を閉じずに、このままお待ちください（{elapsedSec}秒）</p>
         )}
         {hint && <p className="estimate">{hint}</p>}
+        {elapsedSec >= 20 && detachable && (
+          <button type="button" className="hamster-detach-btn" onClick={detachWaitingJobs}>
+            待たずに、他のことをする（できたら、お知らせします）
+          </button>
+        )}
 
         {/* ドット animation */}
         <div className="loading-dots">

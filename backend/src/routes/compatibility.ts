@@ -13,6 +13,7 @@ import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
 import { isValidPastDate } from '../fortune/dateCheck.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 
 const router = Router()
@@ -27,7 +28,7 @@ function isValidPersonInput(value: unknown): value is PersonInput {
   return !!value && typeof value === 'object' && typeof (value as PersonInput).birthDate === 'string'
 }
 
-router.post('/', inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'compat'), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { personA, personB } = req.body
 

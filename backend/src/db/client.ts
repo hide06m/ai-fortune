@@ -202,6 +202,21 @@ export async function initializeDatabase() {
       )
     `);
 
+    // diagnosis_jobs テーブル：「受付して、できたら知らせる」診断の、受付状況と結果
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS diagnosis_jobs (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind VARCHAR(30) NOT NULL,
+        status VARCHAR(10) NOT NULL DEFAULT 'running',
+        http_status INTEGER,
+        body JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        finished_at TIMESTAMP
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_diagnosis_jobs_user ON diagnosis_jobs(user_id, created_at DESC)`);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

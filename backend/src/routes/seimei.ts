@@ -20,6 +20,7 @@ import { saveReading } from '../db/readings.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
 import { llmFailed } from './llmFailure.js'
 import { requireUnlocked } from '../middleware/requireUnlocked.js'
+import { asyncJob } from '../middleware/asyncJob.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 import { captureLatestResult } from '../middleware/latestResult.js'
 
@@ -27,7 +28,7 @@ const router = Router()
 const KOKUU_CHARACTER_ID: CharacterId = 3
 const MAX_NAME_LENGTH = 8
 
-router.post('/', captureLatestResult({ kind: () => 'seimei', payload: (b) => (b.result ? { seimeiResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(3), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'seimei'), captureLatestResult({ kind: () => 'seimei', payload: (b) => (b.result ? { seimeiResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(3), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { surname, givenName, concern } = req.body
     const concernText = typeof concern === 'string' ? concern.slice(0, 1000) : ''

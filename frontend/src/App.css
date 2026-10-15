@@ -1630,3 +1630,40 @@ h1 {
   margin: 8px auto;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
 }
+
+/* 診断ができたときのお知らせ */
+.job-toast-stack {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.job-toast {
+  pointer-events: auto;
+  width: min(520px, 100%);
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(20, 12, 40, 0.94);
+  border: 1px solid rgba(201, 162, 75, 0.7);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.job-toast.is-error { border-color: rgba(255, 120, 120, 0.8); }
+.job-toast-text { font-size: 0.95rem; line-height: 1.5; }
+.job-toast-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.job-toast-actions button {
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 162, 75, 0.8);
+  background: rgba(201, 162, 75, 0.25);
+  color: #fff;
+  cursor: pointer;
+}
+.job-toast-actions button.is-quiet { border-color: rgba(255, 255, 255, 0.35); background: transparent; }
