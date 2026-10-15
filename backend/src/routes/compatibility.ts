@@ -11,6 +11,8 @@ import { generateFromPrompt } from '../llm/client.js'
 import { fortuneCache } from '../llm/cache.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
 import { dailyLimiter } from '../middleware/rateLimit.js'
+import { llmFailed } from './llmFailure.js'
+import { isValidPastDate } from '../fortune/dateCheck.js'
 import { inFlightGuard } from '../middleware/inFlightGuard.js'
 
 const router = Router()
@@ -31,6 +33,10 @@ router.post('/', inFlightGuard, dailyLimiter, async (req: Request, res: Response
 
     if (!isValidPersonInput(personA) || !isValidPersonInput(personB)) {
       return res.status(400).json({ error: 'personA and personB (each with birthDate) are required' })
+    }
+
+    if (!isValidPastDate(personA.birthDate) || !isValidPastDate(personB.birthDate)) {
+      return res.status(400).json({ success: false, error: 'INVALID_BIRTH_DATE', message: '生年月日を、正しく入力してください（未来の日付や、存在しない日付は使えません）' })
     }
 
     const labelA = personA.name?.trim() || 'Aさん'
@@ -101,14 +107,8 @@ router.post('/', inFlightGuard, dailyLimiter, async (req: Request, res: Response
             console.error('Failed to refund stone after LLM failure:', refundError)
           }
         }
-        return res.json({
-          success: true,
-          personA: fortuneA,
-          personB: fortuneB,
-          analysis,
-          cached: false,
-          stoneBalance
-        })
+        // 失敗を成功の形で返さない（石は、払い戻し済み）
+        return llmFailed(res, stoneBalance)
       }
     }
 

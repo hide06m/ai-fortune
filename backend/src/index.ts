@@ -42,6 +42,8 @@ import palmSessionRoutes from './routes/palmSession.js'
 import palmistryRoutes from './routes/palmistry.js'
 import seimeiRoutes from './routes/seimei.js'
 import musubiRoutes from './routes/musubi.js'
+import { llmFailed } from './routes/llmFailure.js'
+import { isValidPastDate } from './fortune/dateCheck.js'
 import { requireUnlocked } from './middleware/requireUnlocked.js'
 import sukuyouRoutes from './routes/sukuyou.js'
 import resultsRoutes from './routes/results.js'
@@ -317,6 +319,9 @@ app.post('/api/fortune', captureLatestResult({
     if (!birthDate) {
       return res.status(400).json({ error: 'birthDate is required' })
     }
+    if (!isValidPastDate(birthDate)) {
+      return res.status(400).json({ success: false, error: 'INVALID_BIRTH_DATE', message: '生年月日を、正しく入力してください（未来の日付や、存在しない日付は使えません）' })
+    }
 
     // 指定キャラの妥当性チェックと、キャラごとの必要石数（未選択・不正値なら1個扱い）
     const charId: CharacterId | null =
@@ -445,7 +450,7 @@ app.post('/api/fortune', captureLatestResult({
       }
     }
 
-    await applyIntimacyForDiagnosis()
+    // 親密度は、診断が成功してから加算する（失敗した診断で、親密度だけ上がらないように）
 
     // LLMで診断文生成
     let analysis = 'LLM API が未設定です。占術計算結果は以下の通りです。'
@@ -476,6 +481,11 @@ app.post('/api/fortune', captureLatestResult({
         }
       }
     }
+
+    // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）
+    if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
+
+    await applyIntimacyForDiagnosis()
 
     // キャッシュに保存（LLM失敗時のエラーメッセージを「診断結果」として24時間キャッシュしてしまわないよう、成功時のみ保存）
     if (llmSucceeded) {

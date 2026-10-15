@@ -104,7 +104,8 @@ export function getVoiceSettings(): {
     return JSON.parse(settings);
   }
   return {
-    enabled: true,
+    // ボイスは使わない方針（2026-10-15）。画面からは再生しない。再開するときは、呼び出し側の復活とあわせて true に戻す
+    enabled: false,
     volume: 1.0,
   };
 }

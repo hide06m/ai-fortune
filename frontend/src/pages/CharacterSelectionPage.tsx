@@ -17,7 +17,6 @@ import {
 } from '../types/character';
 import { getCharacterIntimacy, getUnlockedCharacters, sendCharacterGift } from '../api/character';
 import { getStoneBalance } from '../api/stones';
-import { speakGreeting, isVoiceEnabled } from '../services/textToSpeech';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
 import { HamsterLoading } from '../components/HamsterLoading';
 import { listLatestResults } from '../api/results';
@@ -132,13 +131,6 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
 
     loadCharacterData();
   }, []);
-
-  // 選択中のキャラクターが変わったら挨拶を再生
-  useEffect(() => {
-    if (isVoiceEnabled()) {
-      speakGreeting(selectedCharacterId);
-    }
-  }, [selectedCharacterId]);
 
   // マウス/キーボード操作で回転
   useEffect(() => {
@@ -267,7 +259,7 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
                   !unlockedCharacters.has(charId) && charId !== 1 ? 'locked' : ''
                 }`}
                 style={{
-                  transform: `rotateY(${offsetRotation}deg) translateZ(400px)`,
+                  transform: `rotateY(${offsetRotation}deg) translateZ(max(400px, calc(var(--carousel-h) * 1.6)))`,
                   pointerEvents: isCenter ? 'auto' : 'none',
                 }}
                 onClick={() => {

@@ -9,6 +9,7 @@
 import { Router, Request, Response } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import { computeSukuyou } from '../fortune/sukuyou.js'
+import { isValidPastDate } from '../fortune/dateCheck.js'
 import { buildSukuyouPrompt } from '../llm/sukuyouPrompt.js'
 import { generateFromPrompt } from '../llm/client.js'
 import { spendStoneForDiagnosis, refundStoneForDiagnosis } from '../db/stones.js'
@@ -28,7 +29,7 @@ router.post('/', captureLatestResult({ kind: () => 'sukuyou', payload: (b) => (b
   try {
     const { birthDate, concern } = req.body
     const concernText = typeof concern === 'string' ? concern.slice(0, 1000) : ''
-    const result = typeof birthDate === 'string' ? computeSukuyou(birthDate) : null
+    const result = isValidPastDate(birthDate) ? computeSukuyou(birthDate) : null
     if (!result) {
       return res.status(400).json({ success: false, error: '生年月日を、正しく入力してください' })
     }

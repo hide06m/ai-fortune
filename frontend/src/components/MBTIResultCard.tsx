@@ -39,7 +39,6 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
   return (
     <div className="mbti-result-card" style={{ ['--mbti-color' as string]: color }}>
       <div className="mbti-result-header">
-        {role && <span className="mbti-result-role">{role.name}</span>}
         <ResultCharacter src={`/assets/results/mbti/${coreType}.webp`} alt={info?.name ?? coreType} fallback={coreType} />
         <h3 className="mbti-result-name">
           {info?.name ?? '性格診断'}
@@ -47,6 +46,7 @@ export function MBTIResultCard({ result }: MBTIResultCardProps) {
         </h3>
         {identity && <div className="mbti-result-identity">{MBTI_IDENTITY_LABELS[identity] ?? identity}</div>}
         {info && <p className="mbti-result-tagline">{info.tagline}</p>}
+        {role && <div className="mbti-result-role">4つのグループ：{role.name}</div>}
       </div>
 
       <div className="mbti-result-bars">
