@@ -1164,7 +1164,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   if (screen === 'landing') {
     return (
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <div className="landing-container">
+        <div className={`landing-container${night ? ' landing-night' : ''}`}>
           <div className="landing-bg">
             {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
             <div className="landing-stage landing-stage-bg">

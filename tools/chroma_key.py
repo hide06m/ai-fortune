@@ -15,6 +15,7 @@ def main():
     ap.add_argument('dst')
     ap.add_argument('--inner', action='store_true', help='中央からも背景を抜く（枠の絵）')
     ap.add_argument('--thresh', type=int, default=60, help='背景色と見なす色の差の許容')
+    ap.add_argument('--global-key', action='store_true', help='背景色に近い画素を、つながっていなくても、すべて透明にする（絵の中に、背景と同じ色の穴があるとき）')
     ap.add_argument('--black', action='store_true', help='黒背景の光の効果：明るさを透明度にする')
     ap.add_argument('--keep-margin', type=int, default=8, help='切り詰めた後に残す余白（px）')
     a = ap.parse_args()
@@ -25,6 +26,8 @@ def main():
         rgb = im.convert('RGB')
         r, g, b = rgb.split()
         alpha = ImageChops.lighter(ImageChops.lighter(r, g), b)
+        # 黒のわずかな明るさ（圧縮のノイズ）は、透明にする
+        alpha = alpha.point(lambda v: 0 if v < 16 else min(255, (v - 16) * 255 // 239))
         # 色は、透明度で割り戻して、明るく戻す
         out = Image.new('RGBA', (w, h))
         po, pa, pr = out.load(), alpha.load(), rgb.load()
@@ -50,6 +53,15 @@ def main():
         seeds.append((w // 2, h // 2))
     for s in seeds:
         ImageDraw.floodfill(work, s, marker, thresh=a.thresh)
+    if a.global_key:
+        bg0 = im.convert('RGB').getpixel((0, 0))
+        src_px = im.load()
+        wp = work.load()
+        for y in range(h):
+            for x in range(w):
+                c = src_px[x, y]
+                if abs(c[0] - bg0[0]) + abs(c[1] - bg0[1]) + abs(c[2] - bg0[2]) < a.thresh * 2:
+                    wp[x, y] = marker
     alpha = Image.new('L', (w, h), 255)
     px = work.load()
     ap_ = alpha.load()

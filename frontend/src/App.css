@@ -170,13 +170,16 @@ body {
   text-align: center;
   color: white;
   z-index: 10;
+  /* 光の大きさの基準（これまでの光の幅）。ロゴは、光より一回り小さくする */
+  --glow-w: max(min(40vw, 70vh), min(66vw, 420px));
 }
 
 .landing-title::before {
   content: '';
   position: absolute;
-  width: 80%;
-  height: 120%;
+  /* 光：ロゴ（幅 = 光の幅の約0.89倍）より一回り大きい楕円 */
+  width: calc(var(--glow-w) * 0.8);
+  height: calc(var(--glow-w) * 0.8 * 0.55);
   background: white;
   top: 50%;
   left: 50%;
@@ -187,9 +190,15 @@ body {
   opacity: 0.6;
 }
 
+.landing-night .landing-title::before {
+  /* 夜の背景に合わせて、光を暗く、青みを帯びさせる */
+  background: #aebfe8;
+  opacity: 0.22;
+}
+
 .landing-logo {
   /* 広い画面では、画面の約5分の2（幅の40％。高さの70％以内）。狭い画面では、幅の約3分の2（最大420px） */
-  width: max(min(40vw, 70vh), min(66vw, 420px));
+  width: calc(var(--glow-w) * 0.71);
   height: auto;
   filter: drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7));
 }
