@@ -25,8 +25,15 @@ Use the attached image as the exact character reference. The character is "Musub
 ```
 OUTPUT RULES: a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped), flat solid pure blue (#0000FF) background filling the whole image, no ground, no cast shadow, no gradient, no vignette, no text, no watermark, no border, crisp clean edges, high resolution.
 ```
-**OUTPUT（緑）** … 上の文の、`pure blue (#0000FF)` を `pure green (#00FF00)` に替えたもの。
-**OUTPUT（黒）** … `flat solid pure black (#000000) background`、`the effect centered with generous empty black margin` に替えたもの。
+**OUTPUT（緑）**
+```
+OUTPUT RULES: a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped), flat solid pure green (#00FF00) background filling the whole image, no ground, no cast shadow, no gradient, no vignette, no text, no watermark, no border, crisp clean edges, high resolution.
+```
+**OUTPUT（黒）**（光・土ぼこりなどの効果用。上の青の文の、背景の色と、余白の言い方を替えたもの）
+```
+OUTPUT RULES: a single visual effect only, centered with generous empty black margin on all sides (nothing cropped), flat solid pure black (#000000) background filling the whole image, no ground, no cast shadow, no gradient, no vignette, no text, no watermark, no border, high resolution.
+```
+（青の文のうち、`flat solid pure blue (#0000FF) background` を `flat solid pure black (#000000) background` に、`a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped)` を `a single visual effect only, centered with generous empty black margin on all sides (nothing cropped)` に、替えています。）
 
 **WORLD STYLE**（背景・小物の画風。背景の先頭に付ける）
 ```
@@ -37,13 +44,15 @@ WORLD STYLE: warm storybook fantasy illustration of a gentle enchanted forest, s
 
 ## 背景（ループして流れる）
 
-### #B1 runbg_sky — 空（動かない1枚）
-【添付】なし（先に、画風を見たいときは、ムスビの `ham001.webp`）　【アスペクト比】9:16（縦長）　【保存名】`runbg_sky`
+### #B1 runbg_sky — 空（動かない1枚）【作り直し：木も、枝も、入れない】
+【添付】前に作った空の絵（画風・色の見本として。**木と枝は、入れないでください**）　【アスペクト比】9:16（縦長）　【保存名】`runbg_sky`
 ```
 [WORLD STYLE]
-A tall vertical background of a bright soft morning sky seen through the far edge of a forest: pale warm-gold and soft sky-blue gradient, a few gentle cream clouds, faint rays of light, very distant misty blue-green hills near the bottom third. Calm and uncluttered. The lower 40% should be softly hazy so that tree layers can be placed in front of it. No trees in the foreground, no ground.
-OUTPUT: a full-bleed illustration filling the whole image, no border.
+Use the attached image only as a reference for the painterly style, soft colors and light. Draw a tall vertical background of a bright soft morning SKY ONLY: a pale warm-gold and soft sky-blue gradient from the top to the horizon, a few gentle cream clouds drifting in the upper and middle parts, soft faint rays of light, and a low horizon at about 75% of the height with a band of very distant misty blue hills and a soft sea of low clouds below them. 
+ABSOLUTELY NO trees, NO branches, NO leaves, NO foliage, NO plants, NO frame or vignette of any kind anywhere in the image, including at the top corners and the left and right edges: the picture must be a clean, open sky that continues evenly to all four edges (the left and right edges must look the same as the center, with no objects touching them). The lowest 25% is soft haze and clouds so that tree layers can be placed in front of it.
+OUTPUT: a full-bleed illustration filling the whole image, no border, no characters, no text.
 ```
+※ 前に作った絵は、木の枝が、四隅に大きく入っていて、走る背景（動く木々が、手前にある）と、**動かない枝が重なる**ため、不自然になります。空は、**木のない、広い空**にしてください。前の絵は、**ゲームのタイトル画面などの、別の用途**に使えます（捨てずに、取っておいてください）。
 
 ### #B2 runbg_far — 遠景の木々（ゆっくり流れる。横にループ）
 【添付】#B1の結果　【アスペクト比】16:9（横長）　【保存名】`runbg_far`
