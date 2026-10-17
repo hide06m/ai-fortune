@@ -163,8 +163,10 @@ body {
 .landing-title {
   position: absolute;
   top: -10px;
-  left: 50%;
-  transform: translateX(calc(-50% + 10px));
+  /* ロゴの中心を、大木のドアの中心に合わせる（ドアは背景画像の横 51.83% の位置。背景の拡大に合わせて、ずらす量も変わる） */
+  left: calc(50% + 0.0183 * max(100vw, calc(100vh * 2730 / 1536)));
+  left: calc(50% + 0.0183 * max(100cqw, calc(100cqh * 2730 / 1536)));
+  transform: translateX(-50%);
   text-align: center;
   color: white;
   z-index: 10;
@@ -173,8 +175,8 @@ body {
 .landing-title::before {
   content: '';
   position: absolute;
-  width: 350px;
-  height: 350px;
+  width: 80%;
+  height: 120%;
   background: white;
   top: 50%;
   left: 50%;
@@ -186,7 +188,8 @@ body {
 }
 
 .landing-logo {
-  width: min(700px, 66vw); /* PCは700px。狭い画面では、画面幅の約3分の2に収める */
+  /* 広い画面では、画面の約5分の2（幅の40％。高さの70％以内）。狭い画面では、幅の約3分の2（最大420px） */
+  width: max(min(40vw, 70vh), min(66vw, 420px));
   height: auto;
   filter: drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7));
 }

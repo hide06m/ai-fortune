@@ -63,6 +63,8 @@ import { SeimeiResultCard } from './components/SeimeiResultCard'
 import { MBTI_TYPES } from './data/mbtiTypes'
 import { startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
 import { JobToast } from './components/JobToast'
+import { HomePage } from './components/HomePage'
+import { pickAfterResultLines } from './data/homeLines'
 import { ResultCharacter } from './components/ResultCharacter'
 import { SukuyouResultCard } from './components/SukuyouResultCard'
 import { submitSukuyou } from './api/sukuyou'
@@ -164,7 +166,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('')
 
   // Screen state
-  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'sukuyou-input' | 'musubi-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
+  const [screen, setScreen] = useState<'landing' | 'door' | 'guide-conversation' | 'guest-conversation' | 'guest-farewell' | 'tutorial' | 'home' | 'character-selection' | 'character-intro' | 'form' | 'counseling' | 'kuri-consult' | 'seimei-input' | 'sukuyou-input' | 'musubi-consult' | 'mbti-quiz' | 'love64-quiz' | 'palm-capture' | 'palm-qr-handoff' | 'result' | 'history' | 'compatibility' | 'compatibility-result'>('landing')
   const [doorState, setDoorState] = useState<'closed' | 'knocking' | 'open'>('closed')
   const [doorExiting, setDoorExiting] = useState(false)  // ✅ door から form への遷移アニメーション
   const [mode, setMode] = useState<'guest' | 'authenticated'>('guest')
@@ -206,11 +208,11 @@ function AppContent() {
   const [introLines, setIntroLines] = useState<IntroLine[]>([])
   const [introStep, setIntroStep] = useState(0)
   // mode：'diagnosis'＝選んだあと、診断の入力へ進む会話／'gift'＝「ちょっとした挨拶」の一言（終わったら占い師選択へ戻る）
-  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: KuriDiagnosisMode; mode?: 'diagnosis' | 'gift' } | null>(null)
+  const [introTarget, setIntroTarget] = useState<{ characterId: CharacterId; kuriMode?: KuriDiagnosisMode; mode?: 'diagnosis' | 'gift' | 'after' } | null>(null)
   const [guideDialogue, setGuideDialogue] = useState('')
   const [guideExpression, setGuideExpression] = useState<1 | 2 | 3 | 4>(2)
   const [guideNoSplit, setGuideNoSplit] = useState(false)
-  const [guideNextScreen, setGuideNextScreen] = useState<'form' | 'character-selection'>('form')
+  const [guideNextScreen, setGuideNextScreen] = useState<'form' | 'home'>('form')
 
   // ゲスト体験フロー（固定シナリオ：占いの館前でムスビと出会う）
   const [guestPhase, setGuestPhase] = useState<'pre-form' | 'post-result' | 'limit'>('pre-form')
@@ -252,7 +254,7 @@ function AppContent() {
       subscribeDetach(() => {
         setLoading(false)
         setError('')
-        setScreen('character-selection')
+        setScreen('home')
       }),
     []
   )
@@ -463,7 +465,7 @@ function AppContent() {
   // キャラ選択画面に入る直前、初対面イベント未再生の解放済みキャラがいないか確認する
   // （いれば通常のキャラ選択より先に、偶然出くわした体の出会いイベントを割り込ませる）
   useEffect(() => {
-    if (screen !== 'character-selection') return
+    if (screen !== 'home') return
     setPendingMeetingCheck(true)
     let cancelled = false
     ;(async () => {
@@ -636,7 +638,7 @@ function AppContent() {
           // 800ms 後に案内役（ムスビ）の会話シーンへ遷移
           setTimeout(() => {
             setDoorExiting(false)  // ✅ リセット
-            enterGuideConversation('character-selection')
+            enterGuideConversation('home')
           }, 800)
         }, 800)
       }, 1500)
@@ -705,7 +707,7 @@ function AppContent() {
   }
 
   // 案内役（ムスビ）の会話シーンへ遷移（ドアが開いた直後、form/character-selection へ行く前に挟む）
-  const enterGuideConversation = async (nextScreen: 'form' | 'character-selection') => {
+  const enterGuideConversation = async (nextScreen: 'form' | 'home') => {
     setGuideNextScreen(nextScreen)
     // 前回のセリフ・表情を残さない（読み込み中に、前のセリフや別の絵が一瞬見えてしまうため）
     setGuideDialogue('')
@@ -820,7 +822,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   // チュートリアル最終セグメントの終了 → 通常のキャラクター選択画面へ
   const finishTutorial = () => {
     setTutorialSegment(null)
-    setScreen('character-selection')
+    setScreen('home')
   }
 
   // 新キャラクターとの初対面イベントを開始（キャラ選択画面へ入る直前に割り込む）
@@ -846,7 +848,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         console.error('Failed to mark character met:', error)
       }
     }
-    setScreen('character-selection')
+    setScreen('home')
   }
 
   // ゲスト体験フロー：占いの館前でムスビと出会う会話シーンへ（固定シナリオ、アカウント不要）
@@ -913,7 +915,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           // 800ms 後にムスビの挨拶会話シーンへ遷移（このドアは認証済みユーザーのみ通る。ゲストはドアを介さず直接会話へ）
           setTimeout(() => {
             setDoorExiting(false)  // ✅ リセット
-            enterGuideConversation('character-selection')
+            enterGuideConversation('home')
           }, 800)
         }, 800)
       }, 1500)
@@ -1067,7 +1069,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   const handleBack = () => {
     if (viewingLatestSavedAt) {
       setViewingLatestSavedAt(null)
-      setScreen('character-selection')
+      setScreen('home')
     } else if (mode === 'guest' && !viewingHistoryReading) {
       // ゲストは診断フォームに戻さず、ムスビとのお別れの会話へ
       enterGuestPostResultConversation()
@@ -1076,11 +1078,12 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       enterTutorialAfterResult()
     } else if (viewingHistoryReading) {
       setScreen('history')
-    } else if (reading?.seimeiResult || reading?.sukuyouResult || selectedCharacterId === 0) {
-      // 姓名判断・ムスビの総合相談の結果からは、占い師選択に戻る（手相の入口に飛ばさない）
-      setScreen('character-selection')
     } else {
-      setScreen(getDiagnosisEntryScreen(selectedCharacterId, kuriDiagnosisMode))
+      // 診断のあとは、その占い師がひとこと感想を話してから、ホームへ戻る
+      setIntroTarget({ characterId: selectedCharacterId, mode: 'after' })
+      setIntroLines(pickAfterResultLines(selectedCharacterId))
+      setIntroStep(0)
+      setScreen('character-intro')
     }
     setError('')
     setFeedback('')
@@ -1394,6 +1397,11 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       if (introTarget.mode === 'gift') {
         // 「ちょっとした挨拶」：一言を聞いたら、占い師選択へ戻る
         setScreen('character-selection')
+        return
+      }
+      if (introTarget.mode === 'after') {
+        // 診断のあとのひとこと：聞いたら、ホームへ
+        setScreen('home')
         return
       }
       if (characterId === 4) {
@@ -1971,13 +1979,28 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   }
 
   // キャラクター選択画面
-  if (screen === 'character-selection') {
+  // ホーム画面
+  if (screen === 'home') {
     if (pendingMeetingCheck) {
       return <div className="app-container" />
     }
     return (
+      <HomePage
+        stoneBalance={stoneBalance}
+        email={userEmail}
+        onPlay={() => setScreen('character-selection')}
+        onHistory={() => { void openHistory() }}
+        onOpenLatest={(kind) => { void openLatestResult(kind) }}
+        onLogout={() => { void handleLogout() }}
+      />
+    )
+  }
+
+  if (screen === 'character-selection') {
+    return (
       <div className="app-container">
         <CharacterSelectionPage
+          onHome={() => setScreen('home')}
           onViewLatest={(kind) => { void openLatestResult(kind) }}
           onGreeting={(characterId) => {
             // 「ちょっとした挨拶」を渡した：その占い師が、一言返す

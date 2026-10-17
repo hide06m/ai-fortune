@@ -39,6 +39,8 @@ interface CharacterSelectionPageProps {
   onGreeting?: (characterId: CharacterId) => void;
   /** 前回の結果を見る（ルーンストーン不要） */
   onViewLatest?: (kind: string) => void;
+  /** ホーム画面へ戻る */
+  onHome?: () => void;
 }
 
 interface IntimacyState {
@@ -79,7 +81,7 @@ function IntimacyHeart({ intimacy }: { intimacy: IntimacyState }) {
   );
 }
 
-export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onViewLatest }: CharacterSelectionPageProps) {
+export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onViewLatest, onHome }: CharacterSelectionPageProps) {
   // 保存されている、前回の結果の種類
   const [latestKinds, setLatestKinds] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -227,6 +229,11 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
 
   return (
     <div className="character-selection">
+      {onHome && (
+        <button type="button" className="selection-home-btn" onClick={onHome}>
+          ← ホーム
+        </button>
+      )}
       {/* カメラ回転カルーセル */}
       <div className="carousel-container">
         {/* 左右の矢印：クリック・タップでも占い師を切り替えられる（キー・ホイールと同じ動き） */}

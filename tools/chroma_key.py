@@ -61,6 +61,20 @@ def main():
     # 縁：1px ほど内側へ削り、少しぼかす（背景色の縁取りを減らす）
     alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
     im.putalpha(alpha)
+    # 縁の色かぶり（背景色のにじみ）を取る：縁の近くの画素で、背景色の成分が飛び出しているものを、他の成分に合わせて落とす
+    bgc = Image.open(a.src).convert('RGB').getpixel((0, 0))
+    dom = max(range(3), key=lambda i: bgc[i])
+    near_edge = alpha.filter(ImageFilter.MinFilter(9))  # これが255でない画素＝縁の近く
+    pix, ne, al = im.load(), near_edge.load(), alpha.load()
+    for y in range(h):
+        for x in range(w):
+            if al[x, y] > 0 and ne[x, y] < 255:
+                r, g, b, aa = pix[x, y]
+                c = [r, g, b]
+                others = max(c[i] for i in range(3) if i != dom)
+                if c[dom] > others + 12:
+                    c[dom] = others + 4
+                    pix[x, y] = (c[0], c[1], c[2], aa)
     box = alpha.point(lambda v: 255 if v > 8 else 0).getbbox()
     if box:
         m = a.keep_margin

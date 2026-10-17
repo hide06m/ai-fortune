@@ -442,3 +442,18 @@
   background: #667eea;
   color: #fff;
 }
+
+/* ホームへ戻るボタン（左上） */
+.selection-home-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 30;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
