@@ -217,6 +217,26 @@ export async function initializeDatabase() {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_diagnosis_jobs_user ON diagnosis_jobs(user_id, created_at DESC)`);
 
+    // 今日の運勢・デイリーミッション
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS daily_mission_claims (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day DATE NOT NULL,
+        mission_id VARCHAR(30) NOT NULL,
+        claimed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, day, mission_id)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS daily_marks (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day DATE NOT NULL,
+        kind VARCHAR(30) NOT NULL,
+        PRIMARY KEY (user_id, day, kind)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

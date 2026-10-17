@@ -138,3 +138,52 @@
   .home-menu { grid-template-columns: repeat(2, 1fr); }
   .home-email { display: none; }
 }
+
+/* 運勢・ミッション */
+.home-btn-daily { position: relative; grid-column: 1 / -1; font-weight: 700; }
+.home-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  box-shadow: 0 0 0 2px rgba(15, 8, 30, 0.9);
+}
+.daily-panel { text-align: left; }
+.daily-fortune { padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(201, 162, 75, 0.45); }
+.daily-fortune-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.daily-fortune-day { font-size: 0.8rem; opacity: 0.75; }
+.daily-fortune-title { font-size: 1.15rem; font-weight: 700; color: #ffd166; }
+.daily-fortune-msg { margin: 8px 0; line-height: 1.7; }
+.daily-stars { list-style: none; margin: 8px 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.daily-stars li { display: flex; justify-content: space-between; font-size: 0.9rem; }
+.daily-stars b { color: #ffd166; letter-spacing: 1px; font-weight: 400; }
+.daily-lucky { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; margin-top: 6px; flex-wrap: wrap; }
+.daily-chip { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.7); display: inline-block; }
+.daily-advice { margin: 8px 0 0; font-size: 0.92rem; opacity: 0.95; }
+.daily-birth p { margin: 0 0 8px; font-size: 0.92rem; line-height: 1.6; }
+.daily-birth select { margin-right: 4px; }
+.daily-btn {
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(201, 162, 75, 0.9);
+  background: linear-gradient(135deg, rgba(110, 70, 190, 0.95), rgba(60, 35, 110, 0.95));
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.daily-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.daily-birth .daily-btn { margin-top: 10px; width: 100%; }
+.daily-missions-title { margin-top: 16px; }
+.daily-missions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.daily-missions li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.05); }
+.daily-missions li.is-done { border-color: rgba(255, 214, 102, 0.8); background: rgba(255, 214, 102, 0.1); }
+.daily-missions li.is-claimed { opacity: 0.6; }
+.daily-missions li b { display: block; font-size: 0.95rem; }
+.daily-missions li small { opacity: 0.75; }
+.daily-got { color: #9be29b; font-size: 0.85rem; white-space: nowrap; }
+.daily-todo { opacity: 0.7; font-size: 0.85rem; white-space: nowrap; }
+.daily-note { margin: 10px 0 0; font-size: 0.78rem; opacity: 0.7; }
+.daily-error { color: #ff9b9b; }

@@ -1992,6 +1992,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         onHistory={() => { void openHistory() }}
         onOpenLatest={(kind) => { void openLatestResult(kind) }}
         onLogout={() => { void handleLogout() }}
+        onStoneBalance={(b) => setStoneBalance(b)}
       />
     )
   }

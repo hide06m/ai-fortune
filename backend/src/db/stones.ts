@@ -21,6 +21,7 @@ export type StoneReason =
   | 'diagnosis_refund'
   | 'signup_bonus'
   | 'character_gift'
+  | 'mission_reward'
 
 const AD_WATCH_DAILY_LIMIT = 5
 
@@ -36,12 +37,12 @@ export async function getStoneBalance(userId: string): Promise<number> {
 }
 
 /**
- * 今日、指定した理由の取引が既に記録されているか（同日判定はサーバーのローカル日付基準）
+ * 今日（日本時間）、指定した理由の取引が既に記録されているか
  */
 async function hasTransactionToday(userId: string, reason: StoneReason): Promise<boolean> {
   const result = await query(
     `SELECT 1 FROM stone_transactions
-     WHERE user_id = $1 AND reason = $2 AND created_at >= date_trunc('day', NOW())
+     WHERE user_id = $1 AND reason = $2 AND created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo')
      LIMIT 1`,
     [userId, reason]
   )
@@ -54,7 +55,7 @@ async function hasTransactionToday(userId: string, reason: StoneReason): Promise
 async function countTransactionsToday(userId: string, reason: StoneReason): Promise<number> {
   const result = await query(
     `SELECT COUNT(*)::int AS count FROM stone_transactions
-     WHERE user_id = $1 AND reason = $2 AND created_at >= date_trunc('day', NOW())`,
+     WHERE user_id = $1 AND reason = $2 AND created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo')`,
     [userId, reason]
   )
   return result.rows[0].count
@@ -164,4 +165,11 @@ export async function spendStoneForGift(userId: string): Promise<number> {
  */
 export async function grantSignupBonus(userId: string): Promise<number> {
   return applyStoneChange(userId, 3, 'signup_bonus')
+}
+
+/**
+ * デイリーミッションの報酬（石）を付与する
+ */
+export async function grantMissionReward(userId: string, amount: number): Promise<number> {
+  return applyStoneChange(userId, amount, 'mission_reward')
 }
