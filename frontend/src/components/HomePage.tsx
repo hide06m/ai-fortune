@@ -42,7 +42,8 @@ interface HomePageProps {
 }
 
 export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest, onLogout, onStoneBalance }: HomePageProps) {
-  const [characterId, setCharacterId] = useState<CharacterId>(0);
+  // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
+  const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
   const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
@@ -83,9 +84,10 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
     setLatest(await listLatestResults());
   };
 
-  const { folder, prefix } = CHARACTER_VISUAL[characterId];
+  const shown: CharacterId = characterId ?? 0;
+  const { folder, prefix } = CHARACTER_VISUAL[shown];
   // ムスビは、フードをかぶっていない絵（ham001）。ナツメも、顔の見える絵（002）
-  const image = characterId === 0 ? `/assets/characters/${folder}/ham001.webp` : `/assets/characters/${folder}/${prefix}${characterId === 1 ? '002' : '001'}.webp`;
+  const image = shown === 0 ? `/assets/characters/${folder}/ham001.webp` : `/assets/characters/${folder}/${prefix}${shown === 1 ? '002' : '001'}.webp`;
 
   return (
     <div className="vn-scene home-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
@@ -97,16 +99,18 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
         <span className="home-email">{email}</span>
       </div>
 
-      <div
-        className="vn-character-bust-wrap"
-        onClick={() => setLine((p) => pickHomeLine(characterId, p))}
-        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-      >
-        <CrossfadeImage src={image} alt={CHARACTER_MASTER_DATA[characterId].name} />
-      </div>
+      {characterId !== null && (
+        <div
+          className="vn-character-bust-wrap"
+          onClick={() => setLine((p) => pickHomeLine(characterId, p))}
+          style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+        >
+          <CrossfadeImage src={image} alt={CHARACTER_MASTER_DATA[characterId].name} />
+        </div>
+      )}
 
       <div className="home-bottom">
-        {line && (
+        {line && characterId !== null && (
           <div className="home-bubble">
             <span className="home-bubble-name">{CHARACTER_MASTER_DATA[characterId].name}</span>
             <p>{line.replace(/。/g, '\n').trim()}</p>
@@ -123,10 +127,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
             📖 図鑑・実績
           </button>
           <button type="button" className="home-btn" onClick={openLatestPanel}>
-            📜 前回の結果
-          </button>
-          <button type="button" className="home-btn" onClick={onHistory}>
-            🗂 診断履歴
+            📜 診断の記録
           </button>
           <button type="button" className="home-btn is-disabled" disabled title="準備中です">
             🎮 ミニゲーム<small>準備中</small>
@@ -146,7 +147,8 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
       {panel === 'latest' && (
         <div className="home-panel-backdrop" onClick={() => setPanel(null)}>
           <div className="home-panel" onClick={(e) => e.stopPropagation()}>
-            <h3>前回の結果（石は使いません）</h3>
+            <h3>診断の記録（石は使いません）</h3>
+            <p className="home-panel-lead">占いごとの、いちばん新しい結果です。手相は、写真つきで見返せます。</p>
             {latest.length === 0 ? (
               <p className="home-panel-empty">まだ、保存された結果がありません。</p>
             ) : (
@@ -161,6 +163,9 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
                 ))}
               </ul>
             )}
+            <button type="button" className="home-panel-link" onClick={onHistory}>
+              これまでの診断の、文章を、すべて見る →
+            </button>
             <button type="button" className="home-panel-close" onClick={() => setPanel(null)}>
               閉じる
             </button>

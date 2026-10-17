@@ -65,7 +65,7 @@ router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   }
 })
 
-router.post('/', asyncJob(() => 'love64'), captureLatestResult({ kind: () => 'love64', payload: (b) => (b.result ? { loveTypeResult: b.result, analysis: b.analysis ?? '' } : null) , collect: (b) => (b.result?.type1 ? { kind: 'love', code: String(b.result.type1) } : null) }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'love64'), captureLatestResult({ kind: () => 'love64', payload: (b) => (b.result ? { loveTypeResult: b.result, analysis: b.analysis ?? '' } : null)  }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { answers, concern, reuseLatest, directType, typeOnly } = req.body
     const concernText = typeof concern === 'string' ? concern : ''

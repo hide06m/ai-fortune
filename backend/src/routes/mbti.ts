@@ -65,7 +65,7 @@ router.get('/latest', requireAuth, async (req: Request, res: Response) => {
   }
 })
 
-router.post('/', asyncJob(() => 'mbti'), captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.result ? { mbtiResult: b.result, analysis: b.analysis ?? '' } : null) , collect: (b) => (b.result?.personalityType ? { kind: 'mbti', code: String(b.result.personalityType).split('-')[0] } : null) }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'mbti'), captureLatestResult({ kind: () => 'mbti', payload: (b) => (b.result ? { mbtiResult: b.result, analysis: b.analysis ?? '' } : null)  }), requireUnlocked(4), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { answers, concern, reuseLatest, directType, typeOnly } = req.body
     const concernText = typeof concern === 'string' ? concern : ''

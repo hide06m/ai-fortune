@@ -64,7 +64,8 @@ async function backfillFromLatest(userId: string): Promise<void> {
 }
 
 export async function listCollection(userId: string): Promise<CollectedEntry[]> {
-  await backfillFromLatest(userId)
+  // （自分の診断結果からの補いは、しない。backfillFromLatest は、使わない）
+  void backfillFromLatest
   const r = await query(
     `SELECT kind, code, count, first_at FROM collection_entries WHERE user_id = $1 ORDER BY first_at`,
     [userId]

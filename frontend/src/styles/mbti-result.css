@@ -146,3 +146,32 @@
   font-size: 2rem;
   color: #e0527a;
 }
+
+/* 診断文：長いので、見出しごとに開け閉めする */
+.analysis-toolbar { display: flex; justify-content: flex-end; margin: 6px 0; }
+.analysis-toolbar button {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 162, 75, 0.7);
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.analysis-section {
+  margin: 8px 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 12px;
+}
+.analysis-section > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 700;
+  list-style: none;
+}
+.analysis-section > summary::before { content: '▸ '; opacity: 0.8; }
+.analysis-section[open] > summary::before { content: '▾ '; }
+.analysis-section > summary::-webkit-details-marker { display: none; }
+.analysis-section[open] { padding-bottom: 8px; }

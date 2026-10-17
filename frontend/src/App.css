@@ -1680,3 +1680,17 @@ h1 {
   cursor: pointer;
 }
 .job-toast-actions button.is-quiet { border-color: rgba(255, 255, 255, 0.35); background: transparent; }
+
+/* スマホ（狭い画面）のトップページ：ログイン後のボタンが、ロゴと重ならないよう、画面の下に並べる */
+@media (max-width: 600px) {
+  .landing-user-email { display: none; }
+  .landing-header-actions {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    justify-content: center;
+    margin: 0;
+  }
+  .landing-header-actions button { white-space: nowrap; }
+}

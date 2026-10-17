@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
-import Markdown from 'react-markdown'
-import remarkCjkFriendly from 'remark-cjk-friendly'
+import { AnalysisView } from './components/AnalysisView'
 import './App.css'
 import {
   callFortuneAPI,
@@ -1730,22 +1729,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           <div className="result-section">
             <h2>【総合結論】</h2>
             <div className="analysis">
-              <Markdown
-                remarkPlugins={[remarkCjkFriendly]}
-                components={{
-                  h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="markdown-h3" {...props} />,
-                  p: ({ node, ...props }) => <p className="markdown-p" {...props} />,
-                  ul: ({ node, ...props }) => <ul className="markdown-ul" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="markdown-ol" {...props} />,
-                  li: ({ node, ...props }) => <li className="markdown-li" {...props} />,
-                  strong: ({ node, ...props }) => <strong className="markdown-strong" {...props} />,
-                  em: ({ node, ...props }) => <em className="markdown-em" {...props} />,
-                }}
-              >
-                {displayAnalysis(reading.analysis)}
-              </Markdown>
+              <AnalysisView text={displayAnalysis(reading.analysis)} />
             </div>
             {reading.cached && <small className="cache-notice">※ キャッシュから取得</small>}
           </div>
@@ -1802,7 +1786,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         <div className="form-overlay">
           <div className="form-header">
             <h1>診断履歴</h1>
-            <button onClick={() => setScreen('landing')} className="logout-button">
+            <button onClick={() => setScreen('home')} className="logout-button">
               戻る
             </button>
           </div>
@@ -1942,22 +1926,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             <div className="result-section">
               <h2>【AI相性診断】</h2>
               <div className="analysis">
-                <Markdown
-                remarkPlugins={[remarkCjkFriendly]}
-                  components={{
-                    h1: ({ node, ...props }) => <h1 className="markdown-h1" {...props} />,
-                    h2: ({ node, ...props }) => <h2 className="markdown-h2" {...props} />,
-                    h3: ({ node, ...props }) => <h3 className="markdown-h3" {...props} />,
-                    p: ({ node, ...props }) => <p className="markdown-p" {...props} />,
-                    ul: ({ node, ...props }) => <ul className="markdown-ul" {...props} />,
-                    ol: ({ node, ...props }) => <ol className="markdown-ol" {...props} />,
-                    li: ({ node, ...props }) => <li className="markdown-li" {...props} />,
-                    strong: ({ node, ...props }) => <strong className="markdown-strong" {...props} />,
-                    em: ({ node, ...props }) => <em className="markdown-em" {...props} />,
-                  }}
-                >
-                  {displayAnalysis(compatResult.analysis ?? "")}
-                </Markdown>
+                <AnalysisView text={displayAnalysis(compatResult.analysis ?? "")} />
               </div>
               {compatResult.cached && <small className="cache-notice">※ キャッシュから取得</small>}
             </div>

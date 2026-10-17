@@ -17,6 +17,7 @@ const MBTI_CODES = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENF
 
 router.get('/collection', requireAuth, async (req: Request, res: Response) => {
   try {
+    // 自分の診断結果では、図鑑を埋めない（質問に、うそをつく動機になるため）。出会い方の仕組みは、検討中
     const entries = await listCollection(req.user!.userId)
     const by = (kind: string) => new Map(entries.filter((e) => e.kind === kind).map((e) => [e.code, e]))
     const mbti = by('mbti')
@@ -75,12 +76,6 @@ router.get('/achievements', requireAuth, async (req: Request, res: Response) => 
       make('palm_first', '手相を視てもらった', 'コクウに、手相を視てもらった', stats['kind:palm'] ?? 0, 1),
       make('seimei_first', '名前を数えてもらった', 'コクウに、姓名判断をしてもらった', stats['kind:seimei'] ?? 0, 1),
       make('musubi_first', '総合相談', 'ムスビに、総合相談をした', stats['kind:musubi'] ?? 0, 1),
-      make('mbti_4', '性格タイプ・見習い', '性格タイプを、4種類集めた', n('mbti'), 4),
-      make('mbti_16', '性格タイプ・コンプリート', '性格タイプ16種類を、すべて集めた', n('mbti'), 16),
-      make('love_4', '恋愛タイプ・見習い', '恋愛タイプを、4種類集めた', n('love'), 4),
-      make('love_16', '恋愛タイプ・コンプリート', '恋愛タイプ16種類を、すべて集めた', n('love'), 16),
-      make('sukuyou_9', '宿曜・旅の途中', '宿曜の本命宿を、9種類集めた', n('sukuyou'), 9),
-      make('sukuyou_27', '宿曜・コンプリート', '宿曜の27宿を、すべて集めた', n('sukuyou'), 27),
       make('missions_1', '今日もがんばった', 'デイリーミッションを、ぜんぶ達成した日がある', allDays.rows[0].n, 1),
       make('missions_7', '毎日のならわし', 'デイリーミッションを、ぜんぶ達成した日が、7日ある', allDays.rows[0].n, 7),
     ]
