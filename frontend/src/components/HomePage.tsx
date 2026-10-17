@@ -11,6 +11,7 @@ import { listLatestResults, type LatestResultSummary } from '../api/results';
 import { pickHomeLine } from '../data/homeLines';
 import { CrossfadeImage } from './CrossfadeImage';
 import { DailyPanel } from './DailyPanel';
+import { CollectionPanel } from './CollectionPanel';
 import { getDaily, type DailySnapshot } from '../api/daily';
 
 const KIND_LABEL: Record<string, string> = {
@@ -43,7 +44,7 @@ interface HomePageProps {
 export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest, onLogout, onStoneBalance }: HomePageProps) {
   const [characterId, setCharacterId] = useState<CharacterId>(0);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -118,6 +119,9 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           <button type="button" className="home-btn home-btn-daily" onClick={() => setPanel('daily')}>
             🌟 運勢・ミッション{dailyBadge && <i className="home-badge" aria-label="新しいお知らせ" />}
           </button>
+          <button type="button" className="home-btn" onClick={() => setPanel('zukan')}>
+            📖 図鑑・実績
+          </button>
           <button type="button" className="home-btn" onClick={openLatestPanel}>
             📜 前回の結果
           </button>
@@ -136,6 +140,8 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
       {panel === 'daily' && (
         <DailyPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} onSnapshot={updateBadge} />
       )}
+
+      {panel === 'zukan' && <CollectionPanel onClose={() => setPanel(null)} />}
 
       {panel === 'latest' && (
         <div className="home-panel-backdrop" onClick={() => setPanel(null)}>

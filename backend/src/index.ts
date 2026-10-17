@@ -52,6 +52,7 @@ import { inFlightGuard } from './middleware/inFlightGuard.js'
 import { asyncJob } from './middleware/asyncJob.js'
 import jobsRoutes from './routes/jobs.js'
 import dailyRoutes from './routes/daily.js'
+import collectionRoutes from './routes/collection.js'
 import { closeStaleJobs } from './db/jobs.js'
 import { llmConcurrencyState } from './llm/concurrency.js'
 
@@ -587,6 +588,7 @@ app.use('/api/fortune/sukuyou', sukuyouRoutes)
 app.use('/api/results', resultsRoutes)
 app.use('/api/jobs', jobsRoutes)
 app.use('/api/daily', dailyRoutes)
+app.use('/api', collectionRoutes)
 
 /**
  * キャッシュ統計

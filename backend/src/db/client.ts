@@ -237,6 +237,27 @@ export async function initializeDatabase() {
       )
     `);
 
+    // 図鑑（出会ったタイプ）と、実績のための集計
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS collection_entries (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind VARCHAR(12) NOT NULL,
+        code VARCHAR(30) NOT NULL,
+        count INT NOT NULL DEFAULT 1,
+        first_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        last_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, kind, code)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_stats (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        key VARCHAR(40) NOT NULL,
+        value INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, key)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

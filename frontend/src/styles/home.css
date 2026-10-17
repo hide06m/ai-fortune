@@ -187,3 +187,27 @@
 .daily-todo { opacity: 0.7; font-size: 0.85rem; white-space: nowrap; }
 .daily-note { margin: 10px 0 0; font-size: 0.78rem; opacity: 0.7; }
 .daily-error { color: #ff9b9b; }
+
+/* 図鑑・実績 */
+.zukan-panel { text-align: left; }
+.zukan-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.zukan-tabs button { flex: 1; padding: 0.55rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: #fff; cursor: pointer; }
+.zukan-tabs button.is-on { background: rgba(110, 70, 190, 0.9); border-color: rgba(201, 162, 75, 0.9); }
+.zukan-title { margin: 12px 0 6px; font-size: 1rem; }
+.zukan-title small { opacity: 0.75; font-weight: 400; }
+.home-panel .zukan-grid { list-style: none; margin: 0; padding: 0; display: grid; flex-direction: initial; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.home-panel .zukan-grid.is-small { grid-template-columns: repeat(6, 1fr); }
+.zukan-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); min-width: 0; }
+.zukan-card img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: grayscale(1) brightness(0) opacity(0.35); }
+.zukan-card.is-got { border-color: rgba(201, 162, 75, 0.7); background: rgba(255, 214, 102, 0.08); }
+.zukan-card.is-got img { filter: none; }
+.zukan-name { font-size: 0.68rem; text-align: center; line-height: 1.2; word-break: keep-all; }
+.zukan-card small { font-size: 0.62rem; opacity: 0.7; }
+.zukan-shuku { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; color: rgba(255, 255, 255, 0.3); }
+.zukan-card.is-got .zukan-shuku { color: #ffd166; }
+.achv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.achv-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.55rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04); }
+.achv-list li.is-done { border-color: rgba(255, 214, 102, 0.8); background: rgba(255, 214, 102, 0.1); }
+.achv-list li b { display: block; font-size: 0.92rem; }
+.achv-list li small { opacity: 0.75; font-size: 0.78rem; }
+.achv-progress { font-size: 0.82rem; opacity: 0.85; white-space: nowrap; }

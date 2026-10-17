@@ -26,7 +26,7 @@ import { captureLatestResult } from '../middleware/latestResult.js'
 const router = Router()
 const TSUKI_CHARACTER_ID: CharacterId = 2
 
-router.post('/', asyncJob(() => 'sukuyou'), captureLatestResult({ kind: () => 'sukuyou', payload: (b) => (b.result ? { sukuyouResult: b.result, analysis: b.analysis ?? '' } : null) }), requireUnlocked(2), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
+router.post('/', asyncJob(() => 'sukuyou'), captureLatestResult({ kind: () => 'sukuyou', payload: (b) => (b.result ? { sukuyouResult: b.result, analysis: b.analysis ?? '' } : null) , collect: (b) => (b.result?.mei?.name ? { kind: 'sukuyou', code: String(b.result.mei.name) } : null) }), requireUnlocked(2), inFlightGuard, dailyLimiter, async (req: Request, res: Response) => {
   try {
     const { birthDate, concern } = req.body
     const concernText = typeof concern === 'string' ? concern.slice(0, 1000) : ''

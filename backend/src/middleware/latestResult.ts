@@ -8,12 +8,15 @@
 
 import { Request, Response, NextFunction } from 'express'
 import { saveLatestResult, type LatestKind } from '../db/latestResults.js'
+import { incrementStat, recordCollection, type CollectionKind } from '../db/collection.js'
 
 interface CaptureSpec {
   /** どの種類の結果として保存するか（保存しないときは null） */
   kind: (req: Request, body: any) => LatestKind | null
   /** 応答の本体から、画面にそのまま出せる形の結果を取り出す（保存しないときは null） */
   payload: (body: any) => unknown | null
+  /** 図鑑に載せるタイプ（あれば）。応答の本体から取り出す */
+  collect?: (body: any) => { kind: CollectionKind; code: string } | null
 }
 
 export function captureLatestResult(spec: CaptureSpec) {
@@ -25,9 +28,15 @@ export function captureLatestResult(spec: CaptureSpec) {
           const kind = spec.kind(req, body)
           const payload = kind ? spec.payload(body) : null
           if (kind && payload) {
-            saveLatestResult(req.user.userId, kind, payload).catch((error) => {
+            const userId = req.user.userId
+            saveLatestResult(userId, kind, payload).catch((error) => {
               console.error(`[latest-result] 保存に失敗しました（${kind}）:`, error)
             })
+            // 診断の回数（実績用）と、図鑑
+            incrementStat(userId, 'diagnoses').catch(() => {})
+            incrementStat(userId, `kind:${kind}`).catch(() => {})
+            const c = spec.collect?.(body)
+            if (c && c.code) recordCollection(userId, c.kind, c.code).catch((error) => console.error('[collection] 記録に失敗しました:', error))
           }
         }
       } catch (error) {
