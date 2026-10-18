@@ -39,8 +39,12 @@ export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType
   const [page, setPage] = useState(0);
   // 次のページに進んだら、上に戻す
   useEffect(() => {
-    window.scrollTo({ top: 0 });
-    document.querySelector('.mbti-quiz')?.scrollTo?.({ top: 0 });
+    // 描画が終わってから、先頭を画面の上に出す（スクロールできる親が、どれでも効く）
+    const id = requestAnimationFrame(() => {
+      document.querySelector('.mbti-quiz')?.scrollIntoView({ block: 'start' });
+      window.scrollTo({ top: 0 });
+    });
+    return () => cancelAnimationFrame(id);
   }, [page]);
   const [answers, setAnswers] = useState<Map<number, number>>(new Map());
   const [concern, setConcern] = useState('');

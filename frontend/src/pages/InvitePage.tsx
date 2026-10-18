@@ -60,7 +60,11 @@ export function InvitePage({ token }: { token: string }) {
 
   // ページ（質問の次の6問・画面の切り替え）が変わったら、上に戻す
   useEffect(() => {
-    window.scrollTo({ top: 0 });
+    const id = requestAnimationFrame(() => {
+      document.querySelector('.invite-page')?.scrollIntoView({ block: 'start' });
+      window.scrollTo({ top: 0 });
+    });
+    return () => cancelAnimationFrame(id);
   }, [page, step]);
 
   const submit = async (body: { answers?: { id: number; val: number }[]; pickedType?: string }) => {
