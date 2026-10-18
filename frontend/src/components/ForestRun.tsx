@@ -20,8 +20,8 @@ const MUSUBI_H = 132;
 const GRAVITY = 1800;
 const JUMP_V = -760;
 const LIVES = 3;
-const MUSUBI_SINK = 4; // ムスビの足もとを、地面に、少しうめる
-const OBSTACLE_SINK = 5; // 障害物の足もとを、地面に、少しうめる
+const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
+const GROUND_EDGE = 4; // 障害物を切る位置（地面の草の線の、少し下）
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
 
@@ -35,22 +35,24 @@ interface ObstacleKind {
   hx: number;
   hy: number;
   low?: boolean;
+  /** 地面にうめる割合（根や足もとが、地面の上に見えないように、下の部分を、地面の中にかくす） */
+  sink: number;
 }
 
 // 幅 w・高さ h は、画面上の大きさ。hx/hy は、当たり判定を絵より小さくする割合
 const KINDS: Record<string, ObstacleKind> = {
-  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8 },
-  rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8 },
-  stump_l: { img: 'run_stump_l', w: 82, h: 140, hx: 0.65, hy: 0.85 },
-  rock_l: { img: 'run_rock_l', w: 82, h: 130, hx: 0.65, hy: 0.85 },
-  puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true },
-  mushroom_1: { img: 'run_mushroom_1', w: 56, h: 68, hx: 0.7, hy: 0.85 },
-  mushroom_2: { img: 'run_mushroom_2', w: 56, h: 68, hx: 0.7, hy: 0.85 },
-  mushroom_3: { img: 'run_mushroom_3', w: 56, h: 68, hx: 0.7, hy: 0.85 },
+  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.2 },
+  rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
+  stump_l: { img: 'run_stump_l', w: 82, h: 140, hx: 0.65, hy: 0.85, sink: 0.1 },
+  rock_l: { img: 'run_rock_l', w: 82, h: 130, hx: 0.65, hy: 0.85, sink: 0.08 },
+  puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true, sink: 0.45 },
+  mushroom_1: { img: 'run_mushroom_1', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
+  mushroom_2: { img: 'run_mushroom_2', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
+  mushroom_3: { img: 'run_mushroom_3', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
 };
 const KIND_KEYS = Object.keys(KINDS);
 
-const RUN_FRAMES = ['musubi_run_right_1', 'musubi_run_right_2', 'musubi_run_right_3p', 'musubi_run_right_4p', 'musubi_run_right_5p', 'musubi_run_right_6'];
+const RUN_FRAMES = Array.from({ length: 12 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
   ...RUN_FRAMES,
@@ -367,7 +369,13 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
         ctx.globalAlpha = o.hit ? 0.55 : 1;
         const b = boxes[k.img];
-        ctx.drawImage(im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + OBSTACLE_SINK, k.w, k.h);
+        // 下の部分を、地面の線で切って、地面の中に、うめる（根や足もとが、地面の上に、浮いて見えない）
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, W, GY + GROUND_EDGE);
+        ctx.clip();
+        ctx.drawImage(im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + k.h * k.sink + GROUND_EDGE, k.w, k.h);
+        ctx.restore();
         ctx.globalAlpha = 1;
       }
 
@@ -378,10 +386,11 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       else if (g.hitTimer > 0) name = 'musubi_hit_right';
       else if (!g.onGround) name = g.vy < 0 ? 'musubi_jump_up_right' : 'musubi_fall_right';
       else if (g.landTimer > 0) name = 'musubi_land_right';
-      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 11) % RUN_FRAMES.length];
+      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 13) % RUN_FRAMES.length];
       const mi = imgs[name];
       if (mi.naturalWidth) {
-        const sc = MUSUBI_H / 945;
+        // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
+        const sc = name.startsWith('musubi_walk') ? MUSUBI_H / 290 : MUSUBI_H / 945;
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;

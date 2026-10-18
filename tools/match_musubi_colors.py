@@ -11,8 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageCms, ImageStat
 
 GAMES = Path(__file__).resolve().parent.parent / 'frontend' / 'public' / 'assets' / 'games'
-NAMES = [
-    'musubi_run_right_1', 'musubi_run_right_2', 'musubi_run_right_3p', 'musubi_run_right_4p', 'musubi_run_right_5p', 'musubi_run_right_6',
+NAMES = [f'musubi_walk_{i:02d}' for i in range(1, 13)] + [
     'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_idle_right',
 ]
 

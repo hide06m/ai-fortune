@@ -217,8 +217,18 @@ export function playKnock() {
 
 // ドア開く音を再生
 export function playDoorOpen() {
-  doorOpenSound1?.play()
-  doorOpenSound2?.play()
+  // 音の後半（半分から終わりまで）を、ゆっくり小さくする
+  for (const h of [doorOpenSound1, doorOpenSound2]) {
+    if (!h) continue
+    const id = h.play()
+    const total = h.duration() * 1000
+    if (!total) continue
+    const fadeStart = total * 0.5
+    window.setTimeout(() => {
+      const from = BASE_VOLUME.door * seVolume
+      h.fade(from, 0, total - fadeStart, id)
+    }, fadeStart)
+  }
 }
 
 // BGM ループに切り替え（フェード）
