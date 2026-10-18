@@ -40,6 +40,11 @@ export function MBTIQuizPage({ onComplete, onConsult, onCancel }: MBTIQuizPagePr
   const [mode, setMode] = useState<'checking' | 'choice' | 'entry' | 'direct-input' | 'quiz'>('checking');
   const [previousType, setPreviousType] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  // 次のページに進んだら、上に戻す
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    document.querySelector('.mbti-quiz')?.scrollTo?.({ top: 0 });
+  }, [page]);
   const [answers, setAnswers] = useState<Map<number, number>>(new Map());
   const [concern, setConcern] = useState('');
   const [submitting, setSubmitting] = useState(false);

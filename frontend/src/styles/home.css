@@ -297,3 +297,8 @@
 .people-share img { width: 180px; height: 180px; background: #fff; padding: 6px; border-radius: 8px; }
 .people-share-url { width: 100%; box-sizing: border-box; padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); color: #fff; font-size: 0.8rem; margin: 8px 0; }
 .people-status { font-size: 0.7rem; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.4); opacity: 0.85; }
+
+.invite-soft { margin: 0 0 10px; font-size: 0.85rem; opacity: 0.85; }
+.invite-details { margin: 8px 0; font-size: 0.82rem; opacity: 0.9; }
+.invite-details summary { cursor: pointer; opacity: 0.9; }
+.invite-details ul { margin: 6px 0 0; padding-left: 1.2em; display: block; list-style: disc; line-height: 1.6; }

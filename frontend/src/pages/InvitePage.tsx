@@ -58,6 +58,11 @@ export function InvitePage({ token }: { token: string }) {
     });
   }, [token]);
 
+  // ページ（質問の次の6問・画面の切り替え）が変わったら、上に戻す
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [page, step]);
+
   const submit = async (body: { answers?: { id: number; val: number }[]; pickedType?: string }) => {
     setError('');
     setBusy(true);
@@ -121,25 +126,29 @@ export function InvitePage({ token }: { token: string }) {
 
         {step === 'intro' && info && (
           <>
-            <h3>🧵 縁むすびの、お誘い</h3>
+            <h3>🧵 {from}さんからの、おたより</h3>
             <p className="invite-lead">
-              <b>{from}</b>さん（あなたとの関係：{RELATION_LABEL[info.relation]}）から、「恋愛タイプ診断」に、答えてほしいとの、お誘いです。
+              {from}さん（{RELATION_LABEL[info.relation]}）が、あなたの「恋愛タイプ」を、知りたいそうです。
+              <br />
+              答えると、あなたのタイプだけが、{from}さんに届きます。
             </p>
-            <div className="people-notice">
-              <b>送信すると：</b>{from}さんだけが、あなたの恋愛タイプの結果を、縁帳で見られます。公開・ランキング・外部AIへの送信は、ありません。
-              <br />
-              <b>送る情報：</b>恋愛タイプの結果だけ。名前・連絡先・住所などは、入力できません。
-              <br />
-              <b>送信は任意</b>で、断っても、相手には通知されません。送信したあとも、いつでも取り消して、削除できます。
-              <br />
-              <b>ご注意：</b>「{from}」は、送り主が自分で付けた名前です（本人確認はされていません）。この診断は娯楽で、医療や心理の検査ではありません。心当たりのない招待は、送信せず、閉じてください。
-            </div>
+            <p className="invite-soft">答えるかどうかは、自由です。あとから、いつでも取り消せます。</p>
+            <details className="invite-details">
+              <summary>くわしい説明</summary>
+              <ul>
+                <li>届くのは、恋愛タイプの結果だけです（名前・連絡先・住所は、入力しません）。</li>
+                <li>{from}さんだけが見られます。公開や、ランキングは、ありません。</li>
+                <li>答えなくても、{from}さんには、伝わりません。</li>
+                <li>「{from}」は、送り主が自分でつけた名前です。心当たりがなければ、閉じてください。</li>
+                <li>この診断は、遊びのための占いです（検査ではありません）。</li>
+              </ul>
+            </details>
             <label className="invite-consent">
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-              <span>上の内容を理解し、{from}さんに、結果を渡すことに同意します。</span>
+              <span>{from}さんに、結果を届けて、いいです。</span>
             </label>
             <button type="button" className="daily-btn people-wide" disabled={!consent} onClick={() => setStep('choose')}>
-              同意して、すすむ
+              すすむ
             </button>
           </>
         )}
