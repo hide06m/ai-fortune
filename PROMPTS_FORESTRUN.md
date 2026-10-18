@@ -257,3 +257,46 @@ OUTPUT RULES: a single icon only, fully visible and centered with generous empty
 - 近景・中景・道：背景の単色（緑）が、均一で、絵の中に同じ緑が、使われていない。
 - ムスビ：頭が丸くてふっくら、顔の見える（フードをかぶっていない）、全コマで、大きさと地面の位置が、そろっている。
 - 障害物：地面に接する底が、まっすぐ／影や地面が、入っていない。
+
+---
+
+## 【点検の結果にもとづく、作り直し】（2026-10-18）
+
+### ムスビの走り（#R1〜#R6）：6コマが、ほぼ同じ姿勢になっていた
+**原因**：6枚とも、前足が前・後ろ足が後ろの、歩幅の姿勢で、**足が地面を離れるコマ**・**足が入れ替わるコマ**が、できていません（コマ同士の違いの数値も、小さい）。このまま回すと、**足踏みのように見えます**。
+
+**直し方（おすすめ）**：6コマを、作り直すのではなく、**足のちがう「ポーズ」を3種類**作り、プログラムで、体の上下（跳ねる動き）を足して、走りに見せます。
+- **ポーズA（接地・前後に開く）**：いまの #R1 をそのまま使います。
+- **ポーズB（空中・足がそろって地面を離れる）**：作り直し。
+- **ポーズC（足が入れ替わる・通過）**：作り直し。
+
+作り直しは、**#R1 の結果を添付**して、「足だけを変えて、ほかは同じ」と指示します（画像の編集に近い使い方）。
+
+#### #R3' musubi_run_right_3（通過：足が体の下で、そろいかける）
+【添付】`musubi_run_right_1`（青背景の元画像）と、`musubi_idle_right`
+```
+Edit the attached running Musubi image. Keep EVERYTHING identical (the same face, expression, head, robe, brooch, hood, outlines, colors, size and position in the frame, the same ground line) EXCEPT the legs, arms and the robe hem: draw the "passing" moment of a run cycle. The two feet are both close together under the body, one foot planted flat on the ground and the other foot just lifted a little off the ground and swinging forward past it, knees bent. The small front paw and back paw are swung to the opposite sides from the attached image. The robe hem sways slightly. Do not change anything else.
+OUTPUT RULES: a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped), flat solid pure blue (#0000FF) background filling the whole image, no ground, no cast shadow, no gradient, no text, no watermark, crisp clean edges, high resolution.
+```
+#### #R4' musubi_run_right_4（空中：4本の足が、地面から離れる）
+【添付】`musubi_run_right_1`、`musubi_idle_right`
+```
+Edit the attached running Musubi image. Keep EVERYTHING identical (the same face, expression, head, robe, brooch, hood, outlines, colors and size) EXCEPT the pose: draw the "airborne" moment of a run cycle. Musubi is fully in the air, both feet clearly OFF the ground with a visible gap under them, the front foot reaching forward and the back foot trailing behind, knees bent, his whole body shifted UP in the frame by about 8% of the image height compared with the attached image, the robe hem lifted and fluttering backward. Do not change anything else.
+OUTPUT RULES: a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped), flat solid pure blue (#0000FF) background filling the whole image, no ground, no cast shadow, no gradient, no text, no watermark, crisp clean edges, high resolution.
+```
+#### #R5' musubi_run_right_5（入れ替わった足の接地：前後の足が、逆になる）
+【添付】`musubi_run_right_1`、`musubi_idle_right`
+```
+Edit the attached running Musubi image. Keep EVERYTHING identical (the same face, expression, head, robe, brooch, hood, outlines, colors, size and position, the same ground line) EXCEPT the legs and arms: draw the same "contact" moment but with the legs SWAPPED: the leg that was reaching forward is now stretched BACK behind the body (toes just leaving the ground), and the leg that was behind is now reaching FORWARD to touch the ground. The arms are swung to the opposite sides. Do not change anything else.
+OUTPUT RULES: a single subject only, fully visible and centered with generous empty margin on all sides (nothing cropped), flat solid pure blue (#0000FF) background filling the whole image, no ground, no cast shadow, no gradient, no text, no watermark, crisp clean edges, high resolution.
+```
+→ 結果として、**A（#R1）／C（#R3'）／B（#R4'）／A'（#R5'）**の4つで、**接地 → 通過 → 空中 → 逆の接地**の、走りの、サイクルが作れます（#R2・#R6 は、いまのもので、代用できるか、あとで確認）。
+
+### 中景（#B3 runbg_mid）：左右を反転して、つなぐと、大きな木が「2本の、左右対称の木」になる
+**原因**：右端に、大きな木の幹が、あり、左右反転してつなぐと、つなぎ目で、同じ木が、対称に、並びます（つなぎ目そのものは、見えないが、**対称の木**が、目立つ）。
+**直し方（どちらか）**：
+1. **このまま使う**（つなぎ目の「対称の木」が、ときどき、流れる、だけ。気にならない場合）。
+2. **作り直す**：#B3 の末尾に、次の1文を足す。
+```
+IMPORTANT for seamless looping: along the far left edge and the far right edge of the image, show ONLY low bushes, ferns and thin small tree trunks (no large thick trunk, no big canopy touching or cut by either edge); keep the big trees in the middle 70% of the width.
+```
