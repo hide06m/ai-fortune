@@ -1,8 +1,8 @@
 """
-ムスビの、各コマ（歩き12・ジャンプ・落下・着地・ぶつかる・がっかり・喜ぶ・待機）の、表示される大きさを、そろえる。
-コマごとに、頭の大きさが少しずつ違い、アニメーションや、ポーズの切り替えで、大きさが変わって見える。
-頭の幅（頭の上の部分の、横幅）を、ゲームでの表示の大きさで測り、全コマの中央値に、合わせる倍率を書き出す。
-出力: frontend/public/assets/games/musubi_scale.json  （ゲームが、読みこんで、倍率をかける）
+ムスビの、各コマ（歩き12・ジャンプ・落下・着地・ぶつかる・がっかり・喜ぶ・待機）の、顔の大きさと位置を、そろえる。
+- 大きさ：顔の高さ（耳の上から、あご＝白い口まわりの下まで）を、ゲームでの表示の大きさで測り、歩きのコマの中央値に合わせる倍率
+- 位置：顔の中心（白い口まわり）の横の位置を測り、ゲームで、どのコマも、顔が同じ場所に来るようにする
+出力: frontend/public/assets/games/musubi_scale.json  { 名前: { a: 倍率, fx: 顔の中心の横位置（画像の幅に対する割合） } }
 使い方: split_run_sheet.py と match_musubi_colors.py のあとに、python tools/musubi_sizes.py
 """
 import json
@@ -12,8 +12,7 @@ from pathlib import Path
 from PIL import Image
 
 GAMES = Path(__file__).resolve().parent.parent / 'frontend' / 'public' / 'assets' / 'games'
-MUSUBI_H = 132  # ゲームでの、人物の高さの目安
-HEAD_UNITS = 38  # 頭の高さ（ゲームの表示の大きさ）。この範囲の横幅を、頭の幅とする
+MUSUBI_H = 132
 WALK = [f'musubi_walk_{i:02d}' for i in range(1, 13)]
 POSES = ['musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_sad_front', 'musubi_cheer_front_1', 'musubi_idle_right']
 
@@ -25,26 +24,37 @@ def base_scale(name, width):
     return MUSUBI_H / 945
 
 
-def head_width_display(name):
+def face_metrics(name):
+    """(顔の高さ［ゲームでの表示の大きさ］, 顔の中心の横の割合)"""
     im = Image.open(GAMES / f'{name}.png').convert('RGBA')
-    a = im.split()[-1].point(lambda v: 255 if v > 40 else 0)
-    bb = a.getbbox()
+    px = im.load()
+    bb = im.split()[-1].point(lambda v: 255 if v > 128 else 0).getbbox()
+    lim = bb[1] + int((bb[3] - bb[1]) * 0.42)  # 頭の部分（上から42%）
+    ys, xs = [], []
+    for y in range(bb[1], lim):
+        for x in range(bb[0], bb[2]):
+            r, g, b, al = px[x, y]
+            if al > 200 and r > 205 and g > 190 and b > 150 and 12 < r - b < 75:  # 白〜クリーム色（口まわり）
+                ys.append(y)
+                xs.append(x)
+    ys.sort()
+    chin = ys[int(len(ys) * 0.98)]
     sc = base_scale(name, im.width)
-    rows = int(HEAD_UNITS / sc)
-    band = a.crop((0, bb[1], im.width, min(im.height, bb[1] + rows)))
-    hb = band.getbbox()
-    return (hb[2] - hb[0]) * sc
+    return (chin - bb[1]) * sc, (sum(xs) / len(xs)) / im.width
 
 
 def main():
     names = [n for n in WALK + POSES if (GAMES / f'{n}.png').exists()]
-    widths = {n: head_width_display(n) for n in names}
-    target = sorted(widths.values())[len(widths) // 2]
-    adj = {n: round(max(0.8, min(1.25, target / w)), 4) for n, w in widths.items()}
+    m = {n: face_metrics(n) for n in names}
+    walk_heights = sorted(m[n][0] for n in names if n in WALK)
+    target = walk_heights[len(walk_heights) // 2]
+    out = {}
     for n in names:
-        print(f'{n}: head {widths[n]:.1f} -> x{adj[n]}')
-    (GAMES / 'musubi_scale.json').write_text(json.dumps(adj, indent=1), encoding='utf-8')
-    print('target head width', round(target, 1))
+        h, fx = m[n]
+        out[n] = {'a': round(max(0.8, min(1.3, target / h)), 4), 'fx': round(fx, 4)}
+        print(f'{n}: face height {h:.1f} -> x{out[n]["a"]}, face x {fx:.3f}')
+    (GAMES / 'musubi_scale.json').write_text(json.dumps(out, indent=1), encoding='utf-8')
+    print('target face height', round(target, 1))
 
 
 if __name__ == '__main__':

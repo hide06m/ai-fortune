@@ -20,6 +20,7 @@ const MUSUBI_H = 132;
 const GRAVITY = 1800;
 const JUMP_V = -760;
 const LIVES = 3;
+const MUSUBI_FACE_DX = 26; // 顔の中心は、体の中心より、少し前（右）にある
 const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
 const GROUND_EDGE = 6; // 障害物の底を、地面の線から、さらに下へ置く量
 const GATE_H = 240; // ゴールの門の高さ
@@ -137,7 +138,7 @@ const IMAGE_NAMES = [
 type Images = Record<string, HTMLImageElement>;
 
 /** コマごとの、大きさの倍率（tools/musubi_sizes.py が作る）。頭の大きさを、そろえるため */
-let sizeAdj: Record<string, number> = {};
+let sizeAdj: Record<string, { a: number; fx: number }> = {};
 
 interface Box {
   sx: number;
@@ -471,7 +472,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       if (mi.naturalWidth) {
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
         // （切り出しの基準は、幅300。高画質版（2倍）でも、同じ大きさになるよう、画像の幅で割る）
-        const sc = (name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[name] ?? 1);
+        const sc = (name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[name]?.a ?? 1);
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
@@ -480,7 +481,10 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           const b = boxes[name];
           // 走り（歩き）のコマは、体の上下を、絵の中で、そろえてあるので、足もとの基準線（キャンバスの上から360）で、そろえる
           const footY = name.startsWith('musubi_walk') ? mi.naturalHeight * (360 / 380) * sc : b ? (b.sy + b.sh) * sc : mh;
-          dFull(ctx, mi, MUSUBI_X - mw / 2, GY - g.y - footY + MUSUBI_SINK, mw, mh);
+          // 顔（白い口まわり）の中心の横位置を、どのコマでも、同じ場所にそろえる（コマごとに、位置がずれないように）
+          const faceX = sizeAdj[name]?.fx;
+          const left = faceX !== undefined ? MUSUBI_X + MUSUBI_FACE_DX - faceX * mw : MUSUBI_X - mw / 2;
+          dFull(ctx, mi, left, GY - g.y - footY + MUSUBI_SINK, mw, mh);
         }
       }
 

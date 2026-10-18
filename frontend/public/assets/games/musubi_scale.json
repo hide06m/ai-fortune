@@ -1,21 +1,78 @@
 {
- "musubi_walk_01": 1.1511,
- "musubi_walk_02": 0.9621,
- "musubi_walk_03": 0.9719,
- "musubi_walk_04": 0.9922,
- "musubi_walk_05": 0.9549,
- "musubi_walk_06": 1.0026,
- "musubi_walk_07": 0.9896,
- "musubi_walk_08": 0.9744,
- "musubi_walk_09": 1.0,
- "musubi_walk_10": 1.0,
- "musubi_walk_11": 0.9744,
- "musubi_walk_12": 1.0053,
- "musubi_jump_up_right": 0.9916,
- "musubi_fall_right": 1.1349,
- "musubi_land_right": 1.1369,
- "musubi_hit_right": 1.0468,
- "musubi_sad_front": 1.1517,
- "musubi_cheer_front_1": 1.1538,
- "musubi_idle_right": 1.1369
+ "musubi_walk_01": {
+  "a": 1.005,
+  "fx": 0.6301
+ },
+ "musubi_walk_02": {
+  "a": 0.995,
+  "fx": 0.643
+ },
+ "musubi_walk_03": {
+  "a": 1.0,
+  "fx": 0.6402
+ },
+ "musubi_walk_04": {
+  "a": 1.0,
+  "fx": 0.6329
+ },
+ "musubi_walk_05": {
+  "a": 1.0,
+  "fx": 0.6405
+ },
+ "musubi_walk_06": {
+  "a": 1.0,
+  "fx": 0.634
+ },
+ "musubi_walk_07": {
+  "a": 1.0,
+  "fx": 0.6303
+ },
+ "musubi_walk_08": {
+  "a": 1.0,
+  "fx": 0.6356
+ },
+ "musubi_walk_09": {
+  "a": 1.0,
+  "fx": 0.633
+ },
+ "musubi_walk_10": {
+  "a": 1.0,
+  "fx": 0.6293
+ },
+ "musubi_walk_11": {
+  "a": 1.0,
+  "fx": 0.6334
+ },
+ "musubi_walk_12": {
+  "a": 1.0,
+  "fx": 0.6314
+ },
+ "musubi_jump_up_right": {
+  "a": 0.95,
+  "fx": 0.6848
+ },
+ "musubi_fall_right": {
+  "a": 0.9727,
+  "fx": 0.6652
+ },
+ "musubi_land_right": {
+  "a": 0.9528,
+  "fx": 0.67
+ },
+ "musubi_hit_right": {
+  "a": 0.9231,
+  "fx": 0.5574
+ },
+ "musubi_sad_front": {
+  "a": 0.9257,
+  "fx": 0.5219
+ },
+ "musubi_cheer_front_1": {
+  "a": 0.8783,
+  "fx": 0.526
+ },
+ "musubi_idle_right": {
+  "a": 0.9756,
+  "fx": 0.717
+ }
 }

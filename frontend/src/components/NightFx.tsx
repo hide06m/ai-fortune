@@ -44,7 +44,7 @@ export function NightFx() {
       Array.from({ length: 48 }, (_, i) => ({
         x: Math.random() * 100,
         y: 18 + Math.random() * 78,
-        size: 4 + Math.random() * 6,
+        size: 4 + Math.random() * 4,
         dur: 9 + Math.random() * 12,
         delay: -Math.random() * 20,
         dx: (Math.random() - 0.5) * 8,
@@ -63,7 +63,7 @@ export function NightFx() {
           style={{
             left: `${g.x}%`,
             top: `${g.y}%`,
-            width: `${g.r * 1.7}%`,
+            width: `${g.r * 1.3}%`,
             ['--c' as string]: g.c,
             animationDelay: `${-((i * 1.37) % 5)}s`,
             animationDuration: `${3.6 + (i % 5) * 0.7}s`,

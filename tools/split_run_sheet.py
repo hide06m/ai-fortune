@@ -54,17 +54,26 @@ def main():
             frame = frame.crop(frame.split()[-1].getbbox())
             crops.append(frame)
 
-    # 顔の大きさが、コマごとに少し違い、顔がぶるぶる動いて見えるので、頭の幅を、全コマの中央値にそろえる
-    def head_width(f):
-        h = f.split()[-1].crop((0, 0, f.size[0], 85 * k)).point(lambda v: 255 if v > 128 else 0)
-        bb = h.getbbox()
-        return (bb[2] - bb[0]) if bb else f.size[0]
+    # 顔の大きさが、コマごとに違うので、顔の高さ（耳の上から、白い口まわりの下まで）を、全コマの中央値にそろえる
+    def head_height(f):
+        px = f.load()
+        a_ = f.split()[-1]
+        bb = a_.point(lambda v: 255 if v > 128 else 0).getbbox()
+        lim = bb[1] + int((bb[3] - bb[1]) * 0.42)
+        ys = []
+        for y in range(bb[1], lim):
+            for x in range(bb[0], bb[2]):
+                r, g, b, al = px[x, y]
+                if al > 200 and r > 205 and g > 190 and b > 150 and 12 < r - b < 75:
+                    ys.append(y)
+        ys.sort()
+        return (ys[int(len(ys) * 0.98)] - bb[1]) if ys else f.size[1] * 0.2
 
-    widths = sorted(head_width(f) for f in crops)
-    median = widths[len(widths) // 2]
+    heights = sorted(head_height(f) for f in crops)
+    median = heights[len(heights) // 2]
     frames = []
     for f in crops:
-        k = min(1.18, max(0.85, median / head_width(f)))
+        k = min(1.3, max(0.8, median / head_height(f)))
         if abs(k - 1) > 0.01:
             f = f.resize((round(f.size[0] * k), round(f.size[1] * k)), Image.LANCZOS)
         fa = f.split()[-1]

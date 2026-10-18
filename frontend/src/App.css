@@ -1747,8 +1747,8 @@ h1 {
   animation: nightGlowPulse 4s ease-in-out infinite;
 }
 @keyframes nightGlowPulse {
-  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(0.85); }
+  50% { opacity: 0.75; transform: translate(-50%, -50%) scale(1.05); }
 }
 .night-mote {
   position: absolute;
