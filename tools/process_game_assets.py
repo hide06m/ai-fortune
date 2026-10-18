@@ -42,6 +42,9 @@ for path in sorted(glob.glob(os.path.join(RAW, '*'))):
     if base.endswith('.png'):
         base = base[:-4]
     name = RENAME.get(base, base)
+    # 作り直し版（ファイル名の終わりに「'」が付いたもの）は、名前の終わりを「p」にして、元のものと並べて、使い分けられるようにする
+    if name.endswith("'"):
+        name = name[:-1] + 'p'
     dst = os.path.join(OUT, name + '.png')
     if name == 'runbg_far':
         # 遠景：上の空の部分は、空の層が見えるよう、少しずつ透明にする（上の約3割は、完全に透明、木が始まる位置までに、不透明になる）

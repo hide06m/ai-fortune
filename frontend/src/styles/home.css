@@ -246,3 +246,38 @@
 
 .zukan-preparing { padding: 14px; border-radius: 10px; border: 1px dashed rgba(255, 255, 255, 0.35); line-height: 1.7; }
 .zukan-preparing p { margin: 0 0 6px; }
+
+/* 縁帳 */
+.people-panel { text-align: left; }
+.people-panel h4 { margin: 12px 0 6px; font-size: 0.95rem; }
+.people-thumb { width: 28px; height: 28px; object-fit: contain; vertical-align: middle; margin-right: 6px; }
+.people-wide { width: 100%; margin-top: 12px; }
+.people-danger { margin-top: 10px; width: 100%; padding: 0.5rem; border-radius: 10px; border: 1px solid rgba(255, 130, 130, 0.6); background: transparent; color: #ffb0b0; cursor: pointer; font-size: 0.85rem; }
+.people-notice { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 214, 102, 0.1); border: 1px solid rgba(255, 214, 102, 0.5); font-size: 0.82rem; line-height: 1.5; }
+.people-field { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; font-size: 0.88rem; }
+.people-field input, .people-field select { padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 1rem; }
+.people-field select option { color: #000; }
+.people-questions { display: flex; flex-direction: column; gap: 12px; }
+.people-question p { margin: 0 0 6px; font-size: 0.9rem; line-height: 1.5; }
+.people-scale { display: flex; gap: 6px; }
+.people-scale button { flex: 1; padding: 0.45rem 0; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: rgba(255, 255, 255, 0.55); font-size: 1.1rem; cursor: pointer; }
+.people-scale button.is-on { color: #ff8fb8; border-color: #ff8fb8; background: rgba(255, 143, 184, 0.18); }
+.people-scale button.people-unknown.is-on { color: #fff; border-color: #fff; background: rgba(255, 255, 255, 0.2); }
+.people-scale-labels { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; font-size: 0.7rem; opacity: 0.7; line-height: 1.3; }
+.people-scale-labels span { flex: 1; }
+.people-scale-labels span:last-child { text-align: right; }
+.people-nav { display: flex; gap: 8px; margin-top: 12px; }
+.people-nav .home-panel-close { margin-top: 0; }
+.people-result { text-align: center; }
+.people-result img { width: 120px; height: 120px; object-fit: contain; }
+.people-result-label { margin: 4px 0; font-size: 0.85rem; opacity: 0.85; }
+.people-result-type { margin: 0; font-size: 1.2rem; font-weight: 700; color: #ffd166; }
+.people-result-type small { font-size: 0.8rem; color: #fff; opacity: 0.8; font-weight: 400; }
+.people-compare ul { gap: 4px; }
+.people-compare li { display: grid; grid-template-columns: 1fr 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); font-size: 0.78rem; }
+.people-compare li.is-same { background: rgba(255, 214, 102, 0.12); }
+.people-compare li i { font-style: normal; font-size: 0.72rem; opacity: 0.85; }
+.people-memo { font-size: 0.85rem; opacity: 0.85; }
+.people-links li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.people-links img { width: 36px; height: 36px; object-fit: contain; }
+.people-compare li b { grid-column: 1 / -1; font-size: 0.82rem; }

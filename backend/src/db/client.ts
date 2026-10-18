@@ -258,6 +258,30 @@ export async function initializeDatabase() {
       )
     `);
 
+    // 縁帳（周りの人の記録）：本人だけが見られる。自分の診断結果とは、別の表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS people (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(30) NOT NULL,
+        relation VARCHAR(10) NOT NULL,
+        memo VARCHAR(100) NOT NULL DEFAULT '',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_people_user ON people(user_id)`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS person_results (
+        person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+        kind VARCHAR(12) NOT NULL,
+        type_code VARCHAR(20) NOT NULL,
+        answers JSONB,
+        confidence VARCHAR(10) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (person_id, kind)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {
