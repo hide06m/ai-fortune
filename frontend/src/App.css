@@ -204,6 +204,11 @@ body {
   filter: drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7));
 }
 
+.landing-night .landing-logo {
+  /* 夜の背景では、ロゴの色を、少しだけ暗くする */
+  filter: brightness(0.82) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7));
+}
+
 /* ログイン状態表示・ログアウトボタン */
 .landing-header-actions {
   display: flex;

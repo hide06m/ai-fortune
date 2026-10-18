@@ -311,3 +311,85 @@ Match the attached distant forest. A wide, LOW horizontal strip of mid-distance 
 OUTPUT: no border, no text, no characters, no shadow, no sky.
 ```
 できあがりの確認：①木と茂みが画面の下45%までに収まり、上の55%が単色の緑 ②幹と幹のあいだに緑の抜けがない ③大きな木がなく、同じリズムが続く
+
+
+---
+
+## 走りのコマ（#R1〜R8）を、動きから作り直すプロンプト（2026-10-19）
+
+### なぜ、動きが不自然だったか
+- これまでの6コマは、「走っている絵」を6枚、別々に頼んだだけで、**走りの、決まった体の動き（キーポーズ）**を、指定していなかった。そのため、足の位置が毎回バラバラで、体の上下も、ついていなかった。
+- 横スクロールのドットゲーム（マリオ、ロックマン、星のカービィ、ソニックなど）の走りは、どれも、**少ないコマで、決まった「型」**を繰り返している。ここでは、その型（アニメーションの基本の、4つの姿勢）を使う。
+
+### 走りの基本の型（4つの姿勢 × 左右 ＝ 8コマ）
+| コマ | 姿勢 | 体の動き |
+|---|---|---|
+| 1 | **接地（コンタクト）** 右足が前 | 右足のかかとが前でついた瞬間。左足は、後ろに、のびて、つま先だけ地面。両腕は、足と逆に振る（左腕が前、右腕が後ろ）。体は、少し高め |
+| 2 | **沈み（ダウン）** | 体が、いちばん低い。右足に体重がのり、ひざが曲がる。左足は、後ろから、浮きはじめる。頭と体が、少し下がる |
+| 3 | **すれちがい（パッシング）** | 右足で立ち、左足が、体の下を、前へ通りすぎる（ひざを曲げて、足を引きつける）。体は、中くらいの高さ。両腕は、体の横 |
+| 4 | **跳ね（アップ）** | 体が、いちばん高い。右足で地面をけって、少し浮く（足は地面から離れる）。左足が前にのびる準備。頭が、いちばん上 |
+| 5 | **接地** 左足が前 | 1の左右反対。左足のかかとが前でついた瞬間。右足は、後ろにのびる。右腕が前、左腕が後ろ |
+| 6 | **沈み** | 2の左右反対 |
+| 7 | **すれちがい** | 3の左右反対 |
+| 8 | **跳ね** | 4の左右反対 |
+
+- 1コマ目の左右反対が、5コマ目、…と、**前半4コマと、後半4コマは、同じ形の、左右の足だけ入れ替えた絵**になる。
+- 全体は、1→2→3→4→5→6→7→8→1…と、ぐるぐる回る（8コマ、1秒に10〜12コマ）。
+- **体の上下**：4（跳ね）がいちばん高く、2・6（沈み）が、いちばん低い。差は、体の高さの、約8%。
+- **マントのゆれ**：体より、すこし遅れて、動く（沈みのときは、後ろに、ふくらみ、跳ねのときは、ふわっと、持ち上がる）。
+- **尻尾**：体と逆に、少し、ゆれる（1コマごとに、小さく）。
+
+### 作り方（おすすめ：1枚のシートで、8コマを、まとめて作る）
+色や絵柄が、コマごとに変わらないよう、**1枚の絵に、8コマを横1列で、まとめて作ってもらう**。できたら、私が、8つに切り分けて、ゲームに入れる。（うまくいかないときは、下の「1コマずつ」の方法）
+
+【添付】`musubi_idle_right`（ムスビの右向きの見本。顔・色・服の見本）、`musubi_run_right_1`（走りの絵柄の見本）
+【アスペクト比】21:9 または 16:9（横長）　【保存名】`musubi_run_sheet`
+
+**RUN SHEET PROMPT**
+```
+Using the attached character as the exact reference (same face, same grey-and-white hamster, same olive-green hooded cloak with the small leaf brooch, same pink hands and feet, same line weight and shading style), draw a horizontal sprite sheet of 8 frames of a side-view RUN CYCLE facing right, arranged in one row from left to right, each frame in its own equal-width cell, with the character the same size in every cell, feet resting on the same invisible baseline (except frames 4 and 8, which are slightly above it), and generous empty space between cells so that no frame touches another.
+
+The 8 frames, in order:
+1. CONTACT (right foot forward): the right heel has just touched the ground in front, the left leg is stretched behind with only the toes on the ground. Left arm swings forward, right arm swings back. Body slightly high.
+2. DOWN: the body is at its lowest, weight on the right leg with the knee bent, the left foot lifting off behind. Head and body dip slightly. The cloak bulges backward.
+3. PASSING: standing on the right leg, the left leg swings forward under the body with the knee bent. Body at middle height. Arms close to the body.
+4. UP (airborne): the body is at its highest, pushed off the right foot, both feet just above the ground, the left leg reaching forward. The cloak lifts and floats up lightly.
+5. CONTACT (left foot forward): the mirror of frame 1 with the legs and arms swapped: the left heel touches the ground in front, the right leg stretched behind, the right arm forward, the left arm back.
+6. DOWN: the mirror of frame 2 (weight on the left leg).
+7. PASSING: the mirror of frame 3 (standing on the left leg, the right leg swings forward).
+8. UP (airborne): the mirror of frame 4 (pushed off the left foot).
+
+The up-down difference between the lowest frames (2, 6) and the highest frames (4, 8) is about 8% of the body height. The cloak and tail trail slightly behind the body's motion. Facial expression: happy, mouth slightly open, the same in all frames. Keep exactly the same colors and the same lighting in all 8 frames.
+
+OUTPUT: the whole background is flat solid pure blue (#0000FF) with no gradient, no ground line, no shadow, no text, no frame numbers, no border, no watermark. Do not use any blue inside the character.
+```
+
+### うまくいかないとき：1コマずつ作る（8回）
+- 毎回、**同じ見本2枚**（`musubi_idle_right`、`musubi_run_right_1`）を添付し、**直前に作ったコマ**も、添付する。
+- 文は、下の `[COMMON]` ＋ 各コマの `FRAME` の1行。
+```
+[COMMON]: Using the attached character as the exact reference (same face, grey-and-white hamster, olive-green hooded cloak with the small leaf brooch, pink hands and feet, same line weight and shading), draw ONE frame of a side-view run cycle facing right, full body, with the same size as the attached previous frame, the same colors and the same lighting as the previous frame. Flat solid pure blue (#0000FF) background, no ground, no shadow, no text, no blue inside the character.
+
+FRAME 1: CONTACT, right foot forward (heel just touching down in front), left leg stretched behind with toes on the ground, left arm forward, right arm back, body slightly high.
+FRAME 2: DOWN, body at its lowest, weight on the right leg with the knee bent, left foot lifting behind, cloak bulging backward.
+FRAME 3: PASSING, standing on the right leg, left leg swinging forward under the body with a bent knee, body at middle height.
+FRAME 4: UP, body at its highest, both feet just above the ground, left leg reaching forward, cloak floating up.
+FRAME 5〜8: the mirror of frames 1〜4 (left and right legs and arms swapped).
+```
+
+### できあがりの確認
+1. 8コマを並べたとき、**色・服の濃さ・大きさ**が、そろっている。
+2. 1と5、2と6、3と7、4と8が、**足と腕だけ入れ替わった**形になっている。
+3. 4と8が、いちばん高く、2と6が、いちばん低い。
+4. ぐるぐる回して見たとき、足が、すべるように見えない（接地のコマで、前足が、前にある）。
+
+---
+
+## 丸太の作り直し（#O5'）
+今の丸太は、真横から見た絵なのに、**両端の切り口が見える**ため、不自然。切り口が見えない描き方にする。
+【添付】`run_stump_s`（絵柄の見本）　【アスペクト比】16:9　【保存名】`run_log2`
+```
+[WORLD STYLE]
+Match the attached stump in style, color and line weight. A fallen tree log lying on the ground, seen from a perfectly flat SIDE view (like a 2D side-scrolling game). The log is a long horizontal cylinder of rough brown bark with a few small moss patches, a couple of knots and short broken branch stubs. Both ends of the log must NOT show their round cut faces and no tree rings: instead the two ends fade out of view, hidden behind tufts of tall grass and ferns that overlap the end of the log on the left and on the right. The log rests directly on the ground, with its underside touching the bottom edge of the image (no floating, no gap). Low and long, about three times as wide as it is tall.
+OUTPUT: the whole background is flat solid pure green (#00FF00) with no gradient, no shadow on the background, no text, no border. Do not use any green similar to #00FF00 on the log or the plants (muted olive greens only).
+```

@@ -20,6 +20,8 @@ const MUSUBI_H = 132;
 const GRAVITY = 1800;
 const JUMP_V = -760;
 const LIVES = 3;
+const MUSUBI_SINK = 4; // ムスビの足もとを、地面に、少しうめる
+const OBSTACLE_SINK = 5; // 障害物の足もとを、地面に、少しうめる
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
 
@@ -41,7 +43,6 @@ const KINDS: Record<string, ObstacleKind> = {
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8 },
   stump_l: { img: 'run_stump_l', w: 82, h: 140, hx: 0.65, hy: 0.85 },
   rock_l: { img: 'run_rock_l', w: 82, h: 130, hx: 0.65, hy: 0.85 },
-  log: { img: 'run_log', w: 170, h: 63, hx: 0.8, hy: 0.8 },
   puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true },
   mushroom_1: { img: 'run_mushroom_1', w: 56, h: 68, hx: 0.7, hy: 0.85 },
   mushroom_2: { img: 'run_mushroom_2', w: 56, h: 68, hx: 0.7, hy: 0.85 },
@@ -50,6 +51,7 @@ const KINDS: Record<string, ObstacleKind> = {
 const KIND_KEYS = Object.keys(KINDS);
 
 const RUN_FRAMES = ['musubi_run_right_1', 'musubi_run_right_2', 'musubi_run_right_3p', 'musubi_run_right_4p', 'musubi_run_right_5p', 'musubi_run_right_6'];
+const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
   ...RUN_FRAMES,
   'musubi_jump_up_right',
@@ -65,13 +67,46 @@ const IMAGE_NAMES = [
   'run_ground',
   'run_start_sign',
   'run_goal_gate',
-  'run_marker',
   'ui_run_progress',
   'ui_run_head',
   ...Object.values(KINDS).map((k) => k.img),
 ];
 
 type Images = Record<string, HTMLImageElement>;
+
+interface Box {
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+}
+/** 絵の、透明な余白を除いた範囲（余白があると、障害物が、地面から浮いて見えるため） */
+const boxes: Record<string, Box> = {};
+
+function opaqueBox(img: HTMLImageElement): Box {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  if (!w || !h) return { sx: 0, sy: 0, sw: w || 1, sh: h || 1 };
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d')!;
+  x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  for (let yy = 0; yy < h; yy++) {
+    for (let xx = 0; xx < w; xx++) {
+      if (d[(yy * w + xx) * 4 + 3] > 40) {
+        if (xx < minX) minX = xx;
+        if (xx > maxX) maxX = xx;
+        if (yy < minY) minY = yy;
+        if (yy > maxY) maxY = yy;
+      }
+    }
+  }
+  if (maxX < minX) return { sx: 0, sy: 0, sw: w, sh: h };
+  return { sx: minX, sy: minY, sw: maxX - minX + 1, sh: maxY - minY + 1 };
+}
 
 function loadImages(): Promise<Images> {
   return Promise.all(
@@ -84,7 +119,17 @@ function loadImages(): Promise<Images> {
           img.src = `${BASE}${name}.png`;
         })
     )
-  ).then((pairs) => Object.fromEntries(pairs));
+  ).then((pairs) => {
+    const imgs: Images = Object.fromEntries(pairs);
+    // 障害物は、余白を除いた形で、高さに合わせて幅を決める
+    for (const k of Object.values(KINDS)) {
+      const b = opaqueBox(imgs[k.img]);
+      boxes[k.img] = b;
+      k.w = k.h * (b.sw / b.sh);
+    }
+    for (const n of MUSUBI_NAMES) boxes[n] = opaqueBox(imgs[n]);
+    return imgs;
+  });
 }
 
 interface Obstacle {
@@ -267,7 +312,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           }
         }
         // ゴール：門のまん中がムスビの位置に来たあと、門をくぐり抜けてから、クリアにする
-        if (g.dist >= LEVEL_LENGTH + GATE_PASS) changePhase('clear');
+        // （空中でゴールしたときは、着地してから、クリアにする）
+        if (g.dist >= LEVEL_LENGTH + GATE_PASS && g.onGround) changePhase('clear');
       }
 
       // ───── 描く ─────
@@ -301,7 +347,6 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         ctx.drawImage(im, x, GY - h + 8, w, h);
       };
       drawSprite('run_start_sign', 300, 150);
-      for (let m = 2000; m < LEVEL_LENGTH - 600; m += 2000) drawSprite('run_marker', m, 120);
       // ゴールの門は、左右に半分ずつ。左半分は、ムスビの後ろ（先に描く）、右半分は、ムスビの前（あとで描く）に置いて、くぐり抜けるように見せる
       const gate = imgs['run_goal_gate'];
       const drawGateHalf = (half: 'left' | 'right') => {
@@ -321,7 +366,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const x = world(o.x);
         if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
         ctx.globalAlpha = o.hit ? 0.55 : 1;
-        ctx.drawImage(im, x, GY - k.h + 6, k.w, k.h);
+        const b = boxes[k.img];
+        ctx.drawImage(im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + OBSTACLE_SINK, k.w, k.h);
         ctx.globalAlpha = 1;
       }
 
@@ -339,7 +385,12 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
-        if (!blink) ctx.drawImage(mi, MUSUBI_X - mw / 2, GY - g.y - mh + 10, mw, mh);
+        if (!blink) {
+          // 絵の下の透明な余白を除いて、足もとを、地面に合わせる（空中では、その分、上がる）
+          const b = boxes[name];
+          const footY = b ? (b.sy + b.sh) * sc : mh;
+          ctx.drawImage(mi, MUSUBI_X - mw / 2, GY - g.y - footY + MUSUBI_SINK, mw, mh);
+        }
       }
 
       drawGateHalf('right');
