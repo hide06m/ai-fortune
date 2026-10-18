@@ -70,9 +70,17 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
   }, [reload]);
 
   useEffect(() => {
-    if (!shareToken) return;
-    QRCode.toDataURL(inviteUrl(shareToken), { margin: 1, width: 360 }).then(setQr, () => setQr(''));
-  }, [shareToken]);
+    // 同じ招待を開き直したときも、QRを作り直す（view が変わるたびに実行する）
+    if (!shareToken || view !== 'share') return;
+    let cancelled = false;
+    QRCode.toDataURL(inviteUrl(shareToken), { margin: 1, width: 360 }).then(
+      (url) => !cancelled && setQr(url),
+      () => !cancelled && setQr('')
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [shareToken, view]);
 
   const openShare = (p: Person, token: string) => {
     setCurrent(p);
