@@ -9,7 +9,7 @@ const BASE_VOLUME = {
   roomBgm: 0.6,
   forestBgm: FOREST_BGM_VOLUME,
   knock: 0.7,
-  door: 0.7,
+  door: 0.35,
 } as const
 
 // 利用者が決めた音量（0〜1）。localStorageに保存する

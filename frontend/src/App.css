@@ -194,7 +194,7 @@ body {
 .landing-night .landing-title::before {
   /* 夜の背景に合わせて、光を暗く、青みを帯びさせる */
   background: #aebfe8;
-  opacity: 0.22;
+  opacity: 0.42;
 }
 
 .landing-logo {

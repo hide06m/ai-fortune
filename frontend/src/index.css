@@ -55,7 +55,8 @@
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
-  border-inline: 1px solid var(--border);
+  /* 画面が切り替わる暗転のとき、縦長の枠線が見えてしまうため、枠線は付けない */
+  border-inline: none;
   min-height: 100svh;
   display: flex;
   flex-direction: column;

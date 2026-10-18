@@ -20,6 +20,8 @@ const MUSUBI_H = 132;
 const GRAVITY = 1800;
 const JUMP_V = -760;
 const LIVES = 3;
+const GATE_H = 240; // ゴールの門の高さ
+const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
 
 type Phase = 'ready' | 'playing' | 'paused' | 'clear' | 'miss';
 
@@ -244,8 +246,9 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         if (g.hitTimer > 0) g.hitTimer -= dt;
 
         // 当たり判定（世界の座標 → 画面の座標）
-        const mx0 = g.dist + MUSUBI_X - 20;
-        const mx1 = g.dist + MUSUBI_X + 20;
+        // 世界の座標では、ムスビは g.dist の位置（画面の MUSUBI_X に、描く）にいる
+        const mx0 = g.dist - 20;
+        const mx1 = g.dist + 20;
         const my0 = g.y; // 足の高さ
         const my1 = g.y + 92;
         for (const o of g.obstacles) {
@@ -263,8 +266,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             if (g.lives <= 0) changePhase('miss');
           }
         }
-        // ゴール
-        if (g.dist + MUSUBI_X >= LEVEL_LENGTH) changePhase('clear');
+        // ゴール：門のまん中がムスビの位置に来たあと、門をくぐり抜けてから、クリアにする
+        if (g.dist >= LEVEL_LENGTH + GATE_PASS) changePhase('clear');
       }
 
       // ───── 描く ─────
@@ -299,7 +302,17 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       };
       drawSprite('run_start_sign', 300, 150);
       for (let m = 2000; m < LEVEL_LENGTH - 600; m += 2000) drawSprite('run_marker', m, 120);
-      drawSprite('run_goal_gate', LEVEL_LENGTH, 240);
+      // ゴールの門は、左右に半分ずつ。左半分は、ムスビの後ろ（先に描く）、右半分は、ムスビの前（あとで描く）に置いて、くぐり抜けるように見せる
+      const gate = imgs['run_goal_gate'];
+      const drawGateHalf = (half: 'left' | 'right') => {
+        if (!gate.naturalWidth) return;
+        const gw2 = GATE_H * (gate.naturalWidth / gate.naturalHeight);
+        const gx = world(LEVEL_LENGTH) - gw2 / 2; // 門のまん中が、LEVEL_LENGTH
+        if (gx > W + 50 || gx + gw2 < -50) return;
+        const sw = gate.naturalWidth / 2;
+        ctx.drawImage(gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + 8, gw2 / 2, GATE_H);
+      };
+      drawGateHalf('left');
 
       // 障害物
       for (const o of g.obstacles) {
@@ -328,6 +341,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
         if (!blink) ctx.drawImage(mi, MUSUBI_X - mw / 2, GY - g.y - mh + 10, mw, mh);
       }
+
+      drawGateHalf('right');
 
       // 手前の草
       const near = imgs['runbg_near'];
