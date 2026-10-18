@@ -131,6 +131,8 @@ export function InvitePage({ token }: { token: string }) {
               <b>送る情報：</b>恋愛タイプの結果だけ。名前・連絡先・住所などは、入力できません。
               <br />
               <b>送信は任意</b>で、断っても、相手には通知されません。送信したあとも、いつでも取り消して、削除できます。
+              <br />
+              <b>ご注意：</b>「{from}」は、送り主が自分で付けた名前です（本人確認はされていません）。この診断は娯楽で、医療や心理の検査ではありません。心当たりのない招待は、送信せず、閉じてください。
             </div>
             <label className="invite-consent">
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />

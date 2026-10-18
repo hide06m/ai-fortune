@@ -29,6 +29,7 @@ export const PEOPLE_LIMIT = 50
 const RELATIONS = ['family', 'friend', 'lover', 'work', 'other'] as const
 const INVITE_DAYS = 14
 const DAILY_INVITE_LIMIT = 20
+const ACTIVE_INVITE_LIMIT = 20 // 有効な（未回答・期限内の）招待の数の上限
 const newToken = () => crypto.randomBytes(16).toString('base64url') // 128bit
 
 /** 連絡先・住所などを書かせないための、かんたんな検査（電話番号・メール・URL の形） */
@@ -115,6 +116,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (today.rows[0].n >= DAILY_INVITE_LIMIT) {
       return res.status(429).json({ success: false, error: '招待を作れるのは、1日に20件までです' })
     }
+    const active = await query('SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1 AND invite_token IS NOT NULL AND invite_expires > NOW()', [userId])
+    if (active.rows[0].n >= ACTIVE_INVITE_LIMIT) {
+      return res.status(429).json({ success: false, error: '返事待ちの招待が、多くなっています。回答を待つか、期限が切れてから、追加してください' })
+    }
     const id = crypto.randomUUID()
     const token = newToken()
     await query(
@@ -189,6 +194,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
 router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!isValidId(req.params.id)) return res.status(404).json({ success: false, error: 'not found' })
+    const active = await query('SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1 AND invite_token IS NOT NULL AND invite_expires > NOW()', [req.user!.userId])
+    if (active.rows[0].n >= ACTIVE_INVITE_LIMIT) {
+      return res.status(429).json({ success: false, error: '返事待ちの招待が、多くなっています' })
+    }
     const token = newToken()
     const r = await query(
       `UPDATE people SET invite_token = $3, invite_expires = NOW() + ($4 || ' days')::interval
