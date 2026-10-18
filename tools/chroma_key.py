@@ -51,8 +51,14 @@ def main():
     seeds = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]
     if a.inner:
         seeds.append((w // 2, h // 2))
+    # 背景の色は、左上の画素。四隅のうち、背景色と近い所だけから、塗りつぶす（絵が、隅まで届いているときに、絵を消さないため）
+    bg_ref = im.convert('RGB').getpixel((0, 0))
+    def near_bg(pt):
+        c = im.convert('RGB').getpixel(pt)
+        return sum(abs(c[i] - bg_ref[i]) for i in range(3)) < a.thresh * 2
     for s in seeds:
-        ImageDraw.floodfill(work, s, marker, thresh=a.thresh)
+        if near_bg(s):
+            ImageDraw.floodfill(work, s, marker, thresh=a.thresh)
     if a.global_key:
         bg0 = im.convert('RGB').getpixel((0, 0))
         src_px = im.load()

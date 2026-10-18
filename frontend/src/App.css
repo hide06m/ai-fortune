@@ -1621,34 +1621,40 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
-/* 診断結果などの枠の、四隅の飾り（flamecorner2）。大きな月の飾りは、文字に重なり、並ぶと圧迫感が出るので、
-   ふだんは「小さな三日月」（mini）だけを、枠の角の外側に少しはみ出して置く。使い分けは、枠に付けるクラスで決める：
-     （なし）  … 小さな三日月（既定）
-     frame-corner-lg  … 大きな月の飾り。特別な枠（ページに1つだけ）に使う。文字との間の余白を広くとる
-     frame-corner-none … 飾りなし（続けて並ぶ、補足の枠など）            */
+/* 診断結果などの枠：角の飾りと、枠の線が、つながった「枠の絵」を、9分割（border-image）で、どんな大きさにも使う。
+   枠の絵は、角の飾りだけを、あとから重ねるのと違って、角が、枠から見切れたように見えない。使い分けは、枠に付けるクラスで決める：
+     （なし）  … 細い金の二重線（frame_simple）。既定。続けて並んでも、圧迫感がない
+     frame-moon … 月と星（frame_moon）。特別な枠（ページに1つ程度）
+     frame-leaf … 蔦・葉・どんぐり（frame_leaf）。日常のパネル
+     frame-corner-none … 枠の絵なし                                            */
 .result-section {
   position: relative;
-  padding: 26px 22px 22px;
-  background-image:
-    url('/assets/ui/flame-corner2-mini-tl.webp'),
-    url('/assets/ui/flame-corner2-mini-tr.webp'),
-    url('/assets/ui/flame-corner2-mini-bl.webp'),
-    url('/assets/ui/flame-corner2-mini-br.webp');
-  background-repeat: no-repeat;
-  background-size: 30px auto, 30px auto, 30px auto, 30px auto;
-  background-position: -6px -6px, calc(100% + 6px) -6px, -6px calc(100% + 6px), calc(100% + 6px) calc(100% + 6px);
+  padding: 18px 16px;
+  border: 26px solid transparent;
+  border-image-source: url('/assets/games/frame_simple.png');
+  border-image-slice: 110;
+  border-image-width: 26px;
+  border-image-repeat: stretch;
+  background-clip: padding-box;
+  margin: -8px;
 }
-.result-section.frame-corner-lg {
-  padding: 46px 40px 40px;
-  background-image:
-    url('/assets/ui/flame-corner2-tl.webp'),
-    url('/assets/ui/flame-corner2-tr.webp'),
-    url('/assets/ui/flame-corner2-bl.webp'),
-    url('/assets/ui/flame-corner2-br.webp');
-  background-size: 44px auto, 44px auto, 44px auto, 44px auto;
-  background-position: -8px -8px, calc(100% + 8px) -8px, -8px calc(100% + 8px), calc(100% + 8px) calc(100% + 8px);
+.result-section.frame-moon {
+  border-width: 40px;
+  border-image-source: url('/assets/games/frame_moon.png');
+  border-image-slice: 150;
+  border-image-width: 40px;
+  padding: 10px 10px;
+  margin: -14px;
 }
-.result-section.frame-corner-none { background-image: none; padding: 20px; }
+.result-section.frame-leaf {
+  border-width: 34px;
+  border-image-source: url('/assets/games/frame_leaf.png');
+  border-image-slice: 140;
+  border-image-width: 34px;
+  padding: 8px 8px;
+  margin: -10px;
+}
+.result-section.frame-corner-none { border: 1px solid var(--border); border-image: none; padding: 20px; margin: 0; }
 
 /* 診断結果のキャラクター画像 */
 .result-character {
@@ -1709,4 +1715,11 @@ h1 {
     margin: 0;
   }
   .landing-header-actions button { white-space: nowrap; }
+}
+
+/* 狭い画面では、枠の太さを、細くする */
+@media (max-width: 600px) {
+  .result-section { border-width: 16px; border-image-width: 16px; padding: 14px 10px; margin: -4px; }
+  .result-section.frame-moon { border-width: 26px; border-image-width: 26px; margin: -8px; }
+  .result-section.frame-leaf { border-width: 22px; border-image-width: 22px; margin: -6px; }
 }
