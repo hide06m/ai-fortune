@@ -21,7 +21,7 @@ const GRAVITY = 1800;
 const JUMP_V = -760;
 const LIVES = 3;
 const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
-const GROUND_EDGE = 4; // 障害物を切る位置（地面の草の線の、少し下）
+const GROUND_EDGE = 6; // 障害物の底を、地面の線から、さらに下へ置く量
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
 
@@ -104,6 +104,7 @@ const KINDS: Record<string, ObstacleKind> = {
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
   stump_l: { img: 'run_stump_l', w: 82, h: 140, hx: 0.65, hy: 0.85, sink: 0.1 },
   rock_l: { img: 'run_rock_l', w: 82, h: 130, hx: 0.65, hy: 0.85, sink: 0.08 },
+  log: { img: 'run_log2', w: 176, h: 60, hx: 0.75, hy: 0.8, sink: 0.08 },
   puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true, sink: 0.45 },
   mushroom_1: { img: 'run_mushroom_1', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
   mushroom_2: { img: 'run_mushroom_2', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
@@ -252,6 +253,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     lives: LIVES,
     obstacles: buildCourse(),
     time: 0,
+    dying: false,
   });
 
   const changePhase = useCallback((p: Phase) => {
@@ -271,6 +273,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.lives = LIVES;
     g.obstacles = buildCourse();
     g.time = 0;
+    g.dying = false;
     setLives(LIVES);
   }, []);
 
@@ -337,7 +340,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       // ───── 更新 ─────
       if (phaseNow === 'playing') {
         g.time += dt;
-        g.dist += SPEED * dt;
+        if (!g.dying) g.dist += SPEED * dt; // ミスが決まったら、前へ進むのを止めて、着地を待つ
         if (!g.onGround) {
           g.vy += GRAVITY * dt;
           g.y -= g.vy * dt;
@@ -348,6 +351,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             g.landTimer = 0.12;
           }
         }
+        if (g.dying && g.onGround) changePhase('miss');
         if (g.landTimer > 0) g.landTimer -= dt;
         if (g.invuln > 0) g.invuln -= dt;
         if (g.hitTimer > 0) g.hitTimer -= dt;
@@ -364,13 +368,13 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           const ox0 = o.x + (k.w * (1 - k.hx)) / 2;
           const ox1 = o.x + k.w - (k.w * (1 - k.hx)) / 2;
           const oh = k.h * k.hy;
-          if (mx1 > ox0 && mx0 < ox1 && my0 < oh && my1 > 0 && g.invuln <= 0) {
+          if (mx1 > ox0 && mx0 < ox1 && my0 < oh && my1 > 0 && g.invuln <= 0 && !g.dying) {
             o.hit = true;
             g.lives -= 1;
             g.invuln = 1.2;
             g.hitTimer = 0.45;
             setLives(g.lives);
-            if (g.lives <= 0) changePhase('miss');
+            if (g.lives <= 0) g.dying = true; // 空中なら、着地してから、ミスにする
           }
         }
         // ゴール：門のまん中がムスビの位置に来たあと、門をくぐり抜けてから、クリアにする
@@ -391,12 +395,6 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const mid = imgs['runbg_mid2'];
       const midH = 250;
       drawLoop(ctx, mid, d * 0.4, GY - midH + 40, midH * (mid.naturalWidth / (mid.naturalHeight || 1)), midH);
-
-      // 地面
-      const gr = imgs['run_ground'];
-      const gh = H - GY + 8;
-      const gw = gh * (gr.naturalWidth / (gr.naturalHeight || 1));
-      drawLoop(ctx, gr, d, GY - 4, gw, gh);
 
       // 看板・目印・ゴールの門
       const world = (wx: number) => wx - d + MUSUBI_X;
@@ -421,23 +419,29 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       };
       drawGateHalf('left');
 
-      // 障害物
-      for (const o of g.obstacles) {
-        const k = KINDS[o.kind];
-        const im = imgs[k.img];
-        const x = world(o.x);
-        if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
-        ctx.globalAlpha = o.hit ? 0.55 : 1;
-        const b = boxes[k.img];
-        // 下の部分を、地面の線で切って、地面の中に、うめる（根や足もとが、地面の上に、浮いて見えない）
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, 0, W, GY + GROUND_EDGE);
-        ctx.clip();
-        dI(ctx, im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + k.h * k.sink + GROUND_EDGE, k.w, k.h);
-        ctx.restore();
-        ctx.globalAlpha = 1;
-      }
+      // 障害物：低いもの（水たまり）以外は、地面より先に描き、地面の草が、足もとにかぶさって、うまって見えるようにする
+      const drawObstacles = (low: boolean) => {
+        for (const o of g.obstacles) {
+          const k = KINDS[o.kind];
+          if (!!k.low !== low) continue;
+          const im = imgs[k.img];
+          const x = world(o.x);
+          if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
+          ctx.globalAlpha = o.hit ? 0.55 : 1;
+          const bb = boxes[k.img];
+          dI(ctx, im, bb.sx, bb.sy, bb.sw, bb.sh, x, GY - k.h + k.h * k.sink + GROUND_EDGE, k.w, k.h);
+          ctx.globalAlpha = 1;
+        }
+      };
+      drawObstacles(false);
+
+      // 地面
+      const gr = imgs['run_ground'];
+      const gh = H - GY + 8;
+      const gw = gh * (gr.naturalWidth / (gr.naturalHeight || 1));
+      drawLoop(ctx, gr, d, GY - 4, gw, gh);
+
+      drawObstacles(true);
 
       // ムスビ
       let name: string;
@@ -450,7 +454,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const mi = imgs[name];
       if (mi.naturalWidth) {
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
-        const sc = name.startsWith('musubi_walk') ? MUSUBI_H / 290 : MUSUBI_H / 945;
+        // （切り出しの基準は、幅300。高画質版（2倍）でも、同じ大きさになるよう、画像の幅で割る）
+        const sc = name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945;
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
@@ -458,7 +463,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           // 絵の下の透明な余白を除いて、足もとを、地面に合わせる（空中では、その分、上がる）
           const b = boxes[name];
           // 走り（歩き）のコマは、体の上下を、絵の中で、そろえてあるので、足もとの基準線（キャンバスの上から360）で、そろえる
-          const footY = name.startsWith('musubi_walk') ? 360 * sc : b ? (b.sy + b.sh) * sc : mh;
+          const footY = name.startsWith('musubi_walk') ? mi.naturalHeight * (360 / 380) * sc : b ? (b.sy + b.sh) * sc : mh;
           dFull(ctx, mi, MUSUBI_X - mw / 2, GY - g.y - footY + MUSUBI_SINK, mw, mh);
         }
       }

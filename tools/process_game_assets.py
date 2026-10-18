@@ -25,6 +25,7 @@ EXTRA = {
     'run_mushroom_3': ['--global-key'],
     # ゴールの門：アーチの上の、枝と幹の間に、背景の青が、つながらずに、残る
     'run_goal_gate': ['--global-key'],
+    'run_log2': ['--global-key'],
     # 枠：中央の空きも、緑なので、中央からも抜く
     'frame_moon': ['--inner', '--global-key'],
     'frame_leaf': ['--inner', '--global-key'],
