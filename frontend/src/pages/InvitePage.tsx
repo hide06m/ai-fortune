@@ -20,6 +20,16 @@ const AXES: { key: string; pair: [string, string]; hint: [string, string] }[] = 
   { key: 'DI', pair: ['D', 'I'], hint: ['寄り添う', '自立・適度な距離'] },
 ];
 
+const REVOKE_KEY = (token: string) => `invite.revoke.${token}`;
+
+function savedRevokeToken(token: string): string {
+  try {
+    return localStorage.getItem(REVOKE_KEY(token)) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 type Step = 'loading' | 'invalid' | 'intro' | 'choose' | 'quiz' | 'pick' | 'done' | 'revoked';
 
 export function InvitePage({ token }: { token: string }) {
@@ -40,6 +50,9 @@ export function InvitePage({ token }: { token: string }) {
         setInfo({ fromName: r.fromName, relation: r.relation });
         setStep('intro');
       } else {
+        // 送信したあとに、同じ端末でリンクを開き直した場合は、取り消せるようにする
+        const saved = savedRevokeToken(token);
+        if (saved) setRevokeToken(saved);
         setStep('invalid');
       }
     });
@@ -56,6 +69,11 @@ export function InvitePage({ token }: { token: string }) {
     }
     setResult(r.result);
     setRevokeToken(r.revokeToken);
+    try {
+      localStorage.setItem(REVOKE_KEY(token), r.revokeToken);
+    } catch {
+      /* 保存できなくても、この画面では取り消せる */
+    }
     setStep('done');
   };
 
@@ -65,7 +83,14 @@ export function InvitePage({ token }: { token: string }) {
   const doRevoke = async () => {
     if (!window.confirm('あなたの回答を、相手の縁帳から、削除します。よろしいですか？')) return;
     const r = await revokeAnswer(revokeToken);
-    if (r.success) setStep('revoked');
+    if (r.success) {
+      try {
+        localStorage.removeItem(REVOKE_KEY(token));
+      } catch {
+        /* 何もしない */
+      }
+      setStep('revoked');
+    }
     else setError(r.error ?? '取り消せませんでした');
   };
 
@@ -85,6 +110,12 @@ export function InvitePage({ token }: { token: string }) {
           <>
             <h3>この招待は、使えません</h3>
             <p className="home-panel-lead">期限切れ・回答済み、または、取り消された招待です。気になる場合は、招待してくれた人に、聞いてみてください。</p>
+            {revokeToken && (
+              <>
+                <p className="daily-note">この端末から、以前に送信した回答が、残っています。取り消す場合は、下のボタンを押してください。</p>
+                <button type="button" className="people-danger" onClick={doRevoke}>送った回答を取り消して、削除する</button>
+              </>
+            )}
           </>
         )}
 
