@@ -270,6 +270,13 @@ export async function initializeDatabase() {
       )
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_people_user ON people(user_id)`);
+    // 招待リンク方式：相手本人が答える（招待トークンは1回限り・期限つき。取り消しトークンは、相手が自分の回答を消すため）
+    await client.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS from_name VARCHAR(30) NOT NULL DEFAULT ''`);
+    await client.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS invite_token VARCHAR(64)`);
+    await client.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS invite_expires TIMESTAMP`);
+    await client.query(`ALTER TABLE people ADD COLUMN IF NOT EXISTS revoke_token VARCHAR(64)`);
+    await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_people_invite_token ON people(invite_token)`);
+    await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_people_revoke_token ON people(revoke_token)`);
     await client.query(`
       CREATE TABLE IF NOT EXISTS person_results (
         person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,

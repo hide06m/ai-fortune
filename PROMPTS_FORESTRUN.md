@@ -300,3 +300,14 @@ OUTPUT RULES: a single subject only, fully visible and centered with generous em
 ```
 IMPORTANT for seamless looping: along the far left edge and the far right edge of the image, show ONLY low bushes, ferns and thin small tree trunks (no large thick trunk, no big canopy touching or cut by either edge); keep the big trees in the middle 70% of the width.
 ```
+
+---
+
+## #B3-R2 runbg_mid 再生成（2026-10-18・中景が「全面の大木の森」になった問題の直し）
+【添付】#B2の結果（遠景）と、今回できた `runbg_mid'` は**添付しない**（引きずられるため）　【アスペクト比】16:9　【保存名】`runbg_mid2`（`'`を付けるなら `runbg_mid2'`）
+```
+[WORLD STYLE]
+Match the attached distant forest. A wide, LOW horizontal strip of mid-distance forest, like a theatre set-piece band for a side-scrolling game. ONLY the bottom 45% of the image contains anything: many SLIM tree trunks of similar thickness and height with small rounded leafy canopies, standing close together in an evenly spaced row, with a continuous dense understory of bushes and ferns filling every gap between the trunks, so there are NO see-through gaps in the band. All trees and bushes are medium-small, softly outlined, in muted desaturated olive and teal greens with low contrast (clearly calmer and less detailed than a foreground), no huge tree, no giant canopy, no tree taller than 45% of the image height, no single special landmark: the same rhythm repeats across the whole width, and the left edge and right edge show the same kind of trunks and bushes at the same height. The band ends at the bottom edge of the image (no ground drawn). Everything above the tree band and everywhere else outside the trees and bushes is flat solid pure green (#00FF00) with no gradient; do not use any bright or similar green inside the trees (muted, darker olive and teal only).
+OUTPUT: no border, no text, no characters, no shadow, no sky.
+```
+できあがりの確認：①木と茂みが画面の下45%までに収まり、上の55%が単色の緑 ②幹と幹のあいだに緑の抜けがない ③大きな木がなく、同じリズムが続く

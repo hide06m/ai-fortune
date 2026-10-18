@@ -1,37 +1,40 @@
 /**
  * 縁帳（周りの人の記録）：ホーム画面から開く。本人だけが見られる、私的な記録
- * 恋愛タイプの代理診断（「あなたから見た〇〇さん（仮説）」）と、自分との共通点・違い、同じタイプの人どうし
+ * 「縁むすび」方式：相手に招待リンク（URL・LINE・QRコード）を送り、相手本人が恋愛タイプに答えると、ここに登録される
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { LOVE_TYPE64_QUESTIONS, LOVE_TYPE64_QUESTIONS_PER_PAGE, LOVE_SCALE_VALUES } from '../data/loveType64Questions';
+import QRCode from 'qrcode';
 import {
   addPerson,
   deleteAllPeople,
   deletePerson,
-  diagnosePerson,
   getLinks,
   getPerson,
+  inviteUrl,
   listPeople,
+  reissueInvite,
   type Comparison,
-  type Confidence,
   type Links,
   type Person,
   type Relation,
 } from '../api/people';
 
-type View = 'list' | 'add' | 'detail' | 'quiz' | 'links';
+type View = 'list' | 'add' | 'share' | 'detail' | 'links';
 
 const RELATION_LABEL: Record<Relation, string> = { family: '家族', friend: '友だち', lover: '恋人', work: '仕事', other: 'その他' };
-const CONFIDENCE_LABEL: Record<Confidence, string> = { high: 'よく分かる', partial: '一部のみ', low: 'あまり分からない' };
-const PAGES = Math.ceil(LOVE_TYPE64_QUESTIONS.length / LOVE_TYPE64_QUESTIONS_PER_PAGE);
+const STATUS_LABEL = { pending: '招待中', answered: '回答済み', expired: '期限切れ' } as const;
+const FROM_NAME_KEY = 'engi.fromName';
 
-interface PeoplePanelProps {
-  onClose: () => void;
-  onBalance?: (balance: number) => void;
+function loadFromName(): string {
+  try {
+    return localStorage.getItem(FROM_NAME_KEY) ?? '';
+  } catch {
+    return '';
+  }
 }
 
-export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
+export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (balance: number) => void }) {
   const [view, setView] = useState<View>('list');
   const [people, setPeople] = useState<Person[] | null>(null);
   const [limit, setLimit] = useState(50);
@@ -43,13 +46,14 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
 
   // 追加フォーム
   const [name, setName] = useState('');
+  const [fromName, setFromName] = useState(loadFromName);
   const [relation, setRelation] = useState<Relation>('friend');
   const [memo, setMemo] = useState('');
 
-  // 代理診断
-  const [page, setPage] = useState(0);
-  const [answers, setAnswers] = useState<Map<number, number | null>>(new Map());
-  const [confidence, setConfidence] = useState<Confidence>('partial');
+  // 共有（招待リンク）
+  const [shareToken, setShareToken] = useState('');
+  const [qr, setQr] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const reload = useCallback(async () => {
     const r = await listPeople();
@@ -65,6 +69,19 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
     reload();
   }, [reload]);
 
+  useEffect(() => {
+    if (!shareToken) return;
+    QRCode.toDataURL(inviteUrl(shareToken), { margin: 1, width: 360 }).then(setQr, () => setQr(''));
+  }, [shareToken]);
+
+  const openShare = (p: Person, token: string) => {
+    setCurrent(p);
+    setShareToken(token);
+    setQr('');
+    setCopied(false);
+    setView('share');
+  };
+
   const openPerson = async (id: string) => {
     setError('');
     const r = await getPerson(id);
@@ -74,31 +91,40 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
     }
     setCurrent(r.person);
     setComparison(r.comparison);
-    setView('detail');
+    if (r.person.status === 'pending' && r.person.inviteToken) openShare(r.person, r.person.inviteToken);
+    else setView('detail');
   };
 
   const handleAdd = async () => {
     setError('');
     setBusy(true);
-    const r = await addPerson({ name, relation, memo });
+    const r = await addPerson({ name, relation, memo, fromName });
     setBusy(false);
     if (!r.success) {
       setError(r.error ?? '追加できませんでした');
       return;
     }
+    try {
+      localStorage.setItem(FROM_NAME_KEY, fromName);
+    } catch {
+      /* 保存できなくても、続けられる */
+    }
+    const person: Person = { id: r.id, name, relation, memo, createdAt: '', status: 'pending', inviteToken: r.inviteToken, result: null };
     setName('');
     setMemo('');
     await reload();
-    startQuiz(r.id, name);
+    openShare(person, r.inviteToken);
   };
 
-  const startQuiz = (id: string, personName?: string) => {
-    setCurrent((prev) => ({ ...(prev ?? { id, name: personName ?? '', relation: 'other', memo: '', createdAt: '', result: null }), id, name: personName ?? prev?.name ?? '' }));
-    setAnswers(new Map());
-    setPage(0);
-    setConfidence('partial');
+  const handleReissue = async (p: Person) => {
     setError('');
-    setView('quiz');
+    const r = await reissueInvite(p.id);
+    if (!r.success) {
+      setError(r.error ?? '再発行できませんでした');
+      return;
+    }
+    await reload();
+    openShare(p, r.inviteToken);
   };
 
   const handleDelete = async (p: Person) => {
@@ -120,28 +146,24 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
     if (r.success) setLinks(r);
   };
 
-  const submitQuiz = async () => {
-    if (!current) return;
-    setError('');
-    const payload = LOVE_TYPE64_QUESTIONS.flatMap((q) => {
-      const v = answers.get(q.id);
-      return typeof v === 'number' ? [{ id: q.id, val: v }] : [];
-    });
-    setBusy(true);
-    const r = await diagnosePerson(current.id, payload, confidence);
-    setBusy(false);
-    if (!r.success) {
-      setError(r.error === 'INSUFFICIENT_STONES' ? 'ルーンストーンが足りません。' : r.error ?? '診断できませんでした');
-      return;
+  const shareText = () => `恋愛タイプ診断（占いの森）に、答えてもらえませんか？ 送信は任意で、あとから削除もできます。`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl(shareToken));
+      setCopied(true);
+    } catch {
+      setError('コピーできませんでした。URLを、長押しして、コピーしてください。');
     }
-    if (typeof r.stoneBalance === 'number') onBalance?.(r.stoneBalance);
-    await reload();
-    await openPerson(current.id);
   };
 
-  const pageQuestions = LOVE_TYPE64_QUESTIONS.slice(page * LOVE_TYPE64_QUESTIONS_PER_PAGE, (page + 1) * LOVE_TYPE64_QUESTIONS_PER_PAGE);
-  const pageDone = pageQuestions.every((q) => answers.has(q.id));
-  const isLastPage = page === PAGES - 1;
+  const nativeShare = async () => {
+    try {
+      await navigator.share({ title: '占いの森：恋愛タイプ診断', text: shareText(), url: inviteUrl(shareToken) });
+    } catch {
+      /* 取りやめた場合は、何もしない */
+    }
+  };
 
   return (
     <div className="home-panel-backdrop" onClick={onClose}>
@@ -152,7 +174,7 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
           <>
             <h3>🧵 縁帳</h3>
             <p className="home-panel-lead">
-              周りの人を、あなたの目で見て、記録します。あなた以外には、見えません。診断は、あなたから見た「仮説」で、ご本人の診断結果ではありません。
+              周りの人に、恋愛タイプ診断を、送ります。相手が、自分で答えると、その人のタイプが、ここに登録されます。あなた以外には、見えません。
             </p>
             {people === null ? (
               <p className="home-panel-empty">読み込んでいます…</p>
@@ -167,16 +189,16 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
                         {p.result && <img className="people-thumb" src={`/assets/results/lovetype/${p.result.type1}.webp`} alt="" />}
                         {p.name}　<small>{RELATION_LABEL[p.relation]}</small>
                       </span>
-                      <small>{p.result ? p.result.characterName : '未診断'}</small>
+                      {p.result ? <small>{p.result.characterName}</small> : <span className="people-status">{STATUS_LABEL[p.status]}</span>}
                     </button>
                   </li>
                 ))}
               </ul>
             )}
             <button type="button" className="daily-btn people-wide" onClick={() => { setError(''); setView('add'); }} disabled={(people?.length ?? 0) >= limit}>
-              ＋ 人を追加（{people?.length ?? 0} / {limit}）
+              ＋ 人を招待する（{people?.length ?? 0} / {limit}）
             </button>
-            {(people?.length ?? 0) >= 2 && (
+            {(people?.filter((p) => p.result).length ?? 0) >= 2 && (
               <button type="button" className="home-panel-link" onClick={openLinks}>
                 つながりを見る →
               </button>
@@ -194,16 +216,20 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
 
         {view === 'add' && (
           <>
-            <h3>人を追加</h3>
+            <h3>人を招待する</h3>
             <div className="people-notice">
               <b>書かないでください：</b>実名・電話番号・住所・勤務先・健康や性に関すること。ニックネームがおすすめです。
             </div>
             <label className="people-field">
-              名前（ニックネーム）
+              この人の呼び名（あなたの縁帳にだけ表示）
               <input type="text" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} placeholder="例：はなちゃん" />
             </label>
             <label className="people-field">
-              関係
+              あなたの呼び名（<b>相手に見えます</b>）
+              <input type="text" value={fromName} maxLength={30} onChange={(e) => setFromName(e.target.value)} placeholder="例：ゆうき" />
+            </label>
+            <label className="people-field">
+              関係（相手にも表示されます）
               <select value={relation} onChange={(e) => setRelation(e.target.value as Relation)}>
                 {(Object.keys(RELATION_LABEL) as Relation[]).map((r) => (
                   <option key={r} value={r}>{RELATION_LABEL[r]}</option>
@@ -211,73 +237,31 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
               </select>
             </label>
             <label className="people-field">
-              メモ（任意・100文字まで）
+              メモ（任意・100文字まで・あなたにだけ表示）
               <input type="text" value={memo} maxLength={100} onChange={(e) => setMemo(e.target.value)} />
             </label>
-            <p className="daily-note">追加すると、そのまま、恋愛タイプの診断に進みます（ルーンストーン1個）。</p>
-            <button type="button" className="daily-btn people-wide" onClick={handleAdd} disabled={busy || !name.trim()}>
-              {busy ? '追加しています…' : '追加して、診断へ'}
+            <p className="daily-note">追加すると、招待リンクが、できます。石は、使いません。</p>
+            <button type="button" className="daily-btn people-wide" onClick={handleAdd} disabled={busy || !name.trim() || !fromName.trim()}>
+              {busy ? '作っています…' : '招待リンクを作る'}
             </button>
             <button type="button" className="home-panel-close" onClick={() => setView('list')}>戻る</button>
           </>
         )}
 
-        {view === 'quiz' && current && (
+        {view === 'share' && current && (
           <>
-            <h3>{current.name}さんなら、どう答えそう？</h3>
-            <p className="home-panel-lead">
-              {current.name}さんになったつもりで、答えてください。{page + 1} / {PAGES}　分からない質問は「？」を選べます。
-            </p>
-            <div className="people-questions">
-              {pageQuestions.map((q) => (
-                <div key={q.id} className="people-question">
-                  <p>{q.text}</p>
-                  <div className="people-scale">
-                    {LOVE_SCALE_VALUES.map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        className={answers.get(q.id) === val ? 'is-on' : ''}
-                        onClick={() => setAnswers((m) => new Map(m).set(q.id, val))}
-                        aria-label={val <= 1 ? q.left : q.right}
-                      >
-                        ♥
-                      </button>
-                    ))}
-                    <button type="button" className={`people-unknown${answers.get(q.id) === null ? ' is-on' : ''}`} onClick={() => setAnswers((m) => new Map(m).set(q.id, null))}>
-                      ？
-                    </button>
-                  </div>
-                  <div className="people-scale-labels">
-                    <span>{q.left}</span>
-                    <span>{q.right}</span>
-                  </div>
-                </div>
-              ))}
+            <h3>{current.name}さんへの、招待リンク</h3>
+            <p className="home-panel-lead">このリンクを、{current.name}さんに、送ってください（LINE・メッセージ・QRコード）。相手が答えると、縁帳に登録されます。リンクは、14日間・1回だけ使えます。</p>
+            <div className="people-share">
+              {qr && <img src={qr} alt="招待のQRコード" />}
+              <input className="people-share-url" readOnly value={inviteUrl(shareToken)} onFocus={(e) => e.target.select()} />
             </div>
-            {isLastPage && (
-              <label className="people-field">
-                この人のことは、どのくらい分かりますか？
-                <select value={confidence} onChange={(e) => setConfidence(e.target.value as Confidence)}>
-                  {(Object.keys(CONFIDENCE_LABEL) as Confidence[]).map((c) => (
-                    <option key={c} value={c}>{CONFIDENCE_LABEL[c]}</option>
-                  ))}
-                </select>
-              </label>
+            {typeof navigator.share === 'function' && (
+              <button type="button" className="daily-btn people-wide" onClick={nativeShare}>LINEなどで送る</button>
             )}
-            <div className="people-nav">
-              <button type="button" className="home-panel-close" onClick={() => (page === 0 ? setView('list') : setPage(page - 1))} disabled={busy}>
-                戻る
-              </button>
-              <button
-                type="button"
-                className="daily-btn"
-                disabled={!pageDone || busy}
-                onClick={() => (isLastPage ? submitQuiz() : setPage(page + 1))}
-              >
-                {busy ? '診断中…' : isLastPage ? '診断する（石1個）' : '次へ'}
-              </button>
-            </div>
+            <button type="button" className="daily-btn people-wide" onClick={copy}>{copied ? 'コピーしました' : 'リンクをコピー'}</button>
+            <p className="daily-note">相手が断っても、通知は、来ません。返事を、急かさないでください。</p>
+            <button type="button" className="home-panel-close" onClick={() => { reload(); setView('list'); }}>戻る</button>
           </>
         )}
 
@@ -287,12 +271,15 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
             {current.result ? (
               <div className="people-result">
                 <img src={`/assets/results/lovetype/${current.result.type1}.webp`} alt={current.result.characterName} />
-                <p className="people-result-label">あなたから見た、{current.name}さん（仮説）</p>
+                <p className="people-result-label">{current.name}さん本人の回答</p>
                 <p className="people-result-type">{current.result.characterName}　<small>{current.result.subTypeName}</small></p>
-                <p className="daily-note">確信度：{CONFIDENCE_LABEL[current.result.confidence]}　／　ご本人の診断結果ではありません。</p>
+                <p className="daily-note">{current.result.confidence === 'quiz' ? '18問に答えた結果です。' : 'ご本人が、タイプを選んで、送ってくれました（本人の申告）。'}</p>
               </div>
             ) : (
-              <p className="home-panel-empty">まだ、診断していません。</p>
+              <>
+                <p className="home-panel-empty">まだ、回答がありません（{STATUS_LABEL[current.status]}）。</p>
+                <button type="button" className="daily-btn people-wide" onClick={() => handleReissue(current)}>招待リンクを、作り直す</button>
+              </>
             )}
 
             {comparison && comparison.total > 0 && (
@@ -317,9 +304,6 @@ export function PeoplePanel({ onClose, onBalance }: PeoplePanelProps) {
 
             {current.memo && <p className="people-memo">メモ：{current.memo}</p>}
 
-            <button type="button" className="daily-btn people-wide" onClick={() => startQuiz(current.id, current.name)}>
-              {current.result ? 'もう一度診断する（石1個）' : '診断する（石1個）'}
-            </button>
             <button type="button" className="people-danger" onClick={() => handleDelete(current)}>この人の記録を削除</button>
             <button type="button" className="home-panel-close" onClick={() => { reload(); setView('list'); }}>戻る</button>
           </>
