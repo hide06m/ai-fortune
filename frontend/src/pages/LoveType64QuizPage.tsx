@@ -40,6 +40,8 @@ export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType
   // 次のページに進んだら、上に戻す
   useEffect(() => {
     // 描画が終わってから、先頭を画面の上に出す（スクロールできる親が、どれでも効く）
+    // ボタンに触れたままだと、ブラウザが、そのボタンを見える位置に戻してしまうことがあるため、外す
+    (document.activeElement as HTMLElement | null)?.blur?.();
     const toTop = () => {
       document.querySelector('.mbti-quiz')?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });

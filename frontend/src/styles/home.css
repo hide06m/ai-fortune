@@ -302,3 +302,6 @@
 .invite-details { margin: 8px 0; font-size: 0.82rem; opacity: 0.9; }
 .invite-details summary { cursor: pointer; opacity: 0.9; }
 .invite-details ul { margin: 6px 0 0; padding-left: 1.2em; display: block; list-style: disc; line-height: 1.6; }
+
+/* ページを切り替えたときに、ブラウザが、スクロール位置を勝手に補正しないようにする */
+.invite-page, .mbti-quiz, html, body { overflow-anchor: none; }

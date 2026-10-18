@@ -60,6 +60,8 @@ export function InvitePage({ token }: { token: string }) {
 
   // ページ（質問の次の6問・画面の切り替え）が変わったら、上に戻す
   useEffect(() => {
+    // ボタンに触れたままだと、ブラウザが、そのボタンを見える位置に戻してしまうことがあるため、外す
+    (document.activeElement as HTMLElement | null)?.blur?.();
     const toTop = () => {
       document.querySelector('.invite-page')?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
