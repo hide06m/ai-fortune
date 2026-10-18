@@ -53,6 +53,7 @@ import { pickCharacterIntro, pickGiftGreeting, DAILY_BONUS_LINES, type IntroLine
 import { CHARACTER_VISUAL } from './data/characterVisuals'
 import { BirthDateInput } from './components/BirthDateInput'
 import { CrossfadeImage } from './components/CrossfadeImage'
+import { NightFx } from './components/NightFx'
 import { CounselingScene, type CounselingValues } from './components/CounselingScene'
 import { submitMBTIQuizReuseLatest } from './api/mbti'
 import { submitSeimei } from './api/seimei'
@@ -1168,6 +1169,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
             <div className="landing-stage landing-stage-bg">
               <img src={night ? '/assets/indexNight001.jpg' : '/assets/index001.jpg'} alt="" className="landing-bg-image" draggable={false} />
+              {night && <NightFx />}
             </div>
             {/* 背景ビデオ（昼の木漏れ日。夜は出さない） */}
             {!night && <video

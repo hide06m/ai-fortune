@@ -1728,3 +1728,43 @@ h1 {
   .result-section.frame-moon { border-width: 26px; border-image-width: 26px; margin: -8px; }
   .result-section.frame-leaf { border-width: 22px; border-image-width: 22px; margin: -6px; }
 }
+
+/* 夜のトップページの演出：舞う光の点と、地面の草花の明滅（背景画像と同じ大きさのステージに重ねる） */
+.night-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.night-glow {
+  position: absolute;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--c), 0.55) 0%, rgba(var(--c), 0.18) 40%, rgba(var(--c), 0) 70%);
+  mix-blend-mode: screen;
+  opacity: 0.35;
+  animation: nightGlowPulse 4s ease-in-out infinite;
+}
+@keyframes nightGlowPulse {
+  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 0.75; transform: translate(-50%, -50%) scale(1.12); }
+}
+.night-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--c), 1) 0%, rgba(var(--c), 0.5) 45%, rgba(var(--c), 0) 75%);
+  box-shadow: 0 0 8px 2px rgba(var(--c), 0.45);
+  opacity: 0;
+  animation: nightMoteFloat 14s ease-in-out infinite;
+}
+@keyframes nightMoteFloat {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: 0.9; }
+  50% { opacity: 0.45; transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5)); }
+  85% { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .night-glow, .night-mote { animation: none; opacity: 0.3; }
+}

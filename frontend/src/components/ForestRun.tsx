@@ -124,7 +124,7 @@ const IMAGE_NAMES = [
   'musubi_sad_front',
   'runbg_sky',
   'runbg_far',
-  'runbg_mid2',
+  'runbg_mid2_loop',
   'runbg_near',
   'run_ground',
   'run_start_sign',
@@ -232,6 +232,13 @@ function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: 
     }
     ctx.restore();
   }
+}
+
+/** つなぎ目を混ぜてある絵（_loop）を、反転せずに、そのまま、横に並べる */
+function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
+  if (!img.naturalWidth) return;
+  const start = -(((offset % w) + w) % w);
+  for (let x = start; x < W; x += w) dFull(ctx, img, Math.round(x), y, w + 1, h);
 }
 
 export function ForestRun({ onClose }: { onClose: () => void }) {
@@ -392,9 +399,9 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const d = g.dist;
       const far = imgs['runbg_far'];
       drawLoop(ctx, far, d * 0.12, GY - 360, 700, 700 * (far.naturalHeight / (far.naturalWidth || 1)));
-      const mid = imgs['runbg_mid2'];
+      const mid = imgs['runbg_mid2_loop'];
       const midH = 250;
-      drawLoop(ctx, mid, d * 0.4, GY - midH + 40, midH * (mid.naturalWidth / (mid.naturalHeight || 1)), midH);
+      drawLoopPlain(ctx, mid, d * 0.4, GY - midH + 40, midH * (mid.naturalWidth / (mid.naturalHeight || 1)), midH);
 
       // 看板・目印・ゴールの門
       const world = (wx: number) => wx - d + MUSUBI_X;
