@@ -40,11 +40,21 @@ export function LoveType64QuizPage({ onComplete, onConsult, onCancel }: LoveType
   // 次のページに進んだら、上に戻す
   useEffect(() => {
     // 描画が終わってから、先頭を画面の上に出す（スクロールできる親が、どれでも効く）
-    const id = requestAnimationFrame(() => {
-      document.querySelector('.mbti-quiz')?.scrollIntoView({ block: 'start' });
-      window.scrollTo({ top: 0 });
-    });
-    return () => cancelAnimationFrame(id);
+    const toTop = () => {
+      document.querySelector('.mbti-quiz')?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    // スマホでは、描画やアドレスバーの動きで、最初の1回が無視されることがあるため、少し遅らせて、もう2回やる
+    const id = requestAnimationFrame(toTop);
+    const t1 = window.setTimeout(toTop, 60);
+    const t2 = window.setTimeout(toTop, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [page]);
   const [answers, setAnswers] = useState<Map<number, number>>(new Map());
   const [concern, setConcern] = useState('');

@@ -60,11 +60,21 @@ export function InvitePage({ token }: { token: string }) {
 
   // ページ（質問の次の6問・画面の切り替え）が変わったら、上に戻す
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      document.querySelector('.invite-page')?.scrollIntoView({ block: 'start' });
-      window.scrollTo({ top: 0 });
-    });
-    return () => cancelAnimationFrame(id);
+    const toTop = () => {
+      document.querySelector('.invite-page')?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    // スマホでは、描画やアドレスバーの動きで、最初の1回が無視されることがあるため、少し遅らせて、もう2回やる
+    const id = requestAnimationFrame(toTop);
+    const t1 = window.setTimeout(toTop, 60);
+    const t2 = window.setTimeout(toTop, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [page, step]);
 
   const submit = async (body: { answers?: { id: number; val: number }[]; pickedType?: string }) => {
