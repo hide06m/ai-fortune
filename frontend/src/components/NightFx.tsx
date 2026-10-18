@@ -41,10 +41,10 @@ export function NightFx() {
   // 光の点：位置・速さ・ゆれ方を、最初に1回だけ、ランダムに決める
   const motes = useMemo<Mote[]>(
     () =>
-      Array.from({ length: 34 }, (_, i) => ({
+      Array.from({ length: 48 }, (_, i) => ({
         x: Math.random() * 100,
         y: 18 + Math.random() * 78,
-        size: 3 + Math.random() * 5,
+        size: 4 + Math.random() * 6,
         dur: 9 + Math.random() * 12,
         delay: -Math.random() * 20,
         dx: (Math.random() - 0.5) * 8,
@@ -63,7 +63,7 @@ export function NightFx() {
           style={{
             left: `${g.x}%`,
             top: `${g.y}%`,
-            width: `${g.r}%`,
+            width: `${g.r * 1.7}%`,
             ['--c' as string]: g.c,
             animationDelay: `${-((i * 1.37) % 5)}s`,
             animationDuration: `${3.6 + (i % 5) * 0.7}s`,

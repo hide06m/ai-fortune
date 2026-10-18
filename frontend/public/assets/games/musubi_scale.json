@@ -1,0 +1,21 @@
+{
+ "musubi_walk_01": 1.1511,
+ "musubi_walk_02": 0.9621,
+ "musubi_walk_03": 0.9719,
+ "musubi_walk_04": 0.9922,
+ "musubi_walk_05": 0.9549,
+ "musubi_walk_06": 1.0026,
+ "musubi_walk_07": 0.9896,
+ "musubi_walk_08": 0.9744,
+ "musubi_walk_09": 1.0,
+ "musubi_walk_10": 1.0,
+ "musubi_walk_11": 0.9744,
+ "musubi_walk_12": 1.0053,
+ "musubi_jump_up_right": 0.9916,
+ "musubi_fall_right": 1.1349,
+ "musubi_land_right": 1.1369,
+ "musubi_hit_right": 1.0468,
+ "musubi_sad_front": 1.1517,
+ "musubi_cheer_front_1": 1.1538,
+ "musubi_idle_right": 1.1369
+}

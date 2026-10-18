@@ -1741,20 +1741,20 @@ h1 {
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--c), 0.55) 0%, rgba(var(--c), 0.18) 40%, rgba(var(--c), 0) 70%);
+  background: radial-gradient(circle, rgba(var(--c), 0.85) 0%, rgba(var(--c), 0.35) 40%, rgba(var(--c), 0) 70%);
   mix-blend-mode: screen;
-  opacity: 0.35;
+  opacity: 0.5;
   animation: nightGlowPulse 4s ease-in-out infinite;
 }
 @keyframes nightGlowPulse {
-  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.9); }
-  50% { opacity: 0.75; transform: translate(-50%, -50%) scale(1.12); }
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
 }
 .night-mote {
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(var(--c), 1) 0%, rgba(var(--c), 0.5) 45%, rgba(var(--c), 0) 75%);
-  box-shadow: 0 0 8px 2px rgba(var(--c), 0.45);
+  box-shadow: 0 0 12px 4px rgba(var(--c), 0.6);
   opacity: 0;
   animation: nightMoteFloat 14s ease-in-out infinite;
 }
@@ -1768,3 +1768,5 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .night-glow, .night-mote { animation: none; opacity: 0.3; }
 }
+
+.landing-fx-stage { z-index: 3; }

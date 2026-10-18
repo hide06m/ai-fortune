@@ -1169,8 +1169,13 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
             <div className="landing-stage landing-stage-bg">
               <img src={night ? '/assets/indexNight001.jpg' : '/assets/index001.jpg'} alt="" className="landing-bg-image" draggable={false} />
-              {night && <NightFx />}
             </div>
+            {/* 夜の演出（光の点・草花の明滅）。背景を暗くする膜より上に置く */}
+            {night && (
+              <div className="landing-stage landing-fx-stage">
+                <NightFx />
+              </div>
+            )}
             {/* 背景ビデオ（昼の木漏れ日。夜は出さない） */}
             {!night && <video
               className="landing-video"

@@ -125,8 +125,8 @@ const IMAGE_NAMES = [
   'runbg_sky',
   'runbg_far',
   'runbg_mid2_loop',
-  'runbg_near',
-  'run_ground',
+  'runbg_near_loop',
+  'run_ground_loop',
   'run_start_sign',
   'run_goal_gate',
   'ui_run_progress',
@@ -135,6 +135,9 @@ const IMAGE_NAMES = [
 ];
 
 type Images = Record<string, HTMLImageElement>;
+
+/** コマごとの、大きさの倍率（tools/musubi_sizes.py が作る）。頭の大きさを、そろえるため */
+let sizeAdj: Record<string, number> = {};
 
 interface Box {
   sx: number;
@@ -171,6 +174,12 @@ function opaqueBox(img: HTMLImageElement): Box {
 }
 
 function loadImages(): Promise<Images> {
+  fetch(`${BASE}musubi_scale.json`)
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((j) => {
+      sizeAdj = j;
+    })
+    .catch(() => {});
   return Promise.all(
     IMAGE_NAMES.map(
       (name) =>
@@ -238,7 +247,7 @@ function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: 
 function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
   if (!img.naturalWidth) return;
   const start = -(((offset % w) + w) % w);
-  for (let x = start; x < W; x += w) dFull(ctx, img, Math.round(x), y, w + 1, h);
+  for (let x = start; x < W; x += w) dFull(ctx, img, Math.floor(x), y, Math.ceil(w) + 2, h);
 }
 
 export function ForestRun({ onClose }: { onClose: () => void }) {
@@ -443,10 +452,10 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       drawObstacles(false);
 
       // 地面
-      const gr = imgs['run_ground'];
+      const gr = imgs['run_ground_loop'];
       const gh = H - GY + 8;
       const gw = gh * (gr.naturalWidth / (gr.naturalHeight || 1));
-      drawLoop(ctx, gr, d, GY - 4, gw, gh);
+      drawLoopPlain(ctx, gr, d, GY - 4, gw, gh);
 
       drawObstacles(true);
 
@@ -462,7 +471,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       if (mi.naturalWidth) {
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
         // （切り出しの基準は、幅300。高画質版（2倍）でも、同じ大きさになるよう、画像の幅で割る）
-        const sc = name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945;
+        const sc = (name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[name] ?? 1);
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
         const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
@@ -478,9 +487,9 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       drawGateHalf('right');
 
       // 手前の草
-      const near = imgs['runbg_near'];
+      const near = imgs['runbg_near_loop'];
       const nearH = 200;
-      drawLoop(ctx, near, d * 1.25, H - nearH + 20, nearH * (near.naturalWidth / (near.naturalHeight || 1)), nearH);
+      drawLoopPlain(ctx, near, d * 1.25, H - nearH + 20, nearH * (near.naturalWidth / (near.naturalHeight || 1)), nearH);
 
       // 道のり
       const bar = imgs['ui_run_progress'];
