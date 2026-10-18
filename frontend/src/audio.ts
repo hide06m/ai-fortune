@@ -217,17 +217,19 @@ export function playKnock() {
 
 // ドア開く音を再生
 export function playDoorOpen() {
-  // 音の後半（半分から終わりまで）を、ゆっくり小さくする
+  // 音の後ろの5分の1を、切る。フェードアウトは、そのぶん前（全体の3割）から始めて、8割のところで終わる
   for (const h of [doorOpenSound1, doorOpenSound2]) {
     if (!h) continue
     const id = h.play()
     const total = h.duration() * 1000
     if (!total) continue
-    const fadeStart = total * 0.5
+    const fadeStart = total * 0.3
+    const end = total * 0.8
     window.setTimeout(() => {
       const from = BASE_VOLUME.door * seVolume
-      h.fade(from, 0, total - fadeStart, id)
+      h.fade(from, 0, end - fadeStart, id)
     }, fadeStart)
+    window.setTimeout(() => h.stop(id), end)
   }
 }
 

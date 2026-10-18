@@ -11,7 +11,9 @@ from pathlib import Path
 from PIL import Image
 
 GAMES = Path(__file__).resolve().parent.parent / 'frontend' / 'public' / 'assets' / 'games'
-CW, CH = 300, 340
+CW, CH = 300, 380
+BASE = 360  # 足もとの基準線（キャンバスの上から）
+BOB_KEEP = 0.2  # 体の上下のゆれを、残す割合（小さいほど、上下しない）
 
 
 def runs(flags):
@@ -30,7 +32,7 @@ def main():
     W, H = sheet.size
     a = sheet.split()[-1].point(lambda v: 255 if v > 128 else 0)
     rows = runs([a.crop((0, y, W, y + 1)).getbbox() is not None for y in range(H)])
-    n = 0
+    frames = []
     for (y0, y1) in rows:
         band = a.crop((0, y0, W, y1))
         cols = runs([band.crop((x, 0, x + 1, y1 - y0)).getbbox() is not None for x in range(W)])
@@ -58,12 +60,18 @@ def main():
                         xs += xx
                         tot += 1
             cx = xs / tot if tot else fw / 2
-            canvas = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
-            ox = int(round(CW / 2 - cx))
-            canvas.alpha_composite(frame, (ox, CH - fh))
-            n += 1
-            canvas.save(GAMES / f'musubi_walk_{n:02d}.png')
-    print(f'{n} frames -> musubi_walk_01..{n:02d}')
+            frames.append((frame, cx))
+
+    # 体の上下のゆれが大きすぎるので、頭の高さを、平均に近づける（足の高さは、そのぶん、動く）
+    tops = [BASE - f.size[1] for f, _ in frames]
+    mean_top = sum(tops) / len(tops)
+    for n, ((frame, cx), top) in enumerate(zip(frames, tops), start=1):
+        target_top = mean_top + (top - mean_top) * BOB_KEEP
+        canvas = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
+        ox = int(round(CW / 2 - cx))
+        canvas.alpha_composite(frame, (ox, int(round(target_top))))
+        canvas.save(GAMES / f'musubi_walk_{n:02d}.png')
+    print(f'{len(frames)} frames -> musubi_walk_01..{len(frames):02d}')
 
 
 if __name__ == '__main__':

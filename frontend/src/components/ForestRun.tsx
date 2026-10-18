@@ -25,6 +25,65 @@ const GROUND_EDGE = 4; // 障害物を切る位置（地面の草の線の、少
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
 
+// 画面の細かさ（スマホは、画面の点が細かいので、2倍で描く）
+const RES = Math.min(2, Math.max(1, Math.ceil(window.devicePixelRatio || 1)));
+
+/**
+ * 画像を、画面に出す大きさまで、段階的に小さくして（半分ずつ）、高画質で縮める。
+ * 元の画像は、大きすぎるので、そのまま縮めて描くと、ざらざらに見える。
+ * 同じ大きさのものは、1回だけ作って、使い回す。
+ */
+const scaledCache = new WeakMap<HTMLImageElement, Map<string, HTMLCanvasElement>>();
+
+function scaled(img: HTMLImageElement, sx: number, sy: number, sw: number, sh: number, dw: number, dh: number): HTMLCanvasElement | HTMLImageElement {
+  const tw = Math.max(1, Math.round(dw * RES));
+  const th = Math.max(1, Math.round(dh * RES));
+  if (!img.naturalWidth) return img;
+  let map = scaledCache.get(img);
+  if (!map) {
+    map = new Map();
+    scaledCache.set(img, map);
+  }
+  const key = `${sx},${sy},${sw},${sh},${tw},${th}`;
+  const hit = map.get(key);
+  if (hit) return hit;
+  // 元の絵から、必要な範囲を切り出す
+  let cur = document.createElement('canvas');
+  cur.width = sw;
+  cur.height = sh;
+  let cx = cur.getContext('2d')!;
+  cx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+  // 半分ずつ、小さくする
+  while (cur.width / 2 >= tw && cur.height / 2 >= th) {
+    const next = document.createElement('canvas');
+    next.width = Math.ceil(cur.width / 2);
+    next.height = Math.ceil(cur.height / 2);
+    cx = next.getContext('2d')!;
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(cur, 0, 0, next.width, next.height);
+    cur = next;
+  }
+  const out = document.createElement('canvas');
+  out.width = tw;
+  out.height = th;
+  cx = out.getContext('2d')!;
+  cx.imageSmoothingQuality = 'high';
+  cx.drawImage(cur, 0, 0, tw, th);
+  map.set(key, out);
+  return out;
+}
+
+/** 画像の一部（sx,sy,sw,sh）を、(x,y) に、大きさ w×h で描く */
+function dI(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sx: number, sy: number, sw: number, sh: number, x: number, y: number, w: number, h: number) {
+  ctx.drawImage(scaled(img, sx, sy, sw, sh, w, h), x, y, w, h);
+}
+
+/** 画像の全体を、(x,y) に、大きさ w×h で描く */
+function dFull(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  if (!img.naturalWidth) return;
+  dI(ctx, img, 0, 0, img.naturalWidth, img.naturalHeight, x, y, w, h);
+}
+
 type Phase = 'ready' | 'playing' | 'paused' | 'clear' | 'miss';
 
 interface ObstacleKind {
@@ -166,9 +225,9 @@ function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: 
     if (flip) {
       ctx.translate(x + w, y);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, 0, 0, w, h);
+      dFull(ctx, img, 0, 0, w, h);
     } else {
-      ctx.drawImage(img, x, y, w, h);
+      dFull(ctx, img, x, y, w, h);
     }
     ctx.restore();
   }
@@ -264,6 +323,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     if (!loaded) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
+    ctx.setTransform(RES, 0, 0, RES, 0, 0);
     const imgs = imagesRef.current!;
     let raf = 0;
     let prev = performance.now();
@@ -323,7 +383,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const sky = imgs['runbg_sky'];
       if (sky.naturalWidth) {
         const s = Math.max(W / sky.naturalWidth, H / sky.naturalHeight);
-        ctx.drawImage(sky, (W - sky.naturalWidth * s) / 2, 0, sky.naturalWidth * s, sky.naturalHeight * s);
+        dFull(ctx, sky, (W - sky.naturalWidth * s) / 2, 0, sky.naturalWidth * s, sky.naturalHeight * s);
       }
       const d = g.dist;
       const far = imgs['runbg_far'];
@@ -346,7 +406,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const w = h * (im.naturalWidth / im.naturalHeight);
         const x = world(wx);
         if (x > W + 50 || x + w < -50) return;
-        ctx.drawImage(im, x, GY - h + 8, w, h);
+        dFull(ctx, im, x, GY - h + 8, w, h);
       };
       drawSprite('run_start_sign', 300, 150);
       // ゴールの門は、左右に半分ずつ。左半分は、ムスビの後ろ（先に描く）、右半分は、ムスビの前（あとで描く）に置いて、くぐり抜けるように見せる
@@ -357,7 +417,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const gx = world(LEVEL_LENGTH) - gw2 / 2; // 門のまん中が、LEVEL_LENGTH
         if (gx > W + 50 || gx + gw2 < -50) return;
         const sw = gate.naturalWidth / 2;
-        ctx.drawImage(gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + 8, gw2 / 2, GATE_H);
+        dI(ctx, gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + 8, gw2 / 2, GATE_H);
       };
       drawGateHalf('left');
 
@@ -374,7 +434,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         ctx.beginPath();
         ctx.rect(0, 0, W, GY + GROUND_EDGE);
         ctx.clip();
-        ctx.drawImage(im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + k.h * k.sink + GROUND_EDGE, k.w, k.h);
+        dI(ctx, im, b.sx, b.sy, b.sw, b.sh, x, GY - k.h + k.h * k.sink + GROUND_EDGE, k.w, k.h);
         ctx.restore();
         ctx.globalAlpha = 1;
       }
@@ -397,8 +457,9 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         if (!blink) {
           // 絵の下の透明な余白を除いて、足もとを、地面に合わせる（空中では、その分、上がる）
           const b = boxes[name];
-          const footY = b ? (b.sy + b.sh) * sc : mh;
-          ctx.drawImage(mi, MUSUBI_X - mw / 2, GY - g.y - footY + MUSUBI_SINK, mw, mh);
+          // 走り（歩き）のコマは、体の上下を、絵の中で、そろえてあるので、足もとの基準線（キャンバスの上から360）で、そろえる
+          const footY = name.startsWith('musubi_walk') ? 360 * sc : b ? (b.sy + b.sh) * sc : mh;
+          dFull(ctx, mi, MUSUBI_X - mw / 2, GY - g.y - footY + MUSUBI_SINK, mw, mh);
         }
       }
 
@@ -416,11 +477,11 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const bh = bw * (bar.naturalHeight / bar.naturalWidth);
         const bx = (W - bw) / 2;
         const by = 26;
-        ctx.drawImage(bar, bx, by, bw, bh);
+        dFull(ctx, bar, bx, by, bw, bh);
         const head = imgs['ui_run_head'];
         const p = Math.min(1, g.dist / LEVEL_LENGTH);
         const hs = 42;
-        if (head.naturalWidth) ctx.drawImage(head, bx + bw * 0.1 + bw * 0.8 * p - hs / 2, by + bh / 2 - hs / 2, hs, hs);
+        if (head.naturalWidth) dFull(ctx, head, bx + bw * 0.1 + bw * 0.8 * p - hs / 2, by + bh / 2 - hs / 2, hs, hs);
       }
       // 残りのハート
       ctx.font = '30px sans-serif';
@@ -444,7 +505,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
   return (
     <div className="run-backdrop">
       <div className="run-stage" onPointerDown={jump}>
-        <canvas ref={canvasRef} width={W} height={H} className="run-canvas" />
+        <canvas ref={canvasRef} width={W * RES} height={H * RES} className="run-canvas" />
 
         {!loaded && <div className="run-overlay">読み込んでいます…</div>}
 
