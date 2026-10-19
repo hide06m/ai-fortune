@@ -789,15 +789,19 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
 
         {phase === 'paused' && (
           <div className="run-overlay">
-            <p>一時停止中</p>
+            <div className="run-panel">
+            <p className="run-panel-title">一時停止中</p>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}><span className="run-btn-label">つづける</span></button>
+            </div>
           </div>
         )}
 
         {(phase === 'clear' || phase === 'miss') && (
           <div className="run-overlay">
-            <p className="run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
+            <div className="run-panel">
+            <p className="run-panel-title run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
+            </div>
           </div>
         )}
 

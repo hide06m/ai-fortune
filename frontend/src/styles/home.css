@@ -451,3 +451,63 @@
 
 /* カウントダウンの数字：落ち着いた、クリーム色 */
 .run-count { color: #fbf3da; text-shadow: 0 3px 10px rgba(30, 20, 8, 0.75); }
+
+/* ───── 森ランの、ボタン・板・パネル：描いてもらった、木と苔の絵を使う ───── */
+.run-btn,
+.run-difficulty button.run-btn,
+.run-difficulty button.run-btn.is-on {
+  aspect-ratio: 2640 / 1059;
+  min-height: 0;
+  padding: 11% 9% 5%;
+  border: none;
+  border-radius: 0;
+  background: url('/assets/games/ui_wood_btn.png') center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.run-btn.is-on, .run-difficulty button.run-btn.is-on {
+  aspect-ratio: 2695 / 1100;
+  background: url('/assets/games/ui_wood_btn_on.png') center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+.run-btn:active, .run-difficulty button.run-btn:active {
+  background: url('/assets/games/ui_wood_btn_pressed.png') center / 100% 100% no-repeat;
+  transform: translateY(1px);
+}
+.run-btn .run-btn-label { font-size: 1.02rem; }
+.run-btn-wide { width: min(64%, 250px); }
+.run-btn-wide .run-btn-label { font-size: 1.15rem; }
+
+.run-start-banner {
+  width: min(58%, 230px);
+  aspect-ratio: 2651 / 1328;
+  padding: 12% 8% 4%;
+  border: none;
+  border-radius: 0;
+  background: url('/assets/games/ui_wood_start.png') center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+  font-size: 1.12rem;
+}
+
+/* ゴール・ざんねん・一時停止：木のパネルの中に、文字とボタン */
+.run-panel {
+  width: min(88%, 380px);
+  aspect-ratio: 2700 / 1476;
+  background: url('/assets/games/ui_wood_panel.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  padding: 10% 10% 8%;
+  box-sizing: border-box;
+}
+.run-panel .run-btn-wide { width: 62%; }
+.run-panel-title { margin: 0; font-size: 1.7rem; font-weight: 800; color: #fbf3da; text-shadow: 0 2px 5px rgba(30, 20, 8, 0.85); }
+.run-panel .run-result { font-size: 2rem; color: #fbf3da; }
