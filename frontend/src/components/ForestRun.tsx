@@ -11,7 +11,6 @@ const GY = 730; // 走る面（地面の上の縁）
 const BASE = '/assets/games/';
 
 // 世界の長さ（px）と速さ（px/秒）
-const LEVEL_LENGTH = 9000;
 const SPEED = 300;
 
 // ムスビ
@@ -85,12 +84,35 @@ function dFull(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
   dI(ctx, img, 0, 0, img.naturalWidth, img.naturalHeight, x, y, w, h);
 }
 
-type Difficulty = 'easy' | 'normal';
+type Difficulty = 'easy' | 'normal' | 'hard' | 'extra';
+
+/** 難易度ごとの設定 */
+interface DifficultyConfig {
+  label: string;
+  sub: string;
+  length: number; // コースの長さ（px）。約300px/秒
+  birds: string[]; // とんでくる鳥の種類（空なら、鳥なし）
+  birdStart: number;
+  birdGap: [number, number]; // 鳥と鳥の間隔
+  groundGap: [number, number]; // 地面の障害物の間隔（絵の幅を足す前）
+  bigWeight: number; // 大きい障害物（丸太・高い切り株・高い石）が出る割合
+  randomColor: boolean; // 鳥の色を、ランダムにする（高さと、色が、結びつかない）
+  clearRadius: number; // 鳥の前後で、地面の障害物を、取りのぞく範囲
+}
+const DIFFS: Record<Difficulty, DifficultyConfig> = {
+  easy: { label: 'かんたん', sub: '地面の障害物だけ・短め', length: 6000, birds: [], birdStart: 0, birdGap: [0, 0], groundGap: [400, 300], bigWeight: 0.12, randomColor: false, clearRadius: 0 },
+  normal: { label: 'ふつう', sub: '高い空の鳥が出る', length: 9000, birds: ['fly_high'], birdStart: 2000, birdGap: [1900, 800], groundGap: [360, 260], bigWeight: 0.22, randomColor: false, clearRadius: 400 },
+  hard: { label: 'むずかしい', sub: '低い空の鳥も出る・長め', length: 12000, birds: ['fly_high', 'fly_low'], birdStart: 1800, birdGap: [1500, 800], groundGap: [340, 240], bigWeight: 0.3, randomColor: false, clearRadius: 360 },
+  extra: { label: 'エクストラ', sub: '鳥の色がバラバラ・大きな障害物が多い・いちばん長い', length: 15000, birds: ['fly_high', 'fly_low'], birdStart: 1600, birdGap: [1150, 700], groundGap: [300, 200], bigWeight: 0.5, randomColor: true, clearRadius: 300 },
+};
+const DIFF_ORDER: Difficulty[] = ['easy', 'normal', 'hard', 'extra'];
+const BIG_KINDS = ['log', 'stump_l', 'rock_l'];
 const DIFFICULTY_KEY = 'forestRun.difficulty';
 
 function loadDifficulty(): Difficulty {
   try {
-    return localStorage.getItem(DIFFICULTY_KEY) === 'normal' ? 'normal' : 'easy';
+    const v = localStorage.getItem(DIFFICULTY_KEY) as Difficulty | null;
+    return v && v in DIFFS ? v : 'easy';
   } catch {
     return 'easy';
   }
@@ -133,13 +155,11 @@ interface FlyerKind {
   hb0: number; // 当たり判定の下端（絵の高さに対する割合。下から）
   hb1: number; // 当たり判定の上端（同上）。羽は、判定に入れない
   speed: number; // 画面に入ってから、こちらへ向かってくる速さ（px/秒）
-  tone: 'low' | 'high';
 }
 const FLYERS: Record<string, FlyerKind> = {
-  fly_low: { alt: 6, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 150, tone: 'low' },
-  fly_high: { alt: 118, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 110, tone: 'high' },
+  fly_low: { alt: 6, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 150 },
+  fly_high: { alt: 118, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 110 },
 };
-const FLYER_KEYS = Object.keys(FLYERS);
 const BIRD_FRAMES = 4;
 
 const RUN_FRAMES = Array.from({ length: 12 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
@@ -163,6 +183,7 @@ const IMAGE_NAMES = [
   'ui_run_head',
   ...Object.values(KINDS).map((k) => k.img),
   ...Array.from({ length: BIRD_FRAMES }, (_, i) => `run_bird_${i + 1}`),
+  ...Array.from({ length: BIRD_FRAMES }, (_, i) => `run_bird_red_${i + 1}`),
 ];
 
 type Images = Record<string, HTMLImageElement>;
@@ -240,35 +261,44 @@ interface Obstacle {
   kind: string;
   x: number; // 世界の座標（左端）
   hit: boolean;
+  tone?: 'blue' | 'red'; // 鳥の色
 }
 
-function buildCourse(withBirds: boolean): Obstacle[] {
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildCourse(diff: Difficulty): Obstacle[] {
+  const cfg = DIFFS[diff];
   const list: Obstacle[] = [];
+  const common = KIND_KEYS.filter((k) => !BIG_KINDS.includes(k));
   let x = 900; // スタート看板から少し走ってから
   let last = '';
-  while (x < LEVEL_LENGTH - 700) {
-    let kind = KIND_KEYS[Math.floor(Math.random() * KIND_KEYS.length)];
-    if (kind === last) kind = KIND_KEYS[(KIND_KEYS.indexOf(kind) + 1) % KIND_KEYS.length];
+  for (let guard = 0; x < cfg.length - 700 && guard < 400; guard++) {
+    let kind = Math.random() < cfg.bigWeight ? pick(BIG_KINDS) : pick(common);
+    if (kind === last) kind = kind === common[0] ? common[1] : common[0];
     last = kind;
     list.push({ kind, x, hit: false });
-    // 次までの間隔：大きい障害物の後は、広めにあける
-    x += 360 + Math.random() * 260 + KINDS[kind].w;
+    // 次までの間隔
+    x += cfg.groundGap[0] + Math.random() * cfg.groundGap[1] + KINDS[kind].w;
   }
-  if (!withBirds) return list;
+  if (cfg.birds.length === 0) return list;
   // 空を飛ぶ障害物：一定の間隔で、置く。その前後 420px にある、地面の障害物は、取りのぞく
   // （ジャンプしたい場面と、ジャンプしたくない場面が、重ならないように）
-  let fx = 1700;
+  let fx = cfg.birdStart;
   let lastFly = '';
-  while (fx < LEVEL_LENGTH - 900) {
+  for (let guard = 0; fx < cfg.length - 900 && guard < 200; guard++) {
     for (let i = list.length - 1; i >= 0; i--) {
       const o = list[i];
-      if (!FLYERS[o.kind] && Math.abs(o.x + KINDS[o.kind].w / 2 - fx) < 420) list.splice(i, 1);
+      if (!FLYERS[o.kind] && Math.abs(o.x + KINDS[o.kind].w / 2 - (fx - 140)) < cfg.clearRadius) list.splice(i, 1); // 鳥は、画面に入ってから、約140px 手前へ、すすむ
     }
-    let kind = FLYER_KEYS[Math.floor(Math.random() * FLYER_KEYS.length)];
-    if (kind === lastFly && Math.random() < 0.6) kind = FLYER_KEYS.find((k) => k !== kind) ?? kind;
+    let kind = pick(cfg.birds);
+    if (cfg.birds.length > 1 && kind === lastFly && Math.random() < 0.6) kind = cfg.birds.find((k) => k !== kind) ?? kind;
     lastFly = kind;
-    list.push({ kind, x: fx, hit: false });
-    fx += 1100 + Math.random() * 700;
+    // 鳥の色：ふだんは青。エクストラは、高さと関係なく、ランダム（赤茶の鳥が上に、青の鳥が下に、来ることもある）
+    const tone: 'blue' | 'red' = cfg.randomColor ? pick(['blue', 'red'] as const) : 'blue';
+    list.push({ kind, x: fx, hit: false, tone });
+    fx += cfg.birdGap[0] + Math.random() * cfg.birdGap[1];
   }
   list.sort((a, b) => a.x - b.x);
   return list;
@@ -313,7 +343,7 @@ function drawPlaceholderBird(ctx: CanvasRenderingContext2D, cx: number, cy: numb
 function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
   if (!img.naturalWidth) return;
   const start = -(((offset % (w * 2)) + w * 2) % (w * 2));
-  for (let i = 0; start + i * w < W + w; i++) {
+  for (let i = 0; start + i * w < W + w && i < 40; i++) {
     const x = start + i * w;
     const flip = i % 2 === 1;
     ctx.save();
@@ -332,7 +362,7 @@ function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: 
 function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
   if (!img.naturalWidth) return;
   const start = -(((offset % w) + w) % w);
-  for (let x = start; x < W; x += w) dFull(ctx, img, Math.floor(x), y, Math.ceil(w) + 2, h);
+  for (let x = start, n = 0; x < W && n < 40; x += w, n++) dFull(ctx, img, Math.floor(x), y, Math.ceil(w) + 2, h);
 }
 
 export function ForestRun({ onClose }: { onClose: () => void }) {
@@ -354,7 +384,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     invuln: 0,
     hitTimer: 0,
     lives: LIVES,
-    obstacles: buildCourse(loadDifficulty() === 'normal'),
+    obstacles: buildCourse(loadDifficulty()),
+    length: DIFFS[loadDifficulty()].length,
     time: 0,
     dying: false,
   });
@@ -374,7 +405,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.invuln = 0;
     g.hitTimer = 0;
     g.lives = LIVES;
-    g.obstacles = buildCourse(difficultyRef.current === 'normal');
+    g.obstacles = buildCourse(difficultyRef.current);
+    g.length = DIFFS[difficultyRef.current].length;
     g.time = 0;
     g.dying = false;
     setLives(LIVES);
@@ -383,7 +415,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
   const chooseDifficulty = useCallback((d: Difficulty) => {
     difficultyRef.current = d;
     setDifficulty(d);
-    game.current.obstacles = buildCourse(d === 'normal');
+    game.current.obstacles = buildCourse(d);
+    game.current.length = DIFFS[d].length;
     try {
       localStorage.setItem(DIFFICULTY_KEY, d);
     } catch {
@@ -445,7 +478,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     let raf = 0;
     let prev = performance.now();
 
-    const frame = (now: number) => {
+    const frameBody = (now: number) => {
       const dt = Math.min((now - prev) / 1000, 0.05);
       prev = now;
       const g = game.current;
@@ -512,7 +545,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         }
         // ゴール：門のまん中がムスビの位置に来たあと、門をくぐり抜けてから、クリアにする
         // （空中でゴールしたときは、着地してから、クリアにする）
-        if (g.dist >= LEVEL_LENGTH + GATE_PASS && g.onGround) changePhase('clear');
+        if (g.dist >= g.length + GATE_PASS && g.onGround) changePhase('clear');
       }
 
       // ───── 描く ─────
@@ -545,7 +578,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const drawGateHalf = (half: 'left' | 'right') => {
         if (!gate.naturalWidth) return;
         const gw2 = GATE_H * (gate.naturalWidth / gate.naturalHeight);
-        const gx = world(LEVEL_LENGTH) - gw2 / 2; // 門のまん中が、LEVEL_LENGTH
+        const gx = world(g.length) - gw2 / 2; // 門のまん中が、コースの終わり
         if (gx > W + 50 || gx + gw2 < -50) return;
         const sw = gate.naturalWidth / 2;
         dI(ctx, gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + 8, gw2 / 2, GATE_H);
@@ -613,12 +646,12 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const bob = Math.sin(g.time * 7 + o.x * 0.01) * 3;
         const y = GY - fk.alt - fk.h + bob;
         const frameNo = (Math.floor(g.time * 10) + Math.floor(o.x / 50)) % BIRD_FRAMES;
-        const bird = imgs[`run_bird_${frameNo + 1}`];
+        const bird = imgs[`${o.tone === 'red' ? 'run_bird_red_' : 'run_bird_'}${frameNo + 1}`];
         ctx.globalAlpha = o.hit ? 0.5 : 1;
         if (bird && bird.naturalWidth) {
           dFull(ctx, bird, x, y, fk.w, fk.h);
         } else {
-          drawPlaceholderBird(ctx, x + fk.w / 2, y + fk.h / 2, fk.w, fk.h, fk.tone, frameNo);
+          drawPlaceholderBird(ctx, x + fk.w / 2, y + fk.h / 2, fk.w, fk.h, o.tone === 'red' ? 'low' : 'high', frameNo);
         }
         ctx.globalAlpha = 1;
       }
@@ -639,7 +672,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const by = 26;
         dFull(ctx, bar, bx, by, bw, bh);
         const head = imgs['ui_run_head'];
-        const p = Math.min(1, g.dist / LEVEL_LENGTH);
+        const p = Math.min(1, g.dist / g.length);
         const hs = 42;
         if (head.naturalWidth) dFull(ctx, head, bx + bw * 0.1 + bw * 0.8 * p - hs / 2, by + bh / 2 - hs / 2, hs, hs);
       }
@@ -651,6 +684,16 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         ctx.fillText('♥', 24 + i * 34, 112);
       }
 
+    };
+    // 1コマの描画で、エラーが起きても、ゲームが止まらないようにする（止まると、画面が固まって見える）
+    let errorShown = false;
+    const frame = (now: number) => {
+      try {
+        frameBody(now);
+      } catch (e) {
+        if (!errorShown) console.error('[ForestRun] frame error', e);
+        errorShown = true;
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -674,12 +717,12 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             <p>タップで、ジャンプ</p>
             <small>（スペース・↑キーでも）</small>
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
-              <button type="button" className={difficulty === 'easy' ? 'is-on' : ''} onClick={() => chooseDifficulty('easy')}>
-                かんたん
-              </button>
-              <button type="button" className={difficulty === 'normal' ? 'is-on' : ''} onClick={() => chooseDifficulty('normal')}>
-                ふつう<small>鳥がとんでくる</small>
-              </button>
+              {DIFF_ORDER.map((d) => (
+                <button key={d} type="button" className={difficulty === d ? 'is-on' : ''} onClick={() => chooseDifficulty(d)}>
+                  {DIFFS[d].label}
+                  <small>{DIFFS[d].sub}</small>
+                </button>
+              ))}
             </div>
             <p className="run-start">タップで、スタート</p>
           </div>

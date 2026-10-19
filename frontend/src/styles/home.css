@@ -321,7 +321,7 @@
 .run-top-buttons .run-close { padding: 0.35rem 0.7rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.6); background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 0.85rem; }
 .run-lives-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.run-difficulty { display: flex; gap: 10px; margin: 6px 0 4px; }
-.run-difficulty button { min-width: 112px; padding: 0.55rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.run-difficulty { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 4px; width: min(86%, 360px); }
+.run-difficulty button { min-width: 0; padding: 0.55rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .run-difficulty button small { font-size: 0.7rem; opacity: 0.85; }
 .run-difficulty button.is-on { border-color: #ffd166; background: rgba(110, 70, 190, 0.85); }

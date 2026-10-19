@@ -3,7 +3,7 @@
 - ゲームの中の鳥は、左へ飛ぶので、左右を反転して書き出す（シートの鳥は右向き）
 - 各コマは、同じ大きさのキャンバスに、足もとを下にそろえ、体の中心を横にそろえて置く
 出力: frontend/public/assets/games/run_bird_1.png … run_bird_4.png
-使い方: python tools/process_game_assets.py のあとに、python tools/split_bird_sheet.py [シート名=run_bird_high_sheet]
+使い方: python tools/process_game_assets.py のあとに、python tools/split_bird_sheet.py [シート名=run_bird_high_sheet] [出力の名前の頭=run_bird_]
 """
 import sys
 from pathlib import Path
@@ -26,6 +26,7 @@ def runs(flags):
 
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else 'run_bird_high_sheet'
+    prefix = sys.argv[2] if len(sys.argv) > 2 else 'run_bird_'  # 出力の名前の頭（赤茶は run_bird_red_）
     sheet = Image.open(GAMES / f'{name}.png').convert('RGBA')
     W, H = sheet.size
     a = sheet.split()[-1].point(lambda v: 255 if v > 128 else 0)
@@ -58,8 +59,8 @@ def main():
         canvas = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
         canvas.alpha_composite(f, (int(round(left - c)), ch - f.size[1]))
         canvas = canvas.transpose(Image.FLIP_LEFT_RIGHT)  # 左向きにする
-        canvas.save(GAMES / f'run_bird_{i}.png')
-    print(f'4 frames -> run_bird_1..4 ({cw}x{ch}) from {name}')
+        canvas.save(GAMES / f'{prefix}{i}.png')
+    print(f'4 frames -> {prefix}1..4 ({cw}x{ch}) from {name}')
     return 0
 
 
