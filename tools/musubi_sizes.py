@@ -13,7 +13,7 @@ from PIL import Image
 
 GAMES = Path(__file__).resolve().parent.parent / 'frontend' / 'public' / 'assets' / 'games'
 MUSUBI_H = 132
-WALK = [f'musubi_walk_{i:02d}' for i in range(1, 13)]
+WALK = [p.stem for p in sorted(GAMES.glob('musubi_walk_*.png'))]
 POSES = ['musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_sad_front', 'musubi_cheer_front_1', 'musubi_idle_right']
 
 

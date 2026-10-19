@@ -13,7 +13,7 @@ const MUSUBI_H = 132;
 const MUSUBI_SINK = 12;
 const FACE_DX = 26;
 const CATCH_HALF = 62; // 受けとめられる、横の幅（ムスビの中心から）
-const RUN_FRAMES = Array.from({ length: 12 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
+const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 
 interface Conf {
   target: number; // 集める点数
@@ -216,7 +216,7 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
   if (info.phase === 'clear') name = 'musubi_cheer_front_1';
   else if (info.phase === 'miss') name = 'musubi_sad_front';
   else if (s.hitTimer > 0) name = 'musubi_hit_right';
-  else name = RUN_FRAMES[Math.floor(s.moving ? s.anim * 14 : 0) % RUN_FRAMES.length];
+  else name = RUN_FRAMES[Math.floor(s.moving ? s.anim * 10 : 0) % RUN_FRAMES.length];
   const mi = imgs[name];
   if (mi && mi.naturalWidth) {
     const isWalk = name.startsWith('musubi_walk');

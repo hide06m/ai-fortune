@@ -1,63 +1,31 @@
 {
  "musubi_walk_01": {
-  "a": 1.005,
-  "fx": 0.6301
+  "a": 0.9934,
+  "fx": 0.6364
  },
  "musubi_walk_02": {
-  "a": 0.995,
-  "fx": 0.643
+  "a": 1.0,
+  "fx": 0.6707
  },
  "musubi_walk_03": {
   "a": 1.0,
-  "fx": 0.6402
+  "fx": 0.6375
  },
  "musubi_walk_04": {
   "a": 1.0,
-  "fx": 0.6329
- },
- "musubi_walk_05": {
-  "a": 1.0,
-  "fx": 0.6405
- },
- "musubi_walk_06": {
-  "a": 1.0,
-  "fx": 0.634
- },
- "musubi_walk_07": {
-  "a": 1.0,
-  "fx": 0.6303
- },
- "musubi_walk_08": {
-  "a": 1.0,
-  "fx": 0.6356
- },
- "musubi_walk_09": {
-  "a": 1.0,
-  "fx": 0.633
- },
- "musubi_walk_10": {
-  "a": 1.0,
-  "fx": 0.6293
- },
- "musubi_walk_11": {
-  "a": 1.0,
-  "fx": 0.6334
- },
- "musubi_walk_12": {
-  "a": 1.0,
-  "fx": 0.6314
+  "fx": 0.6445
  },
  "musubi_jump_up_right": {
   "a": 0.95,
-  "fx": 0.6848
+  "fx": 0.6852
  },
  "musubi_fall_right": {
   "a": 0.9727,
-  "fx": 0.6652
+  "fx": 0.6655
  },
  "musubi_land_right": {
   "a": 0.9528,
-  "fx": 0.67
+  "fx": 0.6703
  },
  "musubi_hit_right": {
   "a": 0.9231,
@@ -73,6 +41,6 @@
  },
  "musubi_idle_right": {
   "a": 0.9756,
-  "fx": 0.717
+  "fx": 0.7172
  }
 }

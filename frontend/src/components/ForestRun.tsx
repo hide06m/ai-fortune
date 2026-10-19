@@ -124,7 +124,7 @@ const FLYERS: Record<string, FlyerKind> = {
 };
 const BIRD_FRAMES = 4;
 
-const RUN_FRAMES = Array.from({ length: 12 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
+const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
   ...RUN_FRAMES,
@@ -597,7 +597,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
       else if (g.hitTimer > 0) name = 'musubi_hit_right';
       else if (!g.onGround) name = g.vy < 0 ? 'musubi_jump_up_right' : 'musubi_fall_right';
       else if (g.landTimer > 0) name = 'musubi_land_right';
-      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 13 * (g.speed / 300)) % RUN_FRAMES.length];
+      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 9 * (g.speed / 300)) % RUN_FRAMES.length];
       const mi = imgs[name];
       if (mi.naturalWidth) {
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
