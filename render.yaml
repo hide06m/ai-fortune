@@ -11,7 +11,8 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: npm install && npm run build
+    # NODE_ENV=production だと、開発用パッケージ（typescript など）が入らず、tsc が失敗するので、--include=dev を付ける
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
