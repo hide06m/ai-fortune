@@ -227,13 +227,26 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
     };
   }, [onClose, startCountdown, restart, chooseDifficulty]);
 
-  // タッチ・マウス：画面の中の、横の位置を、ゲームに伝える
+  // タッチ・マウス：押している（さわっている）間だけ、その横の位置へ動く。はなしたら止まる（キーでも動かせる）
+  const pressed = useRef(false);
   const updatePointer = (e: React.PointerEvent) => {
     const el = stageRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     input.current.pointerX = Math.max(0, Math.min(W, ((e.clientX - r.left) / r.width) * W));
   };
+  useEffect(() => {
+    const release = () => {
+      pressed.current = false;
+      input.current.pointerX = null;
+    };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    return () => {
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+    };
+  }, []);
 
   // ゲームのループ
   useEffect(() => {
@@ -341,10 +354,13 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
         className="run-stage"
         ref={stageRef}
         onPointerDown={(e) => {
+          pressed.current = true;
           updatePointer(e);
           if (phaseRef.current === 'ready') startCountdown();
         }}
-        onPointerMove={updatePointer}
+        onPointerMove={(e) => {
+          if (pressed.current) updatePointer(e);
+        }}
       >
         <canvas ref={canvasRef} width={W * RES} height={H * RES} className="run-canvas" />
 

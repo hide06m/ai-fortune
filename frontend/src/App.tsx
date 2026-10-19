@@ -1178,6 +1178,10 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     return (
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <div className={`landing-container${night ? ' landing-night' : ''}`}>
+          <div className="legal-links">
+            <a href="/terms">利用規約</a>
+            <a href="/privacy">プライバシーポリシー</a>
+          </div>
           <div className="landing-bg">
             {/* 背景画像。ドアのボタンと同じ寸法の式（landing-stage）で置くので、どの画面・ブラウザでもドアとボタンの位置が一致する */}
             <div className="landing-stage landing-stage-bg">
@@ -2443,7 +2447,7 @@ function MiniGameHost() {
         <div className="run-overlay">
           <div className="run-panel">
             <p className="run-panel-title">ミニゲーム</p>
-            <div className="run-panel-buttons" style={{ flexDirection: 'column' }}>
+            <div className="run-panel-buttons run-panel-column">
               {MINIGAMES.map((m) => (
                 <button key={m.id} type="button" className="run-btn run-btn-wide" onClick={() => setGame(m.id)}>
                   <span className="run-btn-label">{m.name}</span>

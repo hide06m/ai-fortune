@@ -645,3 +645,12 @@
   text-shadow: 0 1px 0 rgba(255, 236, 196, 0.65), 0 -1px 0 rgba(15, 6, 0, 0.55);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
 }
+
+/* ミニゲーム選択：ボタンを縦にならべ、長いゲーム名も、板の中に、おさめる */
+.run-panel-buttons.run-panel-column { flex-direction: column; align-items: center; gap: 6px; }
+.run-panel-buttons.run-panel-column .run-btn-wide { width: 78%; padding: 7% 8% 4.5%; }
+.run-panel-buttons.run-panel-column .run-btn-label { white-space: nowrap; font-size: 0.92rem; letter-spacing: 0; }
+
+/* トップ画面の下に、利用規約・プライバシーポリシーへのリンク（Googleの審査で、ログイン画面から見える必要がある） */
+.legal-links { position: fixed; left: 0; right: 0; bottom: 8px; z-index: 30; display: flex; justify-content: center; gap: 18px; font-size: 0.78rem; }
+.legal-links a { color: #f4eefc; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-decoration: underline; }

@@ -285,7 +285,7 @@ export const acornCatchSpec: MiniGameSpec<AcornState> = {
   ],
   lives: { easy: 4, normal: 3, hard: 2, extra: 1 },
   hint: '落ちてくる どんぐりを うけとめよう。赤いキノコは さけてね',
-  pcHint: '画面をなぞる ／ ← → キーで うごく',
+  pcHint: 'ゆびを おいた方へ うごく ／ ← → キーでも うごく',
   init,
   update,
   draw: (ctx, s, imgs, info) => draw(ctx, s, imgs, info),
