@@ -85,6 +85,17 @@ function dFull(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
   dI(ctx, img, 0, 0, img.naturalWidth, img.naturalHeight, x, y, w, h);
 }
 
+type Difficulty = 'easy' | 'normal';
+const DIFFICULTY_KEY = 'forestRun.difficulty';
+
+function loadDifficulty(): Difficulty {
+  try {
+    return localStorage.getItem(DIFFICULTY_KEY) === 'normal' ? 'normal' : 'easy';
+  } catch {
+    return 'easy';
+  }
+}
+
 type Phase = 'ready' | 'playing' | 'paused' | 'clear' | 'miss';
 
 interface ObstacleKind {
@@ -116,16 +127,17 @@ const KIND_KEYS = Object.keys(KINDS);
 /** 空を飛んでくる障害物。低空は、ジャンプで、よける。高空は、ジャンプせず、歩いていれば、くぐれる */
 interface FlyerKind {
   alt: number; // 地面から、体の下端までの高さ
-  w: number;
+  w: number; // 絵の読みこみ後に、縦横比から決める
   h: number;
-  hx: number;
-  hy: number;
+  hx: number; // 当たり判定の横幅（絵に対する割合）
+  hb0: number; // 当たり判定の下端（絵の高さに対する割合。下から）
+  hb1: number; // 当たり判定の上端（同上）。羽は、判定に入れない
   speed: number; // 画面に入ってから、こちらへ向かってくる速さ（px/秒）
   tone: 'low' | 'high';
 }
 const FLYERS: Record<string, FlyerKind> = {
-  fly_low: { alt: 6, w: 96, h: 58, hx: 0.7, hy: 0.7, speed: 150, tone: 'low' },
-  fly_high: { alt: 116, w: 88, h: 52, hx: 0.7, hy: 0.7, speed: 110, tone: 'high' },
+  fly_low: { alt: 6, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 150, tone: 'low' },
+  fly_high: { alt: 118, w: 60, h: 70, hx: 0.6, hb0: 0.05, hb1: 0.62, speed: 110, tone: 'high' },
 };
 const FLYER_KEYS = Object.keys(FLYERS);
 const BIRD_FRAMES = 4;
@@ -150,7 +162,7 @@ const IMAGE_NAMES = [
   'ui_run_progress',
   'ui_run_head',
   ...Object.values(KINDS).map((k) => k.img),
-  ...['low', 'high'].flatMap((t) => Array.from({ length: BIRD_FRAMES }, (_, i) => `run_bird_${t}_${i + 1}`)),
+  ...Array.from({ length: BIRD_FRAMES }, (_, i) => `run_bird_${i + 1}`),
 ];
 
 type Images = Record<string, HTMLImageElement>;
@@ -218,6 +230,8 @@ function loadImages(): Promise<Images> {
       k.w = k.h * (b.sw / b.sh);
     }
     for (const n of MUSUBI_NAMES) boxes[n] = opaqueBox(imgs[n]);
+    const b1 = imgs['run_bird_1'];
+    if (b1 && b1.naturalWidth) for (const f of Object.values(FLYERS)) f.w = f.h * (b1.naturalWidth / b1.naturalHeight);
     return imgs;
   });
 }
@@ -228,7 +242,7 @@ interface Obstacle {
   hit: boolean;
 }
 
-function buildCourse(): Obstacle[] {
+function buildCourse(withBirds: boolean): Obstacle[] {
   const list: Obstacle[] = [];
   let x = 900; // スタート看板から少し走ってから
   let last = '';
@@ -240,21 +254,21 @@ function buildCourse(): Obstacle[] {
     // 次までの間隔：大きい障害物の後は、広めにあける
     x += 360 + Math.random() * 260 + KINDS[kind].w;
   }
-  // 空を飛ぶ障害物：地面の障害物の前後 450px 以内には、置かない（ジャンプしたい場面と、重ならないように）
-  const ground = [...list];
+  if (!withBirds) return list;
+  // 空を飛ぶ障害物：一定の間隔で、置く。その前後 420px にある、地面の障害物は、取りのぞく
+  // （ジャンプしたい場面と、ジャンプしたくない場面が、重ならないように）
   let fx = 1700;
   let lastFly = '';
   while (fx < LEVEL_LENGTH - 900) {
-    const clear = ground.every((o) => fx < o.x - 450 || fx > o.x + KINDS[o.kind].w + 450);
-    if (clear) {
-      let kind = FLYER_KEYS[Math.floor(Math.random() * FLYER_KEYS.length)];
-      if (kind === lastFly && Math.random() < 0.6) kind = FLYER_KEYS.find((k) => k !== kind) ?? kind;
-      lastFly = kind;
-      list.push({ kind, x: fx, hit: false });
-      fx += 900 + Math.random() * 700;
-    } else {
-      fx += 120;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const o = list[i];
+      if (!FLYERS[o.kind] && Math.abs(o.x + KINDS[o.kind].w / 2 - fx) < 420) list.splice(i, 1);
     }
+    let kind = FLYER_KEYS[Math.floor(Math.random() * FLYER_KEYS.length)];
+    if (kind === lastFly && Math.random() < 0.6) kind = FLYER_KEYS.find((k) => k !== kind) ?? kind;
+    lastFly = kind;
+    list.push({ kind, x: fx, hit: false });
+    fx += 1100 + Math.random() * 700;
   }
   list.sort((a, b) => a.x - b.x);
   return list;
@@ -328,6 +342,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>('ready');
   const [loaded, setLoaded] = useState(false);
   const [lives, setLives] = useState(LIVES);
+  const [difficulty, setDifficulty] = useState<Difficulty>(loadDifficulty);
+  const difficultyRef = useRef<Difficulty>(difficulty);
 
   const game = useRef({
     dist: 0,
@@ -338,7 +354,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     invuln: 0,
     hitTimer: 0,
     lives: LIVES,
-    obstacles: buildCourse(),
+    obstacles: buildCourse(loadDifficulty() === 'normal'),
     time: 0,
     dying: false,
   });
@@ -358,10 +374,21 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.invuln = 0;
     g.hitTimer = 0;
     g.lives = LIVES;
-    g.obstacles = buildCourse();
+    g.obstacles = buildCourse(difficultyRef.current === 'normal');
     g.time = 0;
     g.dying = false;
     setLives(LIVES);
+  }, []);
+
+  const chooseDifficulty = useCallback((d: Difficulty) => {
+    difficultyRef.current = d;
+    setDifficulty(d);
+    game.current.obstacles = buildCourse(d === 'normal');
+    try {
+      localStorage.setItem(DIFFICULTY_KEY, d);
+    } catch {
+      /* 保存できなくても、遊べる */
+    }
   }, []);
 
   const jump = useCallback(() => {
@@ -457,8 +484,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             if (o.hit) continue;
             const fx0 = o.x + (fk.w * (1 - fk.hx)) / 2;
             const fx1 = o.x + fk.w - (fk.w * (1 - fk.hx)) / 2;
-            const fy0 = fk.alt + (fk.h * (1 - fk.hy)) / 2;
-            const fy1 = fy0 + fk.h * fk.hy;
+            const fy0 = fk.alt + fk.h * fk.hb0;
+            const fy1 = fk.alt + fk.h * fk.hb1;
             if (mx1 > fx0 && mx0 < fx1 && my0 < fy1 && my1 > fy0 && g.invuln <= 0 && !g.dying) {
               o.hit = true;
               g.lives -= 1;
@@ -586,7 +613,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const bob = Math.sin(g.time * 7 + o.x * 0.01) * 3;
         const y = GY - fk.alt - fk.h + bob;
         const frameNo = (Math.floor(g.time * 10) + Math.floor(o.x / 50)) % BIRD_FRAMES;
-        const bird = imgs[`run_bird_${fk.tone}_${frameNo + 1}`];
+        const bird = imgs[`run_bird_${frameNo + 1}`];
         ctx.globalAlpha = o.hit ? 0.5 : 1;
         if (bird && bird.naturalWidth) {
           dFull(ctx, bird, x, y, fk.w, fk.h);
@@ -646,6 +673,14 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           <div className="run-overlay run-overlay-ready">
             <p>タップで、ジャンプ</p>
             <small>（スペース・↑キーでも）</small>
+            <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
+              <button type="button" className={difficulty === 'easy' ? 'is-on' : ''} onClick={() => chooseDifficulty('easy')}>
+                かんたん
+              </button>
+              <button type="button" className={difficulty === 'normal' ? 'is-on' : ''} onClick={() => chooseDifficulty('normal')}>
+                ふつう<small>鳥がとんでくる</small>
+              </button>
+            </div>
             <p className="run-start">タップで、スタート</p>
           </div>
         )}
