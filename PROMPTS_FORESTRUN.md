@@ -426,3 +426,45 @@ OUTPUT: the whole background is flat solid pure blue (#0000FF) with no gradient,
 
 できあがりの確認：①4コマの鳥の大きさ・色・位置が、そろっている ②羽の位置が、上→半分→下→半分、の順 ③コマどうしが、重なっていない
 できたら、`raw` フォルダに、保存名で入れてください（高画質のものがあれば `_2x` を付けて、同じ名前で）。私が、4コマに切り分けて、ゲームに入れます。
+
+## ムスビの走りを、高解像度で作り直す（2026-10-20）
+
+### なぜ粗いか
+今の走りは、**1枚（2752×1536）に12コマ**をまとめて作ったシートから切り出しているので、1コマの体が、約350×430 px しかない。スマホ（画面が3倍）では、ほぼ等倍で、AI画像のやわらかさが、そのまま見えてしまう。
+
+### 作り方：1枚に、**4コマ（2×2）**だけ。3枚（＝12コマ）
+1コマの大きさが、今の約3倍の面積になる。シートは、同じ見本・同じ文で、**3回**作る（A・B・C。コマの内容だけ変える）。
+
+【添付（3回とも）】`musubi_idle_right`（顔・色・服の見本）、`musubi_run_right_1`（絵柄の見本）、**2回目以降は、直前に作ったシートも**（色・絵柄をそろえるため）
+【アスペクト比】**1:1**（できれば、最大の解像度。4K）　【保存名】`musubi_run_sheet_hq1` `_hq2` `_hq3`
+
+**HQ RUN SHEET PROMPT**（`<FRAMES>` を、下の A/B/C に入れかえる）
+```
+Using the attached character as the exact reference (same face, same grey-and-white hamster, same olive-green hooded cloak with the small leaf brooch, same pink hands and feet, same line weight and shading style), draw a 2x2 sprite sheet of 4 frames of a side-view RUN CYCLE facing right. Draw each character LARGE and highly detailed, with crisp clean line art and fine fur and cloak texture, filling most of its cell. Same character size in every cell, with generous empty blue space between and around the cells so that no frame touches another or the border. Reading order: top-left, top-right, bottom-left, bottom-right.
+
+<FRAMES>
+
+Happy expression, mouth slightly open, the same in all frames. Keep exactly the same colors and lighting in all frames, and in all sheets.
+
+OUTPUT: very high resolution. The whole background is flat solid pure blue (#0000FF) with no gradient, no ground line, no shadow, no text, no frame numbers, no border, no watermark. Do not use any blue inside the character.
+```
+
+**A（hq1）**
+```
+1. CONTACT (right foot forward): right heel just touched the ground in front, left leg stretched behind with only the toes on the ground. Left arm forward, right arm back. Body slightly high.
+2. DOWN: body at its lowest, weight on the right leg with the knee bent, left foot lifting off behind. The cloak bulges backward.
+3. PASSING: standing on the right leg, the left leg swings forward under the body with the knee bent. Body at middle height.
+4. UP (airborne): body at its highest, pushed off the right foot, both feet just above the ground, left leg reaching forward. The cloak floats up.
+```
+**B（hq2）**
+```
+1. CONTACT (left foot forward): mirror of CONTACT with the legs and arms swapped: left heel touches the ground in front, right leg stretched behind, right arm forward, left arm back.
+2. DOWN: weight on the left leg with the knee bent, right foot lifting behind.
+3. PASSING: standing on the left leg, the right leg swings forward under the body.
+4. UP (airborne): pushed off the left foot, right leg reaching forward.
+```
+**C（hq3）**：予備（Aの1〜4の、別テイク。気に入らないコマの差しかえ用）。なくてもよい。
+
+### 取りこみ（私がやる）
+`raw/` に入れる → `process_game_assets.py` → `split_run_sheet.py`（`musubi_run_sheet_hq*.png` があれば、それを使う。大きさは自動で決まる。最大3倍）→ `match_musubi_colors.py` → `musubi_sizes.py`。コマの順は、シートの順（hq1 → hq2 → hq3）。
+※ 8コマ（A＋B）でも、今のゲームの走りは動くように、コマ数に合わせる（12コマ前提の箇所は、取りこみの時に直す）。

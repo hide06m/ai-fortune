@@ -27,14 +27,8 @@ def runs(flags):
     return out
 
 
-def main():
-    # 高画質版（musubi_run_sheet_2x.png）があれば、そちらを使い、切り出すコマも、2倍の大きさにする
-    big = GAMES / 'musubi_run_sheet_2x.png'
-    src = big if big.exists() else GAMES / 'musubi_run_sheet.png'
-    sheet = Image.open(src).convert('RGBA')
-    k = 2 if big.exists() else 1
-    CW, CH, BASE = CW0 * k, CH0 * k, BASE0 * k
-    print('source', src.name, sheet.size, 'k =', k)
+def cut_sheet(sheet):
+    """シート1枚から、コマを切り出す（左から右、上の行から下の行）"""
     W, H = sheet.size
     a = sheet.split()[-1].point(lambda v: 255 if v > 128 else 0)
     rows = runs([a.crop((0, y, W, y + 1)).getbbox() is not None for y in range(H)])
@@ -53,6 +47,32 @@ def main():
                         px0[xx, yy] = (r, g, b, 0)
             frame = frame.crop(frame.split()[-1].getbbox())
             crops.append(frame)
+    return crops
+
+
+def main():
+    # 高解像度版：musubi_run_sheet_hq1.png, _hq2.png … があれば、その順に全部使う（コマは、シートの順につなぐ）
+    hq = sorted(GAMES.glob('musubi_run_sheet_hq*.png'))
+    big = GAMES / 'musubi_run_sheet_2x.png'
+    if hq:
+        srcs = hq
+    else:
+        srcs = [big if big.exists() else GAMES / 'musubi_run_sheet.png']
+    crops = []
+    for src in srcs:
+        sheet = Image.open(src).convert('RGBA')
+        part = cut_sheet(sheet)
+        print('source', src.name, sheet.size, '->', len(part), 'frames')
+        crops += part
+    # 出力の大きさの倍率：切り出したコマの、体の高さ（中央値）から決める。基準（k=1）は、体の高さ約290。
+    # 大きすぎると、スマホで重いので、最大3倍（900×1140）まで
+    hs = sorted(f.size[1] for f in crops)
+    if hq:
+        k = max(1.0, min(3.0, round(hs[len(hs) // 2] / 290 * 2) / 2))
+    else:
+        k = 2 if big.exists() else 1
+    CW, CH, BASE = int(CW0 * k), int(CH0 * k), int(BASE0 * k)
+    print('k =', k, 'canvas', CW, CH)
 
     # 顔の大きさが、コマごとに違うので、顔の高さ（耳の上から、白い口まわりの下まで）を、全コマの中央値にそろえる
     def head_height(f):
@@ -73,9 +93,9 @@ def main():
     median = heights[len(heights) // 2]
     frames = []
     for f in crops:
-        k = min(1.3, max(0.8, median / head_height(f)))
-        if abs(k - 1) > 0.01:
-            f = f.resize((round(f.size[0] * k), round(f.size[1] * k)), Image.LANCZOS)
+        kk = min(1.3, max(0.8, median / head_height(f)))
+        if abs(kk - 1) > 0.01:
+            f = f.resize((round(f.size[0] * kk), round(f.size[1] * kk)), Image.LANCZOS)
         fa = f.split()[-1]
         fw, fh = f.size
         # 上半身（上から45%）の、重心の横位置
