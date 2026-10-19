@@ -580,3 +580,7 @@
 .run-btn,
 .run-difficulty button.run-btn,
 .run-difficulty button.run-btn.is-on { padding: 7% 9% 6%; }
+
+/* 難易度ボタンの文字は、前の位置（板の少し下寄り）のほうが、まん中に見えるので、戻す */
+.run-difficulty button.run-btn,
+.run-difficulty button.run-btn.is-on { padding: 11% 9% 5%; }
