@@ -511,3 +511,57 @@
 .run-panel .run-btn-wide { width: 62%; }
 .run-panel-title { margin: 0; font-size: 1.7rem; font-weight: 800; color: #fbf3da; text-shadow: 0 2px 5px rgba(30, 20, 8, 0.85); }
 .run-panel .run-result { font-size: 2rem; color: #fbf3da; }
+
+/* ───── 木のボタンに、文字を「彫った」ような表現 ───── */
+.run-btn .run-btn-label,
+.run-btn:not(.is-on) .run-btn-label,
+.run-start-banner .run-btn-label {
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', 'MS PMincho', serif;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #3b2210;
+  -webkit-text-fill-color: #3b2210;
+  background: none;
+  /* ふちの下側に、明るい線（彫った溝の、光があたる側）と、上側に、暗い線（影）をつけて、くぼんで見せる */
+  text-shadow: 0 1px 0 rgba(255, 232, 190, 0.55), 0 -1px 0 rgba(20, 8, 0, 0.55);
+}
+.run-btn.is-on .run-btn-label {
+  color: #1f3510;
+  -webkit-text-fill-color: #1f3510;
+  text-shadow: 0 1px 0 rgba(225, 255, 190, 0.5), 0 -1px 0 rgba(8, 24, 0, 0.55);
+}
+.run-btn .run-btn-label { font-size: 1.12rem; }
+.run-btn-wide .run-btn-label { font-size: 1.25rem; }
+
+/* 「タップでスタート」：板の中央に、大きめの彫り文字 */
+.run-start-banner {
+  width: min(62%, 250px);
+  padding: 4% 6% 2%;
+  align-items: center;
+}
+.run-start-banner .run-btn-label { font-size: 1.32rem; letter-spacing: 0.12em; }
+
+/* パネルの題字：濃い板に、焼きこんだような、明るい彫り文字 */
+.run-panel-title, .run-panel .run-result {
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', 'MS PMincho', serif;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #f1dcae;
+  text-shadow: 0 -1px 0 rgba(10, 4, 0, 0.7), 0 1px 0 rgba(255, 236, 190, 0.22), 0 2px 6px rgba(10, 4, 0, 0.6);
+}
+.run-panel .run-result { font-size: 2.1rem; }
+
+/* 「タップでスタート」：板の、まん中の1枚に、収める。うす暗くなる動きは、やめて、彫りを、はっきり */
+.run-start-banner { animation: none; opacity: 1; width: min(56%, 226px); padding: 6% 8% 3%; }
+.run-start-banner .run-btn-label {
+  font-size: 1.12rem;
+  letter-spacing: 0.1em;
+  color: #2a1606;
+  -webkit-text-fill-color: #2a1606;
+  text-shadow: 0 1px 0 rgba(255, 236, 196, 0.7), 0 -1px 0 rgba(15, 6, 0, 0.6), 0 0 1px rgba(255, 236, 196, 0.35);
+}
+.run-btn .run-btn-label, .run-btn:not(.is-on) .run-btn-label {
+  color: #2a1606;
+  -webkit-text-fill-color: #2a1606;
+  text-shadow: 0 1px 0 rgba(255, 236, 196, 0.65), 0 -1px 0 rgba(15, 6, 0, 0.55);
+}
