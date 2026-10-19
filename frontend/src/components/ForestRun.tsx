@@ -772,12 +772,12 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={`run-btn${difficulty === d ? ' is-on' : ''}`} onClick={() => chooseDifficulty(d)}>
-                  {DIFFS[d].label}
+                  <span className="run-btn-label">{DIFFS[d].label}</span>
                 </button>
               ))}
             </div>
             </div>
-            <p className="run-start">タップでスタート</p>
+            <div className="run-start-banner"><span className="run-btn-label">タップでスタート</span></div>
           </div>
         )}
 
@@ -790,14 +790,14 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         {phase === 'paused' && (
           <div className="run-overlay">
             <p>一時停止中</p>
-            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}>つづける</button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}><span className="run-btn-label">つづける</span></button>
           </div>
         )}
 
         {(phase === 'clear' || phase === 'miss') && (
           <div className="run-overlay">
             <p className="run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
-            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}>もういちど</button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
           </div>
         )}
 
