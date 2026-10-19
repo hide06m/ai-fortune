@@ -13,7 +13,6 @@ import { CrossfadeImage } from './CrossfadeImage';
 import { DailyPanel } from './DailyPanel';
 import { CollectionPanel } from './CollectionPanel';
 import { PeoplePanel } from './PeoplePanel';
-import { ForestRun } from './ForestRun';
 import { getDaily, type DailySnapshot } from '../api/daily';
 
 const KIND_LABEL: Record<string, string> = {
@@ -47,7 +46,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
   const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'run'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -134,8 +133,8 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           <button type="button" className="home-btn" onClick={openLatestPanel}>
             📜 診断の記録
           </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('run')}>
-            🎮 ミニゲーム<small>森ラン（試作）</small>
+          <button type="button" className="home-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
+            🎮 ミニゲーム<small>森ラン・どんぐりキャッチ</small>
           </button>
           <button type="button" className="home-btn home-btn-quiet" onClick={onLogout}>
             ログアウト
@@ -149,7 +148,6 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
 
       {panel === 'zukan' && <CollectionPanel onClose={() => setPanel(null)} />}
 
-      {panel === 'run' && <ForestRun onClose={() => setPanel(null)} />}
 
       {panel === 'people' && <PeoplePanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} />}
 
