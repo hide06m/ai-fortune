@@ -88,7 +88,11 @@ export function BirthDateInput({
         type="date"
         className="birthdate-native-picker"
         tabIndex={-1}
-        value={year.length === 4 && month.length > 0 && day.length > 0 ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : ''}
+        // 年の一覧が、ありえない範囲（0001〜275760年）まで、続くと、スクロールが、重くなる。生まれた年として、ありうる範囲に、しぼる
+        min="1900-01-01"
+        max={new Date().toISOString().slice(0, 10)}
+        // 未入力のときは、1990年のあたりで、カレンダーが開く（今年から、遠くまで、さかのぼらなくてよいように）
+        value={year.length === 4 && month.length > 0 && day.length > 0 ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : '1990-01-01'}
         onChange={(e) => {
           const [y, m, d] = e.target.value.split('-')
           if (y && m && d) {

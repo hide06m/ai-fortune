@@ -157,9 +157,9 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
         <div className="home-panel-backdrop" onClick={() => setPanel(null)}>
           <div className="home-panel" onClick={(e) => e.stopPropagation()}>
             <h3>診断の記録（石は使いません）</h3>
-            <p className="home-panel-lead">占いごとの、いちばん新しい結果です。手相は、写真つきで見返せます。</p>
+            <p className="home-panel-lead">占いごとのいちばん新しい結果です。手相は写真つきで見返せます。</p>
             {latest.length === 0 ? (
-              <p className="home-panel-empty">まだ、保存された結果がありません。</p>
+              <p className="home-panel-empty">まだ保存された結果がありません。</p>
             ) : (
               <ul>
                 {latest.map((r) => (
@@ -173,7 +173,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
               </ul>
             )}
             <button type="button" className="home-panel-link" onClick={onHistory}>
-              これまでの診断の、文章を、すべて見る →
+              これまでの診断の文章をすべて見る →
             </button>
             <button type="button" className="home-panel-close" onClick={() => setPanel(null)}>
               閉じる

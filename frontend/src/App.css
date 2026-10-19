@@ -1409,11 +1409,7 @@ body {
   animation: fadeIn 0.6s ease-out;
 }
 
-.vn-bonus-stone img {
-  width: clamp(120px, 22vmin, 260px);
-  height: auto;
-  filter: drop-shadow(0 0 18px rgba(255, 220, 130, 0.85));
-}
+.vn-bonus-stone .stone-gift img { width: clamp(110px, 20vmin, 240px); }
 
 .stone-ad-button {
   padding: 6px 12px;
@@ -1770,3 +1766,40 @@ h1 {
 }
 
 .landing-fx-stage { z-index: 3; }
+
+/* ルーンストーンを、もらったときの表示：石に、蔦と葉の枠を付ける（ムスビのログインボーナスと、森ランの報酬で、共通） */
+.stone-gift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 8px;
+  border: 34px solid transparent;
+  border-image-source: url('/assets/games/frame_leaf.png');
+  border-image-slice: 140;
+  border-image-width: 34px;
+  border-image-repeat: stretch;
+  background-clip: padding-box;
+  background-color: rgba(22, 30, 18, 0.78);
+  color: #ffe9a8;
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  box-sizing: content-box;
+}
+.stone-gift img { width: clamp(70px, 14vmin, 150px); height: auto; filter: drop-shadow(0 0 14px rgba(255, 220, 130, 0.8)); }
+.stone-gift-label { font-size: clamp(0.95rem, 2.2vmin, 1.5rem); white-space: nowrap; }
+/* 森ランの、ゴールの画面では、パネルの上に出す */
+.run-stone-gift { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); z-index: 6; pointer-events: none; animation: fadeIn 0.6s ease-out; }
+
+/* ダブルクリックや、長押しで、セリフや画面の文字が、選択されて、青くなってしまうのを、防ぐ（入力欄と、結果の文章は、選択できたまま） */
+.vn-scene, .vn-scene *, .landing-container, .landing-container *, .home-scene, .home-scene *,
+.run-backdrop, .run-backdrop *, .hamster-loading-container, .hamster-loading-container *, .stone-gift, .stone-gift * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.vn-scene input, .vn-scene textarea, .home-scene input, .home-scene textarea, .run-backdrop input, .run-backdrop textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

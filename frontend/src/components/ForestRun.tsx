@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { claimMinigameReward, type RewardResult } from '../api/minigame';
+import { StoneGift } from './StoneGift';
 import { isJobWaiting, subscribeWaiting } from '../api/asyncJob';
 
 const W = 540;
@@ -376,11 +377,16 @@ function drawPlaceholderBird(ctx: CanvasRenderingContext2D, cx: number, cy: numb
   ctx.restore();
 }
 
-/** つなぎ目を混ぜてある絵（_loop）を、反転せずに、そのまま、横に並べる */
+/**
+ * つなぎ目を混ぜてある絵（_loop）を、反転せずに、そのまま、横に並べる
+ * 並べる位置は、「1枚の幅の、整数倍」で、きっちり、決める（小数のまま、1枚ずつ別々に丸めると、つなぎ目が、1コマごとに、1pxずつ揺れて、震えて見える）
+ */
 function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
   if (!img.naturalWidth) return;
-  const start = -(((offset % w) + w) % w);
-  for (let x = start, n = 0; x < W && n < 40; x += w, n++) dFull(ctx, img, Math.floor(x), y, Math.ceil(w) + 2, h);
+  const unit = 1 / RES; // 画面の1点の大きさ
+  const tw = Math.max(unit, Math.round(w / unit) * unit); // 1枚の幅（画面の点にそろえる）
+  const shift = Math.round((((offset % tw) + tw) % tw) / unit) * unit; // 動かした量（画面の点にそろえる）
+  for (let i = 0, x = -shift; x < W && i < 40; i++, x = -shift + i * tw) dFull(ctx, img, x, y, tw + unit, h);
 }
 
 interface ForestRunProps {
@@ -853,7 +859,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
             <div className="run-ready-top">
             <p>タップでジャンプ</p>
             <small>PC：スペースキー／難易度は ←→↑↓</small>
-            {jobId && <small className="run-reward-hint">クリアで、ルーンストーン（1日1回・ふつう 1／むずかしい 2／エクストラ 5）</small>}
+            {jobId && <small className="run-reward-hint">クリアでルーンストーン（1日1回・ふつう 1／むずかしい 2／エクストラ 5）</small>}
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={`run-btn${difficulty === d ? ' is-on' : ''}`} onClick={() => chooseDifficulty(d)}>
@@ -884,6 +890,12 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
           </div>
         )}
 
+        {phase === 'clear' && jobId && reward && reward.granted > 0 && (
+          <div className="run-stone-gift" onPointerDown={(e) => e.stopPropagation()}>
+            <StoneGift amount={reward.granted} />
+          </div>
+        )}
+
         {(phase === 'clear' || phase === 'miss') && (
           <div className="run-overlay">
             <div className="run-panel">
@@ -891,13 +903,13 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
             {phase === 'clear' && jobId && reward && (
               <p className="run-reward">
                 {reward.granted > 0
-                  ? `ルーンストーン +${reward.granted}（今日の分は、これで、おしまい）`
+                  ? ''
                   : reward.reason === 'daily_limit'
-                    ? '今日の、ルーンストーンは、もらいました'
+                    ? '今日のルーンストーンはもらいました'
                     : reward.reason === 'already'
-                      ? '今日の、ルーンストーンは、もらいました'
+                      ? '今日のルーンストーンはもらいました'
                       : reward.reason === 'no_reward'
-                        ? 'かんたんでは、ルーンストーンは、もらえません'
+                        ? 'かんたんではルーンストーンはもらえません'
                         : ''}
               </p>
             )}
@@ -911,7 +923,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
 
         {diagnosisDone && (
           <button type="button" className="run-done-banner" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-            ✨ 占いが、できました。結果を見る
+            ✨ 占いができました。結果を見る
           </button>
         )}
 

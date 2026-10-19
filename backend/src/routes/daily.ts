@@ -26,8 +26,8 @@ interface MissionDef {
 
 const MISSIONS: MissionDef[] = [
   { id: 'fortune', title: '今日の運勢を見る', desc: '今日の運勢のカードを開く', reward: 1 },
-  { id: 'diagnose', title: '占いを1つする', desc: 'どの占い師の診断でも、1回', reward: 1 },
-  { id: 'gift', title: 'ちょっとした挨拶をする', desc: '占い師に、1回、挨拶を渡す', reward: 1 },
+  { id: 'diagnose', title: '占いを1つする', desc: 'どの占い師の診断でも1回', reward: 1 },
+  { id: 'gift', title: 'ちょっとした挨拶をする', desc: '占い師に1回挨拶を渡す', reward: 1 },
 ]
 const ALL_BONUS = 1
 
@@ -93,7 +93,7 @@ router.post('/birthdate', requireAuth, async (req: Request, res: Response) => {
   try {
     const { birthDate } = req.body
     if (!isValidPastDate(birthDate)) {
-      return res.status(400).json({ success: false, error: 'INVALID_BIRTH_DATE', message: '生年月日を、正しく入力してください' })
+      return res.status(400).json({ success: false, error: 'INVALID_BIRTH_DATE', message: '生年月日を正しく入力してください' })
     }
     await query('UPDATE users SET birth_date = $1 WHERE id = $2', [birthDate, req.user!.userId])
     res.json(await snapshot(req.user!.userId))
@@ -122,17 +122,17 @@ router.post('/missions/:id/claim', requireAuth, async (req: Request, res: Respon
     let reward = 0
     if (id === 'all') {
       const claimed = await claimedToday(userId, day)
-      if (!MISSIONS.every((m) => claimed.has(m.id))) return res.status(400).json({ success: false, error: 'NOT_READY', message: 'まだ、すべてのミッションを受け取っていません' })
+      if (!MISSIONS.every((m) => claimed.has(m.id))) return res.status(400).json({ success: false, error: 'NOT_READY', message: 'まだすべてのミッションを受け取っていません' })
       reward = ALL_BONUS
     } else {
       const m = MISSIONS.find((x) => x.id === id)
       if (!m) return res.status(400).json({ success: false, error: 'UNKNOWN_MISSION' })
-      if (!(await doneToday(userId, m.id, day))) return res.status(400).json({ success: false, error: 'NOT_DONE', message: 'まだ、達成していません' })
+      if (!(await doneToday(userId, m.id, day))) return res.status(400).json({ success: false, error: 'NOT_DONE', message: 'まだ達成していません' })
       reward = m.reward
     }
     // 先に「受け取った」記録を入れる（二重に押されても、石は1回だけ）
     const ins = await query('INSERT INTO daily_mission_claims (user_id, day, mission_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING mission_id', [userId, day, id])
-    if (ins.rows.length === 0) return res.status(409).json({ success: false, error: 'ALREADY_CLAIMED', message: 'もう、受け取っています' })
+    if (ins.rows.length === 0) return res.status(409).json({ success: false, error: 'ALREADY_CLAIMED', message: 'もう受け取っています' })
     try {
       await grantMissionReward(userId, reward)
     } catch (error) {

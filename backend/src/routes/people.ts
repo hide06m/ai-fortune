@@ -100,25 +100,25 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     const memo = typeof req.body.memo === 'string' ? req.body.memo.trim() : ''
     const relation = req.body.relation
     const fromName = typeof req.body.fromName === 'string' ? req.body.fromName.trim() : ''
-    if (!fromName || fromName.length > 30) return res.status(400).json({ success: false, error: '相手に見える、あなたの呼び名を、1〜30文字で入力してください' })
-    if (!name || name.length > 30) return res.status(400).json({ success: false, error: '名前（ニックネーム）は、1〜30文字で入力してください' })
-    if (memo.length > 100) return res.status(400).json({ success: false, error: 'メモは、100文字までです' })
+    if (!fromName || fromName.length > 30) return res.status(400).json({ success: false, error: '相手に見えるあなたの呼び名を1〜30文字で入力してください' })
+    if (!name || name.length > 30) return res.status(400).json({ success: false, error: '名前（ニックネーム）は1〜30文字で入力してください' })
+    if (memo.length > 100) return res.status(400).json({ success: false, error: 'メモは100文字までです' })
     if (!RELATIONS.includes(relation)) return res.status(400).json({ success: false, error: '関係を選んでください' })
     if (looksLikeContact(name) || looksLikeContact(memo) || looksLikeContact(fromName)) {
-      return res.status(400).json({ success: false, error: '電話番号・メールアドレス・URLのような情報は、書かないでください' })
+      return res.status(400).json({ success: false, error: '電話番号・メールアドレス・URLのような情報は書かないでください' })
     }
     const count = await query('SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1', [userId])
     if (count.rows[0].n >= PEOPLE_LIMIT) {
-      return res.status(400).json({ success: false, error: `登録できるのは、${PEOPLE_LIMIT}人までです` })
+      return res.status(400).json({ success: false, error: `登録できるのは${PEOPLE_LIMIT}人までです` })
     }
     // 招待の大量発行（スパム）を防ぐ：24時間に20件まで
     const today = await query("SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours'", [userId])
     if (today.rows[0].n >= DAILY_INVITE_LIMIT) {
-      return res.status(429).json({ success: false, error: '招待を作れるのは、1日に20件までです' })
+      return res.status(429).json({ success: false, error: '招待を作れるのは1日に20件までです' })
     }
     const active = await query('SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1 AND invite_token IS NOT NULL AND invite_expires > NOW()', [userId])
     if (active.rows[0].n >= ACTIVE_INVITE_LIMIT) {
-      return res.status(429).json({ success: false, error: '返事待ちの招待が、多くなっています。回答を待つか、期限が切れてから、追加してください' })
+      return res.status(429).json({ success: false, error: '返事待ちの招待が多くなっています。回答を待つか期限が切れてから追加してください' })
     }
     const id = crypto.randomUUID()
     const token = newToken()
@@ -196,7 +196,7 @@ router.post('/:id/invite', requireAuth, async (req: Request, res: Response) => {
     if (!isValidId(req.params.id)) return res.status(404).json({ success: false, error: 'not found' })
     const active = await query('SELECT COUNT(*)::int AS n FROM people WHERE user_id = $1 AND invite_token IS NOT NULL AND invite_expires > NOW()', [req.user!.userId])
     if (active.rows[0].n >= ACTIVE_INVITE_LIMIT) {
-      return res.status(429).json({ success: false, error: '返事待ちの招待が、多くなっています' })
+      return res.status(429).json({ success: false, error: '返事待ちの招待が多くなっています' })
     }
     const token = newToken()
     const r = await query(
@@ -235,11 +235,11 @@ inviteRouter.use(
     keyGenerator: (req: any) => `ip:${(req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`,
     standardHeaders: false,
     legacyHeaders: false,
-    message: { success: false, error: 'しばらくしてから、もう一度お試しください' },
+    message: { success: false, error: 'しばらくしてからもう一度お試しください' },
   })
 )
 
-const NOT_FOUND = { success: false, error: 'この招待は、使えません（期限切れ・回答済み、または、取り消されました）' }
+const NOT_FOUND = { success: false, error: 'この招待は使えません（期限切れ・回答済みまたは取り消されました）' }
 
 function isToken(t: string): boolean {
   return /^[A-Za-z0-9_-]{22}$/.test(t)
@@ -303,7 +303,7 @@ inviteRouter.post('/:token/answer', async (req: Request, res: Response) => {
         answers.length === 18 &&
         answers.every((a: any) => a && Number.isInteger(a.id) && a.id >= 1 && a.id <= 18 && Number.isInteger(a.val) && a.val >= 0 && a.val <= 5) &&
         new Set(answers.map((a: any) => a.id)).size === 18
-      if (!ok) return res.status(400).json({ success: false, error: '18問すべてに、答えてください' })
+      if (!ok) return res.status(400).json({ success: false, error: '18問すべてに答えてください' })
       storedAnswers = answers.map((a: any) => ({ id: a.id, val: a.val }))
       fullType = calculateLoveType64(storedAnswers!).fullType
       method = 'quiz'

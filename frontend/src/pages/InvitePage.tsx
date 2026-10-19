@@ -102,7 +102,7 @@ export function InvitePage({ token }: { token: string }) {
   const submitPicked = () => submit({ pickedType: `${picked.slice(0, 4).join('')}-${picked.slice(4).join('')}` });
 
   const doRevoke = async () => {
-    if (!window.confirm('あなたの回答を、相手の縁帳から、削除します。よろしいですか？')) return;
+    if (!window.confirm('あなたの回答を相手の縁帳から削除します。よろしいですか？')) return;
     const r = await revokeAnswer(revokeToken);
     if (r.success) {
       try {
@@ -129,12 +129,12 @@ export function InvitePage({ token }: { token: string }) {
 
         {step === 'invalid' && (
           <>
-            <h3>この招待は、使えません</h3>
-            <p className="home-panel-lead">期限切れ・回答済み、または、取り消された招待です。気になる場合は、招待してくれた人に、聞いてみてください。</p>
+            <h3>この招待は使えません</h3>
+            <p className="home-panel-lead">期限切れ・回答済みまたは取り消された招待です。気になる場合は招待してくれた人に聞いてみてください。</p>
             {revokeToken && (
               <>
-                <p className="daily-note">この端末から、以前に送信した回答が、残っています。取り消す場合は、下のボタンを押してください。</p>
-                <button type="button" className="people-danger" onClick={doRevoke}>送った回答を取り消して、削除する</button>
+                <p className="daily-note">この端末から以前に送信した回答が残っています。取り消す場合は下のボタンを押してください。</p>
+                <button type="button" className="people-danger" onClick={doRevoke}>送った回答を取り消して削除する</button>
               </>
             )}
           </>
@@ -142,26 +142,26 @@ export function InvitePage({ token }: { token: string }) {
 
         {step === 'intro' && info && (
           <>
-            <h3>🧵 {from}さんからの、おたより</h3>
+            <h3>🧵 {from}さんからのおたより</h3>
             <p className="invite-lead">
-              {from}さん（{RELATION_LABEL[info.relation]}）が、あなたの「恋愛タイプ」を、知りたいそうです。
+              {from}さん（{RELATION_LABEL[info.relation]}）があなたの「恋愛タイプ」を知りたいそうです。
               <br />
-              答えると、あなたのタイプだけが、{from}さんに届きます。
+              答えるとあなたのタイプだけが{from}さんに届きます。
             </p>
-            <p className="invite-soft">答えるかどうかは、自由です。あとから、いつでも取り消せます。</p>
+            <p className="invite-soft">答えるかどうかは自由です。あとからいつでも取り消せます。</p>
             <details className="invite-details">
               <summary>くわしい説明</summary>
               <ul>
-                <li>届くのは、恋愛タイプの結果だけです（名前・連絡先・住所は、入力しません）。</li>
-                <li>{from}さんだけが見られます。公開や、ランキングは、ありません。</li>
-                <li>答えなくても、{from}さんには、伝わりません。</li>
-                <li>「{from}」は、送り主が自分でつけた名前です。心当たりがなければ、閉じてください。</li>
-                <li>この診断は、遊びのための占いです（検査ではありません）。</li>
+                <li>届くのは恋愛タイプの結果だけです（名前・連絡先・住所は入力しません）。</li>
+                <li>{from}さんだけが見られます。公開やランキングはありません。</li>
+                <li>答えなくても{from}さんには伝わりません。</li>
+                <li>「{from}」は送り主が自分でつけた名前です。心当たりがなければ閉じてください。</li>
+                <li>この診断は遊びのための占いです（検査ではありません）。</li>
               </ul>
             </details>
             <label className="invite-consent">
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-              <span>{from}さんに、結果を届けて、いいです。</span>
+              <span>{from}さんに結果を届けていいです。</span>
             </label>
             <button type="button" className="daily-btn people-wide" disabled={!consent} onClick={() => setStep('choose')}>
               すすむ
@@ -173,10 +173,10 @@ export function InvitePage({ token }: { token: string }) {
           <>
             <h3>どちらで答えますか？</h3>
             <button type="button" className="daily-btn people-wide" onClick={() => { setPage(0); setStep('quiz'); }}>
-              18問に答えて、診断する
+              18問に答えて診断する
             </button>
             <button type="button" className="home-panel-link" onClick={() => setStep('pick')}>
-              自分のタイプを、すでに知っている → 選ぶだけ
+              自分のタイプをすでに知っている → 選ぶだけ
             </button>
           </>
         )}
@@ -214,7 +214,7 @@ export function InvitePage({ token }: { token: string }) {
         {step === 'pick' && (
           <>
             <h3>自分のタイプを選ぶ</h3>
-            <p className="home-panel-lead">診断結果のタイプ（例：LCPO-VI）を、選んでください。</p>
+            <p className="home-panel-lead">診断結果のタイプ（例：LCPO-VI）を選んでください。</p>
             <div className="invite-pick">
               {AXES.map((a, i) => (
                 <div key={a.key} className="invite-pick-row">
@@ -245,15 +245,15 @@ export function InvitePage({ token }: { token: string }) {
               <p className="people-result-type">{result.characterName}　<small>{result.subTypeName}</small></p>
               <p className="home-panel-lead">{result.characterDesc}</p>
             </div>
-            <p className="daily-note">{from}さんの縁帳に、あなたの結果が、登録されました。間違えた場合や、やめたい場合は、下のボタンで、取り消せます。</p>
-            <button type="button" className="people-danger" onClick={doRevoke}>回答を取り消して、削除する</button>
+            <p className="daily-note">{from}さんの縁帳にあなたの結果が登録されました。間違えた場合ややめたい場合は下のボタンで取り消せます。</p>
+            <button type="button" className="people-danger" onClick={doRevoke}>回答を取り消して削除する</button>
           </>
         )}
 
         {step === 'revoked' && (
           <>
             <h3>削除しました</h3>
-            <p className="home-panel-lead">あなたの回答を、相手の縁帳から、削除しました。このページは、閉じて大丈夫です。</p>
+            <p className="home-panel-lead">あなたの回答を相手の縁帳から削除しました。このページは閉じて大丈夫です。</p>
           </>
         )}
       </div>

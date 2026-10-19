@@ -32,7 +32,7 @@ export async function getJob(userId: string, id: string): Promise<JobRow | null>
   return { id: x.id, kind: x.kind, status: x.status, httpStatus: x.http_status, body: x.body, createdAt: x.created_at, finishedAt: x.finished_at }
 }
 
-const RESTART_BODY = { success: false, error: 'SERVER_RESTART', message: '診断の途中で、サーバーが再起動しました。お手数ですが、もう一度お試しください。' }
+const RESTART_BODY = { success: false, error: 'SERVER_RESTART', message: '診断の途中でサーバーが再起動しました。お手数ですがもう一度お試しください。' }
 
 /** サーバーが止まって、途中で終わってしまったジョブを、失敗として閉じる。古いジョブは消す */
 export async function closeStaleJobs(): Promise<void> {

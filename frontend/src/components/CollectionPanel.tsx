@@ -52,13 +52,13 @@ export function CollectionPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {failed && <p className="daily-error">読み込めませんでした。時間をおいて、もう一度お試しください。</p>}
+        {failed && <p className="daily-error">読み込めませんでした。時間をおいてもう一度お試しください。</p>}
         {!failed && !zukan && !achv && <p className="home-panel-empty">読み込んでいます…</p>}
 
         {tab === 'zukan' && (
           <div className="zukan-preparing">
-            <p>🔒 図鑑は、準備中です。</p>
-            <p>性格タイプ16・恋愛タイプ16・宿曜27宿の、図鑑を、作っています。自分の診断結果ではなく、「ほかの人のタイプ」に出会って、集めていく形を、考えています。</p>
+            <p>🔒 図鑑は準備中です。</p>
+            <p>性格タイプ16・恋愛タイプ16・宿曜27宿の図鑑を作っています。自分の診断結果ではなく「ほかの人のタイプ」に出会って集めていく形を考えています。</p>
           </div>
         )}
 

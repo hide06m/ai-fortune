@@ -15,7 +15,7 @@ export function JobToast({ onView }: { onView: (kind: string) => void }) {
       try {
         if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
           new Notification('占いの森', {
-            body: f.ok ? `${f.job.label}の結果が出ました` : `${f.job.label}は、うまくいきませんでした`,
+            body: f.ok ? `${f.job.label}の結果が出ました` : `${f.job.label}はうまくいきませんでした`,
           });
         }
       } catch {
@@ -32,7 +32,7 @@ export function JobToast({ onView }: { onView: (kind: string) => void }) {
       {items.map((i) => (
         <div key={i.key} className={`job-toast${i.ok ? '' : ' is-error'}`}>
           <div className="job-toast-text">
-            {i.ok ? `✨ ${i.job.label}の結果が出ました` : `${i.job.label}は、うまくいきませんでした。${i.message || '時間をおいて、もう一度お試しください。'}`}
+            {i.ok ? `✨ ${i.job.label}の結果が出ました` : `${i.job.label}はうまくいきませんでした。${i.message || '時間をおいてもう一度お試しください。'}`}
           </div>
           <div className="job-toast-actions">
             {i.ok && i.job.kind !== 'compat' && (

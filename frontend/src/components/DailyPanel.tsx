@@ -24,7 +24,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
 
   const apply = (s: DailySnapshot) => {
     if (!s.success) {
-      setError(s.message || '読み込めませんでした。時間をおいて、もう一度お試しください。');
+      setError(s.message || '読み込めませんでした。時間をおいてもう一度お試しください。');
       return;
     }
     setError('');
@@ -69,10 +69,10 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
 
         {snap && !f && (
           <div className="daily-birth">
-            <p>今日の運勢を見るには、生年月日を教えてください（この端末だけでなく、アカウントに保存されます）。</p>
+            <p>今日の運勢を見るには生年月日を教えてください（この端末だけでなくアカウントに保存されます）。</p>
             <BirthDateSelects value={birth} onChange={setBirth} />
             <button type="button" className="daily-btn" disabled={!birth || busy} onClick={saveBirth}>
-              この生年月日で、今日の運勢を見る
+              この生年月日で今日の運勢を見る
             </button>
           </div>
         )}
@@ -122,7 +122,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
               <li className={snap.allBonus.claimed ? 'is-claimed' : snap.allBonus.ready ? 'is-done' : ''}>
                 <div>
                   <b>ぜんぶ達成ボーナス</b>
-                  <small>3つのミッションを、すべて受け取ると</small>
+                  <small>3つのミッションをすべて受け取ると</small>
                 </div>
                 {snap.allBonus.claimed ? (
                   <span className="daily-got">受け取り済み</span>
@@ -135,7 +135,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                 )}
               </li>
             </ul>
-            <p className="daily-note">ミッションは、毎日、日本時間の0時にリセットされます。</p>
+            <p className="daily-note">ミッションは毎日日本時間の0時にリセットされます。</p>
           </>
         )}
 

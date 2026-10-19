@@ -64,6 +64,7 @@ import { MBTI_TYPES } from './data/mbtiTypes'
 import { getWaitingJobId, startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
 import { JobToast } from './components/JobToast'
 import { ForestRun } from './components/ForestRun'
+import { StoneGift } from './components/StoneGift'
 import { HomePage } from './components/HomePage'
 import { pickAfterResultLines } from './data/homeLines'
 import { ResultCharacter } from './components/ResultCharacter'
@@ -1282,8 +1283,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         {/* 石を渡す場面：渡すセリフに来たら、ルーンストーンを見せる */}
         {guideDialogue && pendingDailyBonus && dialogueSentenceIndex >= currentDialogueSentences.length - 1 && (
           <div className="vn-bonus-stone">
-            <img src="/assets/stone.webp" alt="" />
-            <span>ルーンストーン +1</span>
+            <StoneGift amount={1} />
           </div>
         )}
         {guideDialogue && (

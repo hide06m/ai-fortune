@@ -136,14 +136,14 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
   };
 
   const handleDelete = async (p: Person) => {
-    if (!window.confirm(`「${p.name}」さんの記録を、削除します。元には戻せません。`)) return;
+    if (!window.confirm(`「${p.name}」さんの記録を削除します。元には戻せません。`)) return;
     await deletePerson(p.id);
     await reload();
     setView('list');
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm('縁帳の記録を、すべて削除します。元には戻せません。')) return;
+    if (!window.confirm('縁帳の記録をすべて削除します。元には戻せません。')) return;
     await deleteAllPeople();
     await reload();
   };
@@ -154,14 +154,14 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
     if (r.success) setLinks(r);
   };
 
-  const shareText = () => `恋愛タイプ診断（占いの森）に、答えてもらえませんか？ 送信は任意で、あとから削除もできます。`;
+  const shareText = () => `恋愛タイプ診断（占いの森）に答えてもらえませんか？ 送信は任意であとから削除もできます。`;
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl(shareToken));
       setCopied(true);
     } catch {
-      setError('コピーできませんでした。URLを、長押しして、コピーしてください。');
+      setError('コピーできませんでした。URLを長押ししてコピーしてください。');
     }
   };
 
@@ -182,12 +182,12 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
           <>
             <h3>🧵 縁帳</h3>
             <p className="home-panel-lead">
-              周りの人に、恋愛タイプ診断を、送ります。相手が、自分で答えると、その人のタイプが、ここに登録されます。あなた以外には、見えません。
+              周りの人に恋愛タイプ診断を送ります。相手が自分で答えるとその人のタイプがここに登録されます。あなた以外には見えません。
             </p>
             {people === null ? (
               <p className="home-panel-empty">読み込んでいます…</p>
             ) : people.length === 0 ? (
-              <p className="home-panel-empty">まだ、だれも登録されていません。</p>
+              <p className="home-panel-empty">まだだれも登録されていません。</p>
             ) : (
               <ul>
                 {people.map((p) => (
@@ -213,7 +213,7 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
             )}
             {(people?.length ?? 0) > 0 && (
               <button type="button" className="people-danger" onClick={handleDeleteAll}>
-                縁帳を、すべて削除する
+                縁帳をすべて削除する
               </button>
             )}
             <button type="button" className="home-panel-close" onClick={onClose}>
@@ -248,7 +248,7 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
               メモ（任意・100文字まで・あなたにだけ表示）
               <input type="text" value={memo} maxLength={100} onChange={(e) => setMemo(e.target.value)} />
             </label>
-            <p className="daily-note">追加すると、招待リンクが、できます。石は、使いません。</p>
+            <p className="daily-note">追加すると招待リンクができます。石は使いません。</p>
             <button type="button" className="daily-btn people-wide" onClick={handleAdd} disabled={busy || !name.trim() || !fromName.trim()}>
               {busy ? '作っています…' : '招待リンクを作る'}
             </button>
@@ -258,8 +258,8 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
 
         {view === 'share' && current && (
           <>
-            <h3>{current.name}さんへの、招待リンク</h3>
-            <p className="home-panel-lead">このリンクを、{current.name}さんに、送ってください（LINE・メッセージ・QRコード）。相手が答えると、縁帳に登録されます。リンクは、14日間・1回だけ使えます。</p>
+            <h3>{current.name}さんへの招待リンク</h3>
+            <p className="home-panel-lead">このリンクを{current.name}さんに送ってください（LINE・メッセージ・QRコード）。相手が答えると縁帳に登録されます。リンクは14日間・1回だけ使えます。</p>
             <div className="people-share">
               {qr && <img src={qr} alt="招待のQRコード" />}
               <input className="people-share-url" readOnly value={inviteUrl(shareToken)} onFocus={(e) => e.target.select()} />
@@ -268,7 +268,7 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
               <button type="button" className="daily-btn people-wide" onClick={nativeShare}>LINEなどで送る</button>
             )}
             <button type="button" className="daily-btn people-wide" onClick={copy}>{copied ? 'コピーしました' : 'リンクをコピー'}</button>
-            <p className="daily-note">相手が断っても、通知は、来ません。返事を、急かさないでください。</p>
+            <p className="daily-note">相手が断っても通知は来ません。返事を急かさないでください。</p>
             <button type="button" className="home-panel-close" onClick={() => { reload(); setView('list'); }}>戻る</button>
           </>
         )}
@@ -281,18 +281,18 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
                 <img src={`/assets/results/lovetype/${current.result.type1}.webp`} alt={current.result.characterName} />
                 <p className="people-result-label">{current.name}さん本人の回答</p>
                 <p className="people-result-type">{current.result.characterName}　<small>{current.result.subTypeName}</small></p>
-                <p className="daily-note">{current.result.confidence === 'quiz' ? '18問に答えた結果です。' : 'ご本人が、タイプを選んで、送ってくれました（本人の申告）。'}</p>
+                <p className="daily-note">{current.result.confidence === 'quiz' ? '18問に答えた結果です。' : 'ご本人がタイプを選んで送ってくれました（本人の申告）。'}</p>
               </div>
             ) : (
               <>
-                <p className="home-panel-empty">まだ、回答がありません（{STATUS_LABEL[current.status]}）。</p>
-                <button type="button" className="daily-btn people-wide" onClick={() => handleReissue(current)}>招待リンクを、作り直す</button>
+                <p className="home-panel-empty">まだ回答がありません（{STATUS_LABEL[current.status]}）。</p>
+                <button type="button" className="daily-btn people-wide" onClick={() => handleReissue(current)}>招待リンクを作り直す</button>
               </>
             )}
 
             {comparison && comparison.total > 0 && (
               <div className="people-compare">
-                <h4>あなたとの、共通点・違い（{comparison.sameCount} / {comparison.total} が同じ向き）</h4>
+                <h4>あなたとの共通点・違い（{comparison.sameCount} / {comparison.total} が同じ向き）</h4>
                 <p className="daily-note">{comparison.summary}</p>
                 <ul>
                   {comparison.axes.map((a) => (
@@ -307,7 +307,7 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
               </div>
             )}
             {current.result && !comparison && (
-              <p className="daily-note">あなた自身の恋愛タイプ診断をすると、共通点・違いが見られます。</p>
+              <p className="daily-note">あなた自身の恋愛タイプ診断をすると共通点・違いが見られます。</p>
             )}
 
             {current.memo && <p className="people-memo">メモ：{current.memo}</p>}
@@ -325,19 +325,19 @@ export function PeoplePanel({ onClose }: { onClose: () => void; onBalance?: (bal
             ) : (
               <>
                 <h4>あなたと同じタイプの人</h4>
-                {links.sameAsMe.length ? <p>{links.sameAsMe.join('、')}</p> : <p className="home-panel-empty">{links.myType1 ? 'まだ、いません。' : 'あなた自身の恋愛タイプ診断をすると、見られます。'}</p>}
+                {links.sameAsMe.length ? <p>{links.sameAsMe.join('')}</p> : <p className="home-panel-empty">{links.myType1 ? 'まだいません。' : 'あなた自身の恋愛タイプ診断をすると見られます。'}</p>}
                 <h4>同じタイプどうし</h4>
                 {links.sameType.length ? (
                   <ul className="people-links">
                     {links.sameType.map((g) => (
                       <li key={g.type1}>
                         <img src={`/assets/results/lovetype/${g.type1}.webp`} alt="" />
-                        <span>{g.names.join('、')}</span>
+                        <span>{g.names.join('')}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="home-panel-empty">まだ、同じタイプの人は、いません。</p>
+                  <p className="home-panel-empty">まだ同じタイプの人はいません。</p>
                 )}
               </>
             )}
