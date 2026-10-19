@@ -7,8 +7,8 @@
  * 三九の法：命宿（本命宿）、業宿（本命宿から9つ先）、胎宿（本命宿から18先）。
  */
 
-import { toKyureki, type Kyureki } from './kyureki'
-import { SHUKU_LIST, MONTH_START_SHUKU, type Shuku } from './data/sukuyouData'
+import { toKyureki, type Kyureki } from './kyureki.js'
+import { SHUKU_LIST, MONTH_START_SHUKU, type Shuku } from './data/sukuyouData.js'
 
 export interface SukuyouResult {
   /** 生年月日（新暦） */

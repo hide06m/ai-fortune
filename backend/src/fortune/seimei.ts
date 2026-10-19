@@ -14,8 +14,8 @@
  * 三才：天格・人格・地格の1の位から五行（木火土金水）を出し、隣り合う五行の関係（相生・比和・相剋）を見る。
  */
 
-import strokeTable from './data/kangxiStrokes.json'
-import { seimeiNumberOf, normalizeStrokeNumber, type SeimeiNumber } from './data/seimeiNumbers'
+import strokeTable from './data/kangxiStrokes.json' with { type: 'json' }
+import { seimeiNumberOf, normalizeStrokeNumber, type SeimeiNumber } from './data/seimeiNumbers.js'
 
 /** 表の値と、流派や好みが合わない字の画数を、ここで直す（例： '郎': 10 ） */
 export const STROKE_OVERRIDES: Record<string, number> = {}

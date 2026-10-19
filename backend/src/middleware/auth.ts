@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../auth/jwt';
+import { verifyToken } from '../auth/jwt.js';
 
 declare global {
   namespace Express {
