@@ -63,6 +63,8 @@ import { SeimeiResultCard } from './components/SeimeiResultCard'
 import { MBTI_TYPES } from './data/mbtiTypes'
 import { getWaitingJobId, startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
 import { JobToast } from './components/JobToast'
+import { MiniGameShell } from './minigames/MiniGameShell'
+import { acornCatchSpec } from './minigames/acornCatch'
 import { ForestRun } from './components/ForestRun'
 import { StoneGift } from './components/StoneGift'
 import { HomePage } from './components/HomePage'
@@ -2409,15 +2411,53 @@ function SettingsButton() {
 }
 
 /** 診断を待っている間の、ミニゲーム。読み込み画面のボタンから開く。診断ができても、遊びおえるまで、閉じない */
+type MiniGameId = 'forest_run' | 'acorn_catch'
+const MINIGAMES: { id: MiniGameId; name: string; desc: string }[] = [
+  { id: 'forest_run', name: '森ラン', desc: 'ジャンプで 障害物を よけて ゴールへ' },
+  { id: 'acorn_catch', name: 'どんぐりキャッチ', desc: '落ちてくる どんぐりを うけとめよう' },
+]
+
 function MiniGameHost() {
   const [jobId, setJobId] = useState<string | null | undefined>(undefined)
+  const [game, setGame] = useState<MiniGameId | null>(null)
   useEffect(() => {
-    const open = () => setJobId(getWaitingJobId())
+    const open = () => {
+      setGame(null)
+      setJobId(getWaitingJobId())
+    }
     window.addEventListener('open-minigame', open)
     return () => window.removeEventListener('open-minigame', open)
   }, [])
   if (jobId === undefined) return null
-  return <ForestRun jobId={jobId} onClose={() => setJobId(undefined)} />
+  const close = () => {
+    setJobId(undefined)
+    setGame(null)
+  }
+  // 診断を待っている間は、次のゲームへ（ほかのゲームが、1つなら、そのまま）
+  const other = (g: MiniGameId): MiniGameId => (g === 'forest_run' ? 'acorn_catch' : 'forest_run')
+  if (game === 'forest_run') return <ForestRun key="fr" jobId={jobId} onClose={close} onSwitchGame={() => setGame(other('forest_run'))} />
+  if (game === 'acorn_catch') return <MiniGameShell key="ac" spec={acornCatchSpec} jobId={jobId} onClose={close} onSwitchGame={() => setGame(other('acorn_catch'))} />
+  return (
+    <div className="run-backdrop">
+      <div className="run-stage">
+        <div className="run-overlay">
+          <div className="run-panel">
+            <p className="run-panel-title">ミニゲーム</p>
+            <div className="run-panel-buttons" style={{ flexDirection: 'column' }}>
+              {MINIGAMES.map((m) => (
+                <button key={m.id} type="button" className="run-btn run-btn-wide" onClick={() => setGame(m.id)}>
+                  <span className="run-btn-label">{m.name}</span>
+                </button>
+              ))}
+              <button type="button" className="run-btn run-btn-wide" onClick={close}>
+                <span className="run-btn-label">閉じる</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function App() {

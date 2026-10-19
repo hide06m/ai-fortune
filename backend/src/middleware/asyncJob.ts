@@ -70,7 +70,7 @@ export function asyncJob(kindOf: (req: Request) => string) {
     // 長すぎる待ち（AIが返らない・保存の失敗など）で、画面が、いつまでも待たないよう、330秒を過ぎたら、失敗として閉じる
     const watchdog = setTimeout(() => {
       inner.destroy()
-      void finishJob(jobId, 504, { success: false, error: 'JOB_TIMEOUT', message: '診断に時間がかかりすぎました。診断の記録に結果が残っていることもあります。確認して、なければ、もう一度お試しください。' }, req.user!.userId).catch(() => {})
+      void finishJob(jobId, 504, { success: false, error: 'JOB_TIMEOUT', message: '診断に時間がかかりすぎました。もう一度お試しください。' }, req.user!.userId).catch(() => {})
     }, 330_000)
     inner.on('close', () => clearTimeout(watchdog))
     inner.write(payload)

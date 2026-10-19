@@ -110,7 +110,7 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
         )}
         {hint && <p className="estimate">{hint}</p>}
         {elapsedSec >= 90 && (
-          <p className="estimate">かなり時間がかかっています。うまくいかないときは「待たずに他のことをする」を押してください。診断の結果は「診断の記録」に残っていることもあります。</p>
+          <p className="estimate">時間がかかっています。もう少しお待ちください。</p>
         )}
         {detachable && elapsedSec >= 3 && (
           <div className="hamster-minigame">

@@ -7,6 +7,8 @@ import { PalmLab } from './dev/PalmLab.tsx'
 import { PalmReport } from './dev/PalmReport.tsx'
 import { InvitePage } from './pages/InvitePage.tsx'
 import { ForestRun } from './components/ForestRun.tsx'
+import { MiniGameShell } from './minigames/MiniGameShell.tsx'
+import { acornCatchSpec } from './minigames/acornCatch.ts'
 import { BirthDateInput } from './components/BirthDateInput.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
@@ -27,6 +29,8 @@ createRoot(document.getElementById('root')!).render(
     ) : import.meta.env.DEV && window.location.pathname === '/forest-run' ? (
       // 開発用：ログインなしで、森ランだけを開く（スマホでの確認用）
       <ForestRun onClose={() => { window.location.href = '/' }} />
+    ) : import.meta.env.DEV && window.location.pathname === '/acorn-catch' ? (
+      <MiniGameShell spec={acornCatchSpec} onClose={() => { window.location.href = '/' }} />
     ) : import.meta.env.DEV && window.location.pathname === '/birthdate-lab' ? (
       // 開発用：生年月日のカレンダーだけを、開く
       <div style={{ padding: 24, background: '#fff', minHeight: '100vh' }}><BirthDateInput id="lab" value="" onChange={() => {}} /></div>

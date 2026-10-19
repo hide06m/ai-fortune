@@ -46,7 +46,7 @@ router.post('/reward', requireAuth, async (req: Request, res: Response) => {
     const userId = req.user!.userId
     const { jobId, game, difficulty } = req.body
     if (typeof jobId !== 'string' || !/^[0-9a-f-]{36}$/i.test(jobId)) return res.status(400).json({ success: false, error: 'jobId が正しくありません' })
-    if (game !== 'forest_run') return res.status(400).json({ success: false, error: 'game が正しくありません' })
+    if (game !== 'forest_run' && game !== 'acorn_catch') return res.status(400).json({ success: false, error: 'game が正しくありません' })
     const diff = difficulty in MINIGAME_REWARD_BY_DIFFICULTY ? difficulty : 'easy'
     const amount = MINIGAME_REWARD_BY_DIFFICULTY[diff]
     // かんたんは、石が、もらえない（ジョブも、使わない。あとで、ふつう以上でクリアすれば、もらえる）
