@@ -624,3 +624,24 @@
 
 /* 「占いができました」の板：森ランの現在地バー・ハートにかぶらない位置へ（その下） */
 .run-done-banner { top: 150px; }
+
+/* 「占いができました」の板：新しい木の板の絵（ui_done_banner）。現在地バー・ハート・ルーンストーンの表示にかぶらないよう、画面の下に出す */
+.run-done-banner {
+  top: auto;
+  bottom: 26px;
+  padding: 3px 0;
+  border: solid transparent;
+  border-width: 20px 28px 15px 28px;
+  border-image: url('/assets/games/ui_done_banner.png') 150 170 110 170 fill / 20px 28px 15px 28px / 0 stretch;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: #2a1606;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+  font-weight: 900;
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-shadow: 0 1px 0 rgba(255, 236, 196, 0.65), 0 -1px 0 rgba(15, 6, 0, 0.55);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+}

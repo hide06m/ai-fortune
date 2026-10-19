@@ -170,19 +170,22 @@
 
 .hamster-minigame { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .hamster-minigame small { color: #f2eefc; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
-/* 木の板（苔つき）の絵に、彫り文字 */
+/* 木の板（苔つき）の絵に、彫り文字。高さは、半分ほど（絵を9分割して、角の苔や葉は、そのままで、まん中だけ伸ばす） */
 .hamster-minigame-btn {
-  width: min(70vw, 280px);
-  aspect-ratio: 2695 / 1100;
-  padding: 9% 8% 5%;
-  border: none;
-  background: url('/assets/games/ui_wood_btn_on.png') center / 100% 100% no-repeat;
-  color: #1f3510;
+  width: min(70vw, 270px);
+  padding: 3px 0;
+  border: solid transparent;
+  border-width: 18px 26px 14px 26px;
+  border-image: url('/assets/games/ui_wait_btn.png') 140 200 110 200 fill / 18px 26px 14px 26px / 0 stretch;
+  background: none;
+  color: #2a1606;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
   font-weight: 900;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
   letter-spacing: 0.08em;
-  text-shadow: 0 1px 0 rgba(225, 255, 190, 0.5), 0 -1px 0 rgba(8, 24, 0, 0.55);
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 236, 196, 0.65), 0 -1px 0 rgba(15, 6, 0, 0.55);
   cursor: pointer;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
 }

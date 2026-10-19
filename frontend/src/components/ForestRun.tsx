@@ -23,6 +23,7 @@ const JUMP_V = -760;
 const MUSUBI_FACE_DX = 26; // 顔の中心は、体の中心より、少し前（右）にある
 const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
 const FRONT_DROP = 16; // 地面より前に描くもの（切り株・ゴール）の足もとを地面の線から下げる量（根が地面にのって見える）
+const GATE_DROP = 20; // ゴールの門の足もとを、地面の線から下げる量（切り株より、少なめ）
 const GROUND_EDGE = 6; // 障害物の底を、地面の線から、さらに下へ置く量
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
@@ -144,13 +145,15 @@ interface ObstacleKind {
   low?: boolean;
   /** 地面より前（手前）に描く：根が、地面の上に、見えるように、うめない（切り株・ゴールの門） */
   front?: boolean;
+  /** 地面より前に描くとき、足もとを地面の線から下げる量（未指定なら FRONT_DROP） */
+  drop?: number;
   /** 地面にうめる割合（根や足もとが、地面の上に見えないように、下の部分を、地面の中にかくす） */
   sink: number;
 }
 
 // 幅 w・高さ h は、画面上の大きさ。hx/hy は、当たり判定を絵より小さくする割合
 const KINDS: Record<string, ObstacleKind> = {
-  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.02, front: true },
+  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.02, front: true, drop: 25 },
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
   stump_l: { img: 'run_stump_l', w: 74, h: 122, hx: 0.65, hy: 0.85, sink: 0.02, front: true },
   rock_l: { img: 'run_rock_l', w: 74, h: 114, hx: 0.65, hy: 0.85, sink: 0.08 },
@@ -668,7 +671,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
         const gx = world(g.length) - gw2 / 2; // 門のまん中が、コースの終わり
         if (gx > W + 50 || gx + gw2 < -50) return;
         const sw = gate.naturalWidth / 2;
-        dI(ctx, gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + FRONT_DROP, gw2 / 2, GATE_H);
+        dI(ctx, gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + GATE_DROP, gw2 / 2, GATE_H);
       };
       // 障害物：石・キノコ・丸太は、地面より先に描き、地面の草が、足もとにかぶさって、うまって見えるようにする。
       // 切り株と水たまりは、地面より前に描く（切り株の根が、地面の上に、見えるように）
@@ -681,7 +684,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
           if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
           ctx.globalAlpha = o.hit ? 0.55 : 1;
           const bb = boxes[k.img];
-          dI(ctx, im, bb.sx, bb.sy, bb.sw, bb.sh, x, GY - k.h + k.h * k.sink + (k.front ? FRONT_DROP : GROUND_EDGE), k.w, k.h);
+          dI(ctx, im, bb.sx, bb.sy, bb.sw, bb.sh, x, GY - k.h + k.h * k.sink + (k.front ? (k.drop ?? FRONT_DROP) : GROUND_EDGE), k.w, k.h);
           ctx.globalAlpha = 1;
         }
       };
@@ -932,7 +935,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
 
         {diagnosisDone && (
           <button type="button" className="run-done-banner" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
-            ✨ 占いができました。結果を見る
+            占いができました。結果を見る
           </button>
         )}
 
