@@ -397,6 +397,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     maxLives: DIFFS[loadDifficulty()].lives,
     time: 0,
     dying: false,
+    flash: 0, // ぶつかった直後の、ハートと画面の、知らせ（秒）
+    lostIndex: -1, // いま、なくなった、ハートの番号
   });
 
   const changePhase = useCallback((p: Phase) => {
@@ -420,6 +422,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.maxLives = DIFFS[difficultyRef.current].lives;
     g.time = 0;
     g.dying = false;
+    g.flash = 0;
+    g.lostIndex = -1;
     setLives(DIFFS[difficultyRef.current].lives);
   }, []);
 
@@ -550,6 +554,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         if (g.landTimer > 0) g.landTimer -= dt;
         if (g.invuln > 0) g.invuln -= dt;
         if (g.hitTimer > 0) g.hitTimer -= dt;
+        if (g.flash > 0) g.flash -= dt;
 
         // 当たり判定（世界の座標 → 画面の座標）
         // 世界の座標では、ムスビは g.dist の位置（画面の MUSUBI_X に、描く）にいる
@@ -572,6 +577,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             if (mx1 > fx0 && mx0 < fx1 && my0 < fy1 && my1 > fy0 && g.invuln <= 0 && !g.dying) {
               o.hit = true;
               g.lives -= 1;
+              g.flash = 0.7;
+              g.lostIndex = g.lives;
               g.invuln = 1.2;
               g.hitTimer = 0.45;
               setLives(g.lives);
@@ -589,6 +596,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           if (mx1 > ox0 && mx0 < ox1 && my0 < oh && my1 > 0 && g.invuln <= 0 && !g.dying) {
             o.hit = true;
             g.lives -= 1;
+            g.flash = 0.7;
+            g.lostIndex = g.lives;
             g.invuln = 1.2;
             g.hitTimer = 0.45;
             setLives(g.lives);
@@ -732,8 +741,30 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       ctx.font = '30px sans-serif';
       ctx.textBaseline = 'top';
       for (let i = 0; i < g.maxLives; i++) {
-        ctx.fillStyle = i < g.lives ? '#ff6b8b' : 'rgba(255,255,255,0.3)';
-        ctx.fillText('♥', 24 + i * 34, 112);
+        const lost = i >= g.lives;
+        // なくなったばかりの、ハートは、大きくなってから、ちぢみながら、色がぬけていく
+        const just = lost && i === g.lostIndex && g.flash > 0;
+        const k = just ? 1 + (g.flash / 0.7) * 0.8 : 1;
+        ctx.save();
+        ctx.translate(24 + i * 34 + 15, 112 + 17);
+        ctx.scale(k, k);
+        ctx.font = '30px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(40, 20, 20, 0.75)';
+        ctx.strokeText('♥', 0, 0);
+        ctx.fillStyle = lost ? (just ? `rgba(255, 90, 110, ${0.4 + 0.6 * (g.flash / 0.7)})` : 'rgba(70, 45, 45, 0.55)') : '#ff6b8b';
+        ctx.fillText('♥', 0, 0);
+        ctx.restore();
+      }
+      // ぶつかった直後、画面のふちが、ほんのり、赤くなる
+      if (g.flash > 0) {
+        const grad = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.7);
+        grad.addColorStop(0, 'rgba(255, 40, 60, 0)');
+        grad.addColorStop(1, `rgba(255, 40, 60, ${0.38 * (g.flash / 0.7)})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
       }
 
     };
