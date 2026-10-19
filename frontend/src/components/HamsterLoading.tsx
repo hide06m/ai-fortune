@@ -110,9 +110,12 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
         )}
         {hint && <p className="estimate">{hint}</p>}
         {detachable && elapsedSec >= 3 && (
-          <button type="button" className="hamster-minigame-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
-            🎮 ミニゲームで待つ（クリアでルーンストーンがもらえます）
-          </button>
+          <div className="hamster-minigame">
+            <button type="button" className="hamster-minigame-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
+              ミニゲームで待つ
+            </button>
+            <small>クリアでルーンストーンがもらえます</small>
+          </div>
         )}
         {elapsedSec >= 20 && detachable && (
           <button type="button" className="hamster-detach-btn" onClick={detachWaitingJobs}>
