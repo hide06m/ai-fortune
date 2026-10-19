@@ -49,9 +49,9 @@ export type TutorialStep =
  * 最後にドアをクリックしてもらうため handoff: doorKnock で締める。
  */
 export const TUTORIAL_INTRO_STEPS: TutorialStep[] = [
-  { type: 'narration', text: '― 気が付くと、私たちはどこでもない深い森の中にいて、その中央にはまるで古い記憶のように大きな木が立っていた ―' },
+  { type: 'narration', text: '― 気が付くと、わたしはどこでもない深い森の中にいて、その中央にはまるで古い記憶のように大きな木が立っていた ―' },
   { type: 'narration', text: 'その根元には、長い年月を経ているはずなのに奇妙に手入れの行き届いた木のドアがあって、向こう側からかすかに、何かが擦れるような音が聞こえてくる。' },
-  { type: 'narration', text: '私たちは、特に深く考えることもなく、あるいはそうすることがあらかじめ決まっていたかのように、吸い込まれるようにドアを叩いた。' },
+  { type: 'narration', text: 'わたしは、特に深く考えることもなく、あるいはそうすることがあらかじめ決まっていたかのように、吸い込まれるようにドアを叩いた。' },
   { type: 'handoff', action: 'doorKnock' },
 ]
 
@@ -60,9 +60,11 @@ export const TUTORIAL_INTRO_STEPS: TutorialStep[] = [
  * 最後は入力フォームへ handoff。
  */
 export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
-  { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: null, text: 'いらっしゃい' },
-  { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: null, text: 'おや、人が来るのは久しぶりだね' },
-  { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'はじめまして。見慣れない顔だね。ここは占いの館、あるいはただの通り道さ。ボクはここの案内人の"ムスビ"。君の心をほんの少しだけ照らす灯りになれればいいと思っているけれど、名前なんてものはこの森ではコーヒー一杯分の価値もないよ。よろしくね' },
+  // 自己紹介まで、ムスビはフードをかぶって顔が隠れている（ham003）。「ボクはここの案内人のムスビ」でフードを脱ぐ（ham001）
+  { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'いらっしゃい' },
+  { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'おや、人が来るのは久しぶりだね' },
+  { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'ここは占いの館、あるいはただの通り道さ' },
+  { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: 'ムスビ', text: 'ボクはここの案内人の"ムスビ"。君の心をほんの少しだけ照らす灯りになれればいいと思っているけれど、名前なんてものはこの森ではコーヒー一杯分の価値もないよ。よろしくね' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ボクたちは、あらゆる世界の歴史や、使い捨てのライターの構造、あるいは過去の過ちについて研究しているんだ' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ここには時々迷いや悩みを持った人々を引き寄せられるようにやってくる' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'キミみたいにね' },

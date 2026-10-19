@@ -1482,7 +1482,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   if (screen === 'counseling') {
     return (
       <>
-        {loading && <HamsterLoading message={loadingMessage} />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} message={loadingMessage} />}
         <CounselingScene
           background={mode === 'guest' ? '/assets/index001.jpg' : '/assets/room001.jpg'}
           characterImage={mode === 'guest' ? '/assets/characters/0-musubi/ham003.webp' : '/assets/characters/0-musubi/ham002.webp'}
@@ -1509,7 +1509,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         className="form-container"
         style={{ backgroundImage: mode === 'guest' ? 'url(/assets/index001.jpg)' : 'url(/assets/room001.jpg)' }}
       >
-        {loading && <HamsterLoading message={loadingMessage} />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} message={loadingMessage} />}
         <div className="form-overlay">
           <div className="form-header" style={mode === 'guest' ? { justifyContent: 'flex-end' } : undefined}>
             {mode !== 'guest' && <h1>占いの館</h1>}
@@ -1848,7 +1848,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
   if (screen === 'compatibility') {
     return (
       <div className="form-container" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
-        {compatLoading && <HamsterLoading message={loadingMessage} />}
+        {compatLoading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} message={loadingMessage} />}
         <div className="form-overlay">
           <div className="form-header">
             <h1>💞 相性診断</h1>
@@ -2044,7 +2044,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     }
     return (
       <>
-        {loading && <HamsterLoading />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} />}
         <CounselingScene
           mode="concern"
           background="/assets/room001.jpg"
@@ -2094,7 +2094,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     }
     return (
       <>
-        {loading && <HamsterLoading />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} />}
         <CounselingScene
           mode="birthdate"
           background="/assets/room001.jpg"
@@ -2145,7 +2145,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     }
     return (
       <>
-        {loading && <HamsterLoading />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} />}
         <CounselingScene
           mode="name"
           background="/assets/room001.jpg"
@@ -2192,7 +2192,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
     }
     return (
       <>
-        {loading && <HamsterLoading />}
+        {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} />}
         <CounselingScene
           mode="concern"
           background="/assets/room001.jpg"

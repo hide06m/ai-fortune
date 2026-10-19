@@ -615,8 +615,9 @@ body {
 
 .vn-narration-box {
   position: relative;
-  max-width: 600px;
-  padding: 20px 32px;
+  width: min(94vw, 600px);
+  box-sizing: border-box;
+  padding: 18px 18px;
   text-align: center;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 10px;
@@ -625,9 +626,13 @@ body {
 .vn-narration-text {
   color: #fff;
   font-size: var(--vn-text);
-  line-height: 2;
+  line-height: 1.95;
   margin: 0;
   white-space: pre-line;
+  /* 日本語は、文節の切れ目で改行する（スマホで、単語の途中や、1文字だけの行が出ないように） */
+  word-break: auto-phrase;
+  text-wrap: pretty;
+  text-align: left;
 }
 
 .vn-continue-hint-narration {

@@ -3,11 +3,12 @@
  * GET  /api/stones/balance            - 残高・ログインボーナス受取可否を取得
  * POST /api/stones/claim-daily-bonus  - ログインボーナスを受け取る（1日1回、+1石）
  * POST /api/stones/watch-ad           - 広告視聴ボーナスを受け取る（1日5回まで、+1石）
+ * GET  /api/stones/summary           - 石の管理画面用：残高・今日の受け取り状況・最近の増減
  */
 
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus, getAdWatchRemaining } from '../db/stones.js'
+import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus, getAdWatchRemaining, getStoneSummary } from '../db/stones.js'
 
 const router = Router()
 
@@ -50,6 +51,16 @@ router.post('/watch-ad', requireAuth, async (req: Request, res: Response) => {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to claim ad-watch bonus',
     })
+  }
+})
+
+router.get('/summary', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any).userId
+    res.json({ success: true, ...(await getStoneSummary(userId)) })
+  } catch (error) {
+    console.error('[API] Failed to get stone summary:', error)
+    res.status(500).json({ success: false, error: 'Failed to get stone summary' })
   }
 })
 

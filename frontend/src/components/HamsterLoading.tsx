@@ -22,6 +22,8 @@ const FRAME_URLS = Array.from(
 );
 
 interface HamsterLoadingProps {
+  /** 最初の会話の中の診断など、ミニゲームを出さない場面では true（歯車を見て待つ） */
+  noMiniGame?: boolean;
   message?: string;
   isVisible?: boolean;
   /** 「推定時間：あと○秒」を出すか（所要時間が読めない処理では false にして、代わりに hint を渡す） */
@@ -34,7 +36,7 @@ interface HamsterLoadingProps {
 const MESSAGE_INTERVAL_MS = 3000;
 
 // message は後方互換のために残している。待ち受け画面のメッセージは、どの画面でも、世界観の文言からランダムに選び、3秒ごとに切り替える
-export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: HamsterLoadingProps) {
+export function HamsterLoading({ isVisible = true, showEstimate = true, hint, noMiniGame = false }: HamsterLoadingProps) {
   const [flavor, setFlavor] = useState(() => pickRandomLoadingMessage());
   const [estimatedTime, setEstimatedTime] = useState(3); // 推定時間（秒）
   // 長くかかっているとき（AIの混雑など）は、止まったと思われないよう、待っていてよいことを伝える
@@ -112,7 +114,7 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
         {elapsedSec >= 90 && (
           <p className="estimate">時間がかかっています。もう少しお待ちください。</p>
         )}
-        {detachable && elapsedSec >= 3 && (
+        {detachable && !noMiniGame && elapsedSec >= 3 && (
           <div className="hamster-minigame">
             <button type="button" className="hamster-minigame-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
               ミニゲームで待つ
@@ -120,7 +122,7 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
             <small>クリアでルーンストーンがもらえます</small>
           </div>
         )}
-        {elapsedSec >= 20 && detachable && (
+        {elapsedSec >= 20 && detachable && !noMiniGame && (
           <button type="button" className="hamster-detach-btn" onClick={detachWaitingJobs}>
             待たずに他のことをする（できたらお知らせします）
           </button>

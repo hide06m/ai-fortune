@@ -2,6 +2,7 @@
  * ホーム画面：館の部屋で、占い師がひとこと話しかけてくれる。占う・前回の結果・履歴・ミニゲーム（準備中）へ進む
  */
 
+import { StonePanel } from './StonePanel';
 import { useEffect, useState } from 'react';
 import '../styles/home.css';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
@@ -46,7 +47,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
   const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -93,10 +94,10 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   return (
     <div className="vn-scene home-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
       <div className="home-top">
-        <div className="home-stone-chip">
+        <button type="button" className="home-stone-chip" onClick={() => setPanel('stone')} aria-label="ルーンストーンの管理画面を開く">
           <img src="/assets/stone.webp" alt="" />
           <span>{stoneBalance === null ? '—' : stoneBalance} 個</span>
-        </div>
+        </button>
         <span className="home-email">{email}</span>
       </div>
 
@@ -145,6 +146,8 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
       {panel === 'daily' && (
         <DailyPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} onSnapshot={updateBadge} />
       )}
+
+      {panel === 'stone' && <StonePanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} />}
 
       {panel === 'zukan' && <CollectionPanel onClose={() => setPanel(null)} />}
 

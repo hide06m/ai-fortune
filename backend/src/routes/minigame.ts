@@ -13,7 +13,7 @@
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
-import { grantMissionReward } from '../db/stones.js'
+import { grantMinigameReward } from '../db/stones.js'
 import { GAME_DAY_DATE_SQL } from '../time/gameDay.js'
 
 const router = Router()
@@ -84,7 +84,7 @@ router.post('/reward', requireAuth, async (req: Request, res: Response) => {
       [jobId, userId, game, diff, amount]
     )
     if (ins.rows.length === 0) return res.json({ success: true, granted: 0, reason: 'already', remaining: room, limit: MINIGAME_DAILY_LIMIT })
-    const balance = await grantMissionReward(userId, amount)
+    const balance = await grantMinigameReward(userId, amount)
     res.json({ success: true, granted: amount, balance, remaining: room - 1, limit: MINIGAME_DAILY_LIMIT })
   } catch (error) {
     console.error('[API] minigame reward failed:', error)

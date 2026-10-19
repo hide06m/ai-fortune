@@ -13,7 +13,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { query, getPool } from './client.js'
-import { GAME_DAY_START_SQL } from '../time/gameDay.js'
+import { GAME_DAY_START_SQL, GAME_DAY_DATE_SQL } from '../time/gameDay.js'
 
 export type StoneReason =
   | 'login_bonus'
@@ -23,8 +23,9 @@ export type StoneReason =
   | 'signup_bonus'
   | 'character_gift'
   | 'mission_reward'
+  | 'minigame_reward'
 
-const AD_WATCH_DAILY_LIMIT = 5
+export const AD_WATCH_DAILY_LIMIT = 5
 
 /**
  * 現在の石残高を取得
@@ -173,4 +174,36 @@ export async function grantSignupBonus(userId: string): Promise<number> {
  */
 export async function grantMissionReward(userId: string, amount: number): Promise<number> {
   return applyStoneChange(userId, amount, 'mission_reward')
+}
+
+/**
+ * ミニゲームの報酬（石）を付与する（履歴で、ミッションと区別できるよう、別の理由で記録）
+ */
+export async function grantMinigameReward(userId: string, amount: number): Promise<number> {
+  return applyStoneChange(userId, amount, 'minigame_reward')
+}
+
+/**
+ * 石の管理画面用のまとめ：残高・今日の受け取り状況（ログインボーナス・広告・ミニゲーム）・最近の増減
+ */
+export async function getStoneSummary(userId: string) {
+  const balance = await getStoneBalance(userId)
+  const loginBonusClaimed = await hasTransactionToday(userId, 'login_bonus')
+  const adRemaining = await getAdWatchRemaining(userId)
+  const mg = await query(
+    `SELECT COALESCE(SUM(stones), 0)::int AS stones FROM minigame_rewards WHERE user_id = $1 AND day = ${GAME_DAY_DATE_SQL}`,
+    [userId]
+  )
+  const hist = await query(
+    `SELECT amount, reason, created_at FROM stone_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20`,
+    [userId]
+  )
+  return {
+    balance,
+    loginBonusClaimed,
+    adRemaining,
+    adLimit: AD_WATCH_DAILY_LIMIT,
+    minigameStonesToday: mg.rows[0].stones as number,
+    history: hist.rows.map((r) => ({ amount: r.amount as number, reason: r.reason as string, createdAt: new Date(r.created_at).toISOString() })),
+  }
 }

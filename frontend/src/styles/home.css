@@ -654,3 +654,29 @@
 /* トップ画面の下に、利用規約・プライバシーポリシーへのリンク（Googleの審査で、ログイン画面から見える必要がある） */
 .legal-links { position: fixed; left: 0; right: 0; bottom: 8px; z-index: 30; display: flex; justify-content: center; gap: 18px; font-size: 0.78rem; }
 .legal-links a { color: #f4eefc; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-decoration: underline; }
+
+/* ルーンストーンの管理画面 */
+button.home-stone-chip { font: inherit; color: inherit; cursor: pointer; }
+button.home-stone-chip:active { transform: translateY(1px); }
+.stone-manage-balance { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 14px; }
+.stone-manage-balance img { width: 44px; height: 44px; }
+.stone-manage-balance strong { font-size: 2.2rem; line-height: 1; }
+.stone-manage-list li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 6px 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.92rem; }
+.stone-manage-list b { font-weight: 600; opacity: 0.85; text-align: right; }
+.stone-manage-list b.is-done { color: #8fe3a8; opacity: 1; }
+.stone-manage-ad { display: block; width: 100%; margin: 14px 0 4px; padding: 11px 12px; border-radius: 10px; border: 1px solid rgba(255, 224, 150, 0.6); background: linear-gradient(180deg, #8a6a2f, #5d4520); color: #fff3d0; font-weight: 700; cursor: pointer; }
+.stone-manage-ad:disabled { opacity: 0.45; cursor: default; }
+.stone-manage-note { margin: 2px 0 12px; font-size: 0.78rem; opacity: 0.7; text-align: center; }
+.stone-manage h4 { margin: 8px 0 6px; font-size: 0.92rem; }
+.stone-manage-history { max-height: 30vh; overflow-y: auto; }
+.stone-manage-history li { display: grid; grid-template-columns: 5.5em 1fr auto; gap: 8px; font-size: 0.85rem; align-items: baseline; }
+.stone-manage-history .is-plus { color: #8fe3a8; }
+.stone-manage-history .is-minus { color: #ffb0a0; }
+.stone-manage-msg { margin: 8px 0 0; color: #8fe3a8; text-align: center; font-size: 0.9rem; }
+.stone-manage-err { margin: 8px 0 0; color: #ffb0a0; text-align: center; font-size: 0.9rem; }
+.stone-ad-overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.8); }
+.stone-ad-box { width: min(86vw, 320px); padding: 22px 18px; border-radius: 14px; background: #1c1a24; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; color: #fff; }
+.stone-ad-title { margin: 0 0 6px; font-weight: 700; }
+.stone-ad-count { margin: 8px 0; font-size: 3rem; font-weight: 800; }
+.stone-ad-note { margin: 0 0 14px; font-size: 0.8rem; opacity: 0.7; }
+.stone-ad-box button { padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: #fff; cursor: pointer; }

@@ -59,3 +59,20 @@ export async function watchAdForStone(): Promise<StoneClaimResponse> {
   }
   return response.json();
 }
+
+export interface StoneSummary {
+  success: boolean;
+  balance: number;
+  loginBonusClaimed: boolean;
+  adRemaining: number;
+  adLimit: number;
+  /** 今日ミニゲームでもらった石 */
+  minigameStonesToday: number;
+  history: { amount: number; reason: string; createdAt: string }[];
+}
+
+export async function getStoneSummary(): Promise<StoneSummary> {
+  const response = await fetch(`${API_URL}/api/stones/summary`, { method: 'GET', headers: authHeaders() });
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  return response.json();
+}
