@@ -516,7 +516,7 @@
 .run-btn .run-btn-label,
 .run-btn:not(.is-on) .run-btn-label,
 .run-start-banner .run-btn-label {
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', 'MS PMincho', serif;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', 'Meiryo', sans-serif;
   font-weight: 900;
   letter-spacing: 0.1em;
   color: #3b2210;
@@ -543,7 +543,7 @@
 
 /* パネルの題字：濃い板に、焼きこんだような、明るい彫り文字 */
 .run-panel-title, .run-panel .run-result {
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', 'MS PMincho', serif;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', 'Meiryo', sans-serif;
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #f1dcae;
@@ -565,3 +565,6 @@
   -webkit-text-fill-color: #2a1606;
   text-shadow: 0 1px 0 rgba(255, 236, 196, 0.65), 0 -1px 0 rgba(15, 6, 0, 0.55);
 }
+
+.run-btn .run-btn-label, .run-start-banner .run-btn-label { letter-spacing: 0.06em; }
+.run-panel-title, .run-panel .run-result { letter-spacing: 0.08em; }

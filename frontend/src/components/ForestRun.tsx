@@ -767,7 +767,6 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         {loaded && phase === 'ready' && (
           <div className="run-overlay run-overlay-ready">
             <div className="run-ready-top">
-            <p>タップで、ジャンプ</p>
             <small>PC：スペースキー／難易度は ←→↑↓</small>
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
