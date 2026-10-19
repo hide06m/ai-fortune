@@ -587,3 +587,12 @@
 
 /* 一時停止・結果パネルの、ボタンの文字：少しだけ、下げる（中間の位置） */
 .run-panel .run-btn { padding: 8% 9% 5.5%; }
+
+/* 「タップで／スタート」：2行。板の、まん中に、収める */
+.run-start-banner { width: min(50%, 200px); padding: 5% 8% 3%; }
+.run-start-banner .run-btn-label { font-size: 1.22rem; line-height: 1.25; text-align: center; letter-spacing: 0.1em; }
+
+/* 結果パネル：ボタンは、横に2つならべて、ゆとりをもたせる */
+.run-panel-buttons { display: flex; gap: 4%; width: 100%; justify-content: center; }
+.run-panel-buttons .run-btn-wide { width: 46%; padding: 8% 4% 5.5%; }
+.run-panel-buttons .run-btn-label { font-size: 0.88rem; letter-spacing: 0.01em; }

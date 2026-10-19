@@ -826,7 +826,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
               ))}
             </div>
             </div>
-            <div className="run-start-banner"><span className="run-btn-label">タップでスタート</span></div>
+            <div className="run-start-banner"><span className="run-btn-label">タップで<br />スタート</span></div>
           </div>
         )}
 
@@ -850,8 +850,10 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           <div className="run-overlay">
             <div className="run-panel">
             <p className="run-panel-title run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
-            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
+            <div className="run-panel-buttons">
+              <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}><span className="run-btn-label">閉じる</span></button>
+            </div>
             </div>
           </div>
         )}
