@@ -17,7 +17,6 @@ const MUSUBI_X = 120;
 const MUSUBI_H = 132;
 const GRAVITY = 1800;
 const JUMP_V = -760;
-const LIVES = 3;
 const MUSUBI_FACE_DX = 26; // 顔の中心は、体の中心より、少し前（右）にある
 const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
 const GROUND_EDGE = 6; // 障害物の底を、地面の線から、さらに下へ置く量
@@ -85,26 +84,36 @@ function dFull(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'extra';
 
-/** 難易度ごとの設定 */
+/**
+ * 難易度ごとの設定
+ * 間隔は、「秒」で決める（走る速さをかけて、距離にする）。
+ * ジャンプ1回は、約0.84秒（空中）。同じ種類の障害物が続く場合、最短でも、先頭から先頭まで約0.76秒以上の間隔がないと、
+ * 着地して、すぐ次をとぶ、という、きわどい連続でも、絶対に、よけられなくなる。そこを下まわらないようにする。
+ */
 interface DifficultyConfig {
   label: string;
-  sub: string;
-  length: number; // コースの長さ（px）。約300px/秒
-  birds: string[]; // とんでくる鳥の種類（空なら、鳥なし）
-  birdStart: number;
-  birdGap: [number, number]; // 鳥と鳥の間隔
-  groundGap: [number, number]; // 地面の障害物の間隔（絵の幅を足す前）
+  speed: number; // はしる速さ（px/秒）
+  seconds: number; // コースの長さ（秒）
+  lives: number; // ハート（ぶつかれる回数）
+  groundTime: [number, number]; // 地面の障害物の間隔（秒）。[最短, ばらつき]
   bigWeight: number; // 大きい障害物（丸太・高い切り株・高い石）が出る割合
+  birds: string[]; // とんでくる鳥の種類（空なら、鳥なし）
+  birdTime: [number, number]; // 鳥と鳥の間隔（秒）。[最短, ばらつき]
+  birdStart: number; // 最初の鳥が出る位置（秒）
+  birdSpeedMul: number; // 鳥の、こちらへ向かってくる速さの倍率
+  hit: number; // 当たり判定の大きさの倍率（大きいほど、ぎりぎりでよけられない）
   /** 鳥の色：blue＝すべて青／byHeight＝低い鳥は赤茶・高い鳥は青／random＝ランダム（高さと、色が、結びつかない） */
   tone: 'blue' | 'byHeight' | 'random';
-  speed: number; // はしる速さ（px/秒）
-  clearRadius: number; // 鳥の前後で、地面の障害物を、取りのぞく範囲
 }
 const DIFFS: Record<Difficulty, DifficultyConfig> = {
-  easy: { label: 'かんたん', sub: '地面の障害物だけ・短め', length: 6000, birds: [], birdStart: 0, birdGap: [0, 0], groundGap: [400, 300], bigWeight: 0.12, tone: 'blue', speed: 260, clearRadius: 0 },
-  normal: { label: 'ふつう', sub: '高い空の鳥が出る', length: 9000, birds: ['fly_high'], birdStart: 2000, birdGap: [1900, 800], groundGap: [360, 260], bigWeight: 0.22, tone: 'blue', speed: 300, clearRadius: 400 },
-  hard: { label: 'むずかしい', sub: '低い空の鳥も出る・長め', length: 13500, birds: ['fly_high', 'fly_low'], birdStart: 1800, birdGap: [1500, 800], groundGap: [340, 240], bigWeight: 0.3, tone: 'byHeight', speed: 340, clearRadius: 360 },
-  extra: { label: 'エクストラ', sub: '鳥の色がバラバラ・大きな障害物が多い・いちばん長い', length: 19000, birds: ['fly_high', 'fly_low'], birdStart: 1600, birdGap: [1150, 700], groundGap: [300, 200], bigWeight: 0.5, tone: 'random', speed: 380, clearRadius: 300 },
+  // 初見でも、クリアできる（タイミングが、150msずれる人でも、約6割クリア）
+  easy: { label: 'かんたん', speed: 240, seconds: 25, lives: 4, groundTime: [1.9, 0.8], bigWeight: 0.06, birds: [], birdTime: [0, 0], birdStart: 0, birdSpeedMul: 1, tone: 'blue', hit: 0.9 },
+  // 苦手な人は、ちょっと、クリアがむずかしい（150msずれる人で、約2割。100msで約6割）
+  normal: { label: 'ふつう', speed: 290, seconds: 32, lives: 3, groundTime: [1.35, 0.7], bigWeight: 0.25, birds: ['fly_high'], birdTime: [3.2, 1.6], birdStart: 7, birdSpeedMul: 1.1, tone: 'blue', hit: 1 },
+  // 何度も、挑戦しないと、クリアできない（60msずれる人で、約4割）
+  hard: { label: 'むずかしい', speed: 420, seconds: 55, lives: 2, groundTime: [0.9, 0.3], bigWeight: 0.5, birds: ['fly_high', 'fly_low'], birdTime: [2.0, 1.0], birdStart: 5.5, birdSpeedMul: 1.35, tone: 'byHeight', hit: 1.2 },
+  // 1回のミスで終わり。40msずれる人で、約6割。60msで約2割
+  extra: { label: 'エクストラ', speed: 520, seconds: 80, lives: 1, groundTime: [0.88, 0.25], bigWeight: 0.7, birds: ['fly_high', 'fly_low'], birdTime: [1.5, 0.7], birdStart: 4.5, birdSpeedMul: 1.6, tone: 'random', hit: 1.25 },
 };
 const DIFF_ORDER: Difficulty[] = ['easy', 'normal', 'hard', 'extra'];
 const BIG_KINDS = ['log', 'stump_l', 'rock_l'];
@@ -137,8 +146,8 @@ interface ObstacleKind {
 const KINDS: Record<string, ObstacleKind> = {
   stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.2 },
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
-  stump_l: { img: 'run_stump_l', w: 82, h: 140, hx: 0.65, hy: 0.85, sink: 0.1 },
-  rock_l: { img: 'run_rock_l', w: 82, h: 130, hx: 0.65, hy: 0.85, sink: 0.08 },
+  stump_l: { img: 'run_stump_l', w: 74, h: 122, hx: 0.65, hy: 0.85, sink: 0.1 },
+  rock_l: { img: 'run_rock_l', w: 74, h: 114, hx: 0.65, hy: 0.85, sink: 0.08 },
   log: { img: 'run_log2', w: 176, h: 60, hx: 0.75, hy: 0.8, sink: 0.08 },
   puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true, sink: 0.45 },
   mushroom_1: { img: 'run_mushroom_1', w: 56, h: 68, hx: 0.7, hy: 0.85, sink: 0.08 },
@@ -263,6 +272,7 @@ interface Obstacle {
   x: number; // 世界の座標（左端）
   hit: boolean;
   tone?: 'blue' | 'red'; // 鳥の色
+  mul?: number; // 鳥の速さの倍率
 }
 
 function pick<T>(arr: T[]): T {
@@ -271,35 +281,50 @@ function pick<T>(arr: T[]): T {
 
 function buildCourse(diff: Difficulty): Obstacle[] {
   const cfg = DIFFS[diff];
+  const v = cfg.speed;
+  const length = cfg.speed * cfg.seconds;
   const list: Obstacle[] = [];
   const common = KIND_KEYS.filter((k) => !BIG_KINDS.includes(k));
-  let x = 900; // スタート看板から少し走ってから
+  let x = v * 3; // スタート看板から、少し走ってから
   let last = '';
-  for (let guard = 0; x < cfg.length - 700 && guard < 400; guard++) {
+  for (let guard = 0; x < length - v * 2.2 && guard < 600; guard++) {
     let kind = Math.random() < cfg.bigWeight ? pick(BIG_KINDS) : pick(common);
     if (kind === last) kind = kind === common[0] ? common[1] : common[0];
     last = kind;
     list.push({ kind, x, hit: false });
-    // 次までの間隔
-    x += cfg.groundGap[0] + Math.random() * cfg.groundGap[1] + KINDS[kind].w;
+    // 次の障害物の先頭まで：秒で決める（先頭から先頭）
+    x += v * (cfg.groundTime[0] + Math.random() * cfg.groundTime[1]);
   }
   if (cfg.birds.length === 0) return list;
-  // 空を飛ぶ障害物：一定の間隔で、置く。その前後 420px にある、地面の障害物は、取りのぞく
-  // （ジャンプしたい場面と、ジャンプしたくない場面が、重ならないように）
-  let fx = cfg.birdStart;
+  // 空を飛ぶ障害物：一定の間隔で、置く。鳥の前後の、地面の障害物は、取りのぞく
+  // （ジャンプしたい場面と、ジャンプしてはいけない場面が、重ならないよう、鳥が来る前に、着地できる間隔をあける）
+  let t = cfg.birdStart;
   let lastFly = '';
-  for (let guard = 0; fx < cfg.length - 900 && guard < 200; guard++) {
+  for (let guard = 0; v * t < length - v * 3 && guard < 200; guard++) {
+    const fx = v * t;
+    const fkey = (() => {
+      let k = pick(cfg.birds);
+      if (cfg.birds.length > 1 && k === lastFly && Math.random() < 0.6) k = cfg.birds.find((q) => q !== k) ?? k;
+      return k;
+    })();
+    lastFly = fkey;
+    // 鳥は、画面に入ってから、こちらへ向かって、すすむので、実際に、ムスビの所へ来る位置は、少し手前
+    const bs = FLYERS[fkey].speed * cfg.birdSpeedMul;
+    const arrive = fx - (bs * 480) / (v + bs);
+    // 鳥の前後の、地面の障害物は、取りのぞく。
+    //  高い鳥：ジャンプしてはいけない（空中にいると当たる）。障害物のジャンプ（前後0.42秒）が、鳥が来る時と、重ならない間隔（±0.6秒）
+    //  低い鳥：ジャンプが必要。障害物のジャンプから着地して、次のジャンプに入れる間隔（±0.9秒）
+    const half = v * (fkey === 'fly_low' ? 0.9 : 0.6);
     for (let i = list.length - 1; i >= 0; i--) {
       const o = list[i];
-      if (!FLYERS[o.kind] && Math.abs(o.x + KINDS[o.kind].w / 2 - (fx - 140)) < cfg.clearRadius) list.splice(i, 1); // 鳥は、画面に入ってから、約140px 手前へ、すすむ
+      if (FLYERS[o.kind]) continue;
+      const c = o.x + KINDS[o.kind].w / 2;
+      if (Math.abs(c - arrive) < half) list.splice(i, 1);
     }
-    let kind = pick(cfg.birds);
-    if (cfg.birds.length > 1 && kind === lastFly && Math.random() < 0.6) kind = cfg.birds.find((k) => k !== kind) ?? kind;
-    lastFly = kind;
-    // 鳥の色：ふだんは青。エクストラは、高さと関係なく、ランダム（赤茶の鳥が上に、青の鳥が下に、来ることもある）
-    const tone: 'blue' | 'red' = cfg.tone === 'random' ? pick(['blue', 'red'] as const) : cfg.tone === 'byHeight' && kind === 'fly_low' ? 'red' : 'blue';
-    list.push({ kind, x: fx, hit: false, tone });
-    fx += cfg.birdGap[0] + Math.random() * cfg.birdGap[1];
+    // 鳥の色：ふだんは青。むずかしいは、低い鳥だけ赤茶。エクストラは、高さと関係なく、ランダム
+    const tone: 'blue' | 'red' = cfg.tone === 'random' ? pick(['blue', 'red'] as const) : cfg.tone === 'byHeight' && fkey === 'fly_low' ? 'red' : 'blue';
+    list.push({ kind: fkey, x: fx, hit: false, tone, mul: cfg.birdSpeedMul });
+    t += cfg.birdTime[0] + Math.random() * cfg.birdTime[1];
   }
   list.sort((a, b) => a.x - b.x);
   return list;
@@ -372,7 +397,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
   const phaseRef = useRef<Phase>('ready');
   const [phase, setPhase] = useState<Phase>('ready');
   const [loaded, setLoaded] = useState(false);
-  const [lives, setLives] = useState(LIVES);
+  const [lives, setLives] = useState(DIFFS[loadDifficulty()].lives);
   const [difficulty, setDifficulty] = useState<Difficulty>(loadDifficulty);
   const difficultyRef = useRef<Difficulty>(difficulty);
 
@@ -384,10 +409,11 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     landTimer: 0,
     invuln: 0,
     hitTimer: 0,
-    lives: LIVES,
+    lives: DIFFS[loadDifficulty()].lives,
     obstacles: buildCourse(loadDifficulty()),
-    length: DIFFS[loadDifficulty()].length,
+    length: DIFFS[loadDifficulty()].speed * DIFFS[loadDifficulty()].seconds,
     speed: DIFFS[loadDifficulty()].speed,
+    maxLives: DIFFS[loadDifficulty()].lives,
     time: 0,
     dying: false,
   });
@@ -406,21 +432,25 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.landTimer = 0;
     g.invuln = 0;
     g.hitTimer = 0;
-    g.lives = LIVES;
+    g.lives = DIFFS[difficultyRef.current].lives;
     g.obstacles = buildCourse(difficultyRef.current);
-    g.length = DIFFS[difficultyRef.current].length;
+    g.length = DIFFS[difficultyRef.current].speed * DIFFS[difficultyRef.current].seconds;
     g.speed = DIFFS[difficultyRef.current].speed;
+    g.maxLives = DIFFS[difficultyRef.current].lives;
     g.time = 0;
     g.dying = false;
-    setLives(LIVES);
+    setLives(DIFFS[difficultyRef.current].lives);
   }, []);
 
   const chooseDifficulty = useCallback((d: Difficulty) => {
     difficultyRef.current = d;
     setDifficulty(d);
     game.current.obstacles = buildCourse(d);
-    game.current.length = DIFFS[d].length;
+    game.current.length = DIFFS[d].speed * DIFFS[d].seconds;
     game.current.speed = DIFFS[d].speed;
+    game.current.maxLives = DIFFS[d].lives;
+    game.current.lives = DIFFS[d].lives;
+    setLives(DIFFS[d].lives);
     try {
       localStorage.setItem(DIFFICULTY_KEY, d);
     } catch {
@@ -443,7 +473,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
 
   // 開発中の確認用：ブラウザの開発ツールから、ゲームの状態を見られるようにする
   useEffect(() => {
-    if (import.meta.env.DEV) (window as unknown as { __run?: unknown }).__run = { game, jump, phaseRef };
+    if (import.meta.env.DEV) (window as unknown as { __run?: unknown }).__run = { game, jump, phaseRef, sim: { buildCourse, KINDS, FLYERS, DIFFS, GRAVITY, JUMP_V } };
   }, [jump]);
 
   const restart = useCallback(() => {
@@ -529,10 +559,12 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           const fk = FLYERS[o.kind];
           if (fk) {
             // 画面に入ったら、こちらへ向かって、飛んでくる
-            if (o.x - g.dist + MUSUBI_X < W + 60 && !g.dying) o.x -= fk.speed * dt;
+            if (o.x - g.dist + MUSUBI_X < W + 60 && !g.dying) o.x -= fk.speed * (o.mul ?? 1) * dt;
             if (o.hit) continue;
-            const fx0 = o.x + (fk.w * (1 - fk.hx)) / 2;
-            const fx1 = o.x + fk.w - (fk.w * (1 - fk.hx)) / 2;
+            const hm = DIFFS[difficultyRef.current].hit;
+            const fhx = Math.min(1, fk.hx * hm);
+            const fx0 = o.x + (fk.w * (1 - fhx)) / 2;
+            const fx1 = o.x + fk.w - (fk.w * (1 - fhx)) / 2;
             const fy0 = fk.alt + fk.h * fk.hb0;
             const fy1 = fk.alt + fk.h * fk.hb1;
             if (mx1 > fx0 && mx0 < fx1 && my0 < fy1 && my1 > fy0 && g.invuln <= 0 && !g.dying) {
@@ -547,9 +579,11 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           }
           if (o.hit) continue;
           const k = KINDS[o.kind];
-          const ox0 = o.x + (k.w * (1 - k.hx)) / 2;
-          const ox1 = o.x + k.w - (k.w * (1 - k.hx)) / 2;
-          const oh = k.h * k.hy;
+          const hm = DIFFS[difficultyRef.current].hit;
+          const hx = Math.min(1, k.hx * hm);
+          const ox0 = o.x + (k.w * (1 - hx)) / 2;
+          const ox1 = o.x + k.w - (k.w * (1 - hx)) / 2;
+          const oh = k.h * k.hy * hm;
           if (mx1 > ox0 && mx0 < ox1 && my0 < oh && my1 > 0 && g.invuln <= 0 && !g.dying) {
             o.hit = true;
             g.lives -= 1;
@@ -695,7 +729,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       // 残りのハート
       ctx.font = '30px sans-serif';
       ctx.textBaseline = 'top';
-      for (let i = 0; i < LIVES; i++) {
+      for (let i = 0; i < g.maxLives; i++) {
         ctx.fillStyle = i < g.lives ? '#ff6b8b' : 'rgba(255,255,255,0.3)';
         ctx.fillText('♥', 24 + i * 34, 112);
       }
