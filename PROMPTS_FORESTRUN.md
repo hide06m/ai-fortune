@@ -393,3 +393,36 @@ FRAME 5〜8: the mirror of frames 1〜4 (left and right legs and arms swapped).
 Match the attached stump in style, color and line weight. A fallen tree log lying on the ground, seen from a perfectly flat SIDE view (like a 2D side-scrolling game). The log is a long horizontal cylinder of rough brown bark with a few small moss patches, a couple of knots and short broken branch stubs. Both ends of the log must NOT show their round cut faces and no tree rings: instead the two ends fade out of view, hidden behind tufts of tall grass and ferns that overlap the end of the log on the left and on the right. The log rests directly on the ground, with its underside touching the bottom edge of the image (no floating, no gap). Low and long, about three times as wide as it is tall.
 OUTPUT: the whole background is flat solid pure green (#00FF00) with no gradient, no shadow on the background, no text, no border. Do not use any green similar to #00FF00 on the log or the plants (muted olive greens only).
 ```
+
+---
+
+## 空を飛ぶ障害物（鳥）の素材（2026-10-19）
+ゲームの動き（実装済み。いまは、仮の鳥の絵）：
+- **低空の鳥**：地面すれすれを、こちらへ飛んでくる。**ジャンプで、よける**。
+- **高空の鳥**：頭の上を飛んでくる。**ジャンプせず、歩いていれば、くぐれる**（ジャンプすると、ぶつかる）。
+- 見分けがつくよう、**低空＝赤茶（危ない色）、高空＝青（おだやかな色）** にする。どちらも、同じ形の鳥でよい（色違い）。
+
+### 作り方：羽ばたき4コマを、横1列の1枚のシートで（2種類 × 1枚ずつ）
+【添付】`musubi_idle_right`（絵柄の見本）　【アスペクト比】16:9　【保存名】`run_bird_low_sheet`（赤茶）／`run_bird_high_sheet`（青）
+
+**BIRD SHEET PROMPT**（`[COLOR]` を、下の色の文に入れ替える）
+```
+Using the attached character image only as the style reference (same illustration style, line weight, soft shading and warm colors), draw a horizontal sprite sheet of 4 frames of a small cute round forest bird flapping its wings, side view facing LEFT, arranged in one row from left to right, each frame in its own equal-width cell with generous empty space between cells so no frame touches another. The bird is the same size and in the same position in every cell (centered), with its body at the same height.
+
+The 4 frames of the wing flap cycle, in order:
+1. wings raised high up (the top of the stroke)
+2. wings halfway down (slanting down)
+3. wings fully down below the body (the bottom of the stroke)
+4. wings halfway up (slanting up)
+
+The bird: a plump round body, a short beak, a large friendly eye, small feet tucked up against the belly, a short fanned tail. [COLOR]
+Keep exactly the same colors, shading and proportions in all 4 frames. The body stays the same size; only the wings (and a slight body bob) change.
+
+OUTPUT: the whole background is flat solid pure blue (#0000FF) with no gradient, no ground, no shadow, no text, no frame numbers, no border, no watermark. Do not use any blue inside the bird.
+```
+- **赤茶（低空）**：`[COLOR]` → `Body in warm reddish-brown with a lighter cream belly and darker brown wing tips.`
+- **青（高空）**：`[COLOR]` → `Body in soft sky-blue with a white belly and darker blue wing tips. Do not use pure blue (#0000FF) anywhere; use only muted, slightly greyish or teal-leaning blues on the bird so it does not match the background.`
+  - （背景の青と、鳥の青が混ざらないよう、鳥の青は、くすんだ水色にする。うまく抜けないときは、背景を緑 `#00FF00` にして、鳥の色を、赤茶と、くすんだ紫がかった青にする）
+
+できあがりの確認：①4コマの鳥の大きさ・色・位置が、そろっている ②羽の位置が、上→半分→下→半分、の順 ③コマどうしが、重なっていない
+できたら、`raw` フォルダに、保存名で入れてください（高画質のものがあれば `_2x` を付けて、同じ名前で）。私が、4コマに切り分けて、ゲームに入れます。

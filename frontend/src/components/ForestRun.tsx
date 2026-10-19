@@ -113,6 +113,23 @@ const KINDS: Record<string, ObstacleKind> = {
 };
 const KIND_KEYS = Object.keys(KINDS);
 
+/** 空を飛んでくる障害物。低空は、ジャンプで、よける。高空は、ジャンプせず、歩いていれば、くぐれる */
+interface FlyerKind {
+  alt: number; // 地面から、体の下端までの高さ
+  w: number;
+  h: number;
+  hx: number;
+  hy: number;
+  speed: number; // 画面に入ってから、こちらへ向かってくる速さ（px/秒）
+  tone: 'low' | 'high';
+}
+const FLYERS: Record<string, FlyerKind> = {
+  fly_low: { alt: 6, w: 96, h: 58, hx: 0.7, hy: 0.7, speed: 150, tone: 'low' },
+  fly_high: { alt: 116, w: 88, h: 52, hx: 0.7, hy: 0.7, speed: 110, tone: 'high' },
+};
+const FLYER_KEYS = Object.keys(FLYERS);
+const BIRD_FRAMES = 4;
+
 const RUN_FRAMES = Array.from({ length: 12 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
@@ -133,6 +150,7 @@ const IMAGE_NAMES = [
   'ui_run_progress',
   'ui_run_head',
   ...Object.values(KINDS).map((k) => k.img),
+  ...['low', 'high'].flatMap((t) => Array.from({ length: BIRD_FRAMES }, (_, i) => `run_bird_${t}_${i + 1}`)),
 ];
 
 type Images = Record<string, HTMLImageElement>;
@@ -222,7 +240,59 @@ function buildCourse(): Obstacle[] {
     // 次までの間隔：大きい障害物の後は、広めにあける
     x += 360 + Math.random() * 260 + KINDS[kind].w;
   }
+  // 空を飛ぶ障害物：地面の障害物の前後 450px 以内には、置かない（ジャンプしたい場面と、重ならないように）
+  const ground = [...list];
+  let fx = 1700;
+  let lastFly = '';
+  while (fx < LEVEL_LENGTH - 900) {
+    const clear = ground.every((o) => fx < o.x - 450 || fx > o.x + KINDS[o.kind].w + 450);
+    if (clear) {
+      let kind = FLYER_KEYS[Math.floor(Math.random() * FLYER_KEYS.length)];
+      if (kind === lastFly && Math.random() < 0.6) kind = FLYER_KEYS.find((k) => k !== kind) ?? kind;
+      lastFly = kind;
+      list.push({ kind, x: fx, hit: false });
+      fx += 900 + Math.random() * 700;
+    } else {
+      fx += 120;
+    }
+  }
+  list.sort((a, b) => a.x - b.x);
   return list;
+}
+
+/** 鳥の絵ができるまでの、仮の鳥（左向き。羽ばたく） */
+function drawPlaceholderBird(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, tone: 'low' | 'high', frame: number) {
+  const body = tone === 'low' ? '#7a3b2e' : '#4a6fa5';
+  const wing = tone === 'low' ? '#a8503c' : '#7aa0d4';
+  const flap = Math.sin((frame / BIRD_FRAMES) * Math.PI * 2);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.fillStyle = wing;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.05, -h * 0.05);
+  ctx.lineTo(w * 0.25, -h * (0.55 + 0.35 * flap));
+  ctx.lineTo(w * 0.32, -h * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.34, h * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath(); // 頭
+  ctx.arc(-w * 0.3, -h * 0.08, h * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#f2c14e'; // くちばし
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.46, -h * 0.1);
+  ctx.lineTo(-w * 0.58, -h * 0.04);
+  ctx.lineTo(-w * 0.46, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-w * 0.34, -h * 0.12, h * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 /** 左右を交互に反転して、横にならべる（端の絵がつながらないため） */
@@ -380,6 +450,25 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         const my0 = g.y; // 足の高さ
         const my1 = g.y + 92;
         for (const o of g.obstacles) {
+          const fk = FLYERS[o.kind];
+          if (fk) {
+            // 画面に入ったら、こちらへ向かって、飛んでくる
+            if (o.x - g.dist + MUSUBI_X < W + 60 && !g.dying) o.x -= fk.speed * dt;
+            if (o.hit) continue;
+            const fx0 = o.x + (fk.w * (1 - fk.hx)) / 2;
+            const fx1 = o.x + fk.w - (fk.w * (1 - fk.hx)) / 2;
+            const fy0 = fk.alt + (fk.h * (1 - fk.hy)) / 2;
+            const fy1 = fy0 + fk.h * fk.hy;
+            if (mx1 > fx0 && mx0 < fx1 && my0 < fy1 && my1 > fy0 && g.invuln <= 0 && !g.dying) {
+              o.hit = true;
+              g.lives -= 1;
+              g.invuln = 1.2;
+              g.hitTimer = 0.45;
+              setLives(g.lives);
+              if (g.lives <= 0) g.dying = true;
+            }
+            continue;
+          }
           if (o.hit) continue;
           const k = KINDS[o.kind];
           const ox0 = o.x + (k.w * (1 - k.hx)) / 2;
@@ -440,7 +529,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       const drawObstacles = (low: boolean) => {
         for (const o of g.obstacles) {
           const k = KINDS[o.kind];
-          if (!!k.low !== low) continue;
+          if (!k || !!k.low !== low) continue;
           const im = imgs[k.img];
           const x = world(o.x);
           if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
@@ -486,6 +575,25 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           const left = faceX !== undefined ? MUSUBI_X + MUSUBI_FACE_DX - faceX * mw : MUSUBI_X - mw / 2;
           dFull(ctx, mi, left, GY - g.y - footY + MUSUBI_SINK, mw, mh);
         }
+      }
+
+      // 空を飛ぶ障害物（ムスビより前に描く）。絵があれば絵を、なければ、仮の鳥を描く
+      for (const o of g.obstacles) {
+        const fk = FLYERS[o.kind];
+        if (!fk) continue;
+        const x = world(o.x);
+        if (x > W + 40 || x + fk.w < -40) continue;
+        const bob = Math.sin(g.time * 7 + o.x * 0.01) * 3;
+        const y = GY - fk.alt - fk.h + bob;
+        const frameNo = (Math.floor(g.time * 10) + Math.floor(o.x / 50)) % BIRD_FRAMES;
+        const bird = imgs[`run_bird_${fk.tone}_${frameNo + 1}`];
+        ctx.globalAlpha = o.hit ? 0.5 : 1;
+        if (bird && bird.naturalWidth) {
+          dFull(ctx, bird, x, y, fk.w, fk.h);
+        } else {
+          drawPlaceholderBird(ctx, x + fk.w / 2, y + fk.h / 2, fk.w, fk.h, fk.tone, frameNo);
+        }
+        ctx.globalAlpha = 1;
       }
 
       drawGateHalf('right');
