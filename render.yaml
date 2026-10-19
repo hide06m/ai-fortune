@@ -43,7 +43,6 @@ services:
   - type: web
     name: ai-fortune-frontend
     runtime: static
-    region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
