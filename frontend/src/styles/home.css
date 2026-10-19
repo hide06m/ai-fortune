@@ -568,3 +568,10 @@
 
 .run-btn .run-btn-label, .run-start-banner .run-btn-label { letter-spacing: 0.06em; }
 .run-panel-title, .run-panel .run-result { letter-spacing: 0.08em; }
+
+/* パネルの中に、ボタンが2つ：小さめに、ならべる */
+.run-panel { gap: 3%; padding: 9% 10% 8%; }
+.run-panel .run-btn-wide { width: 46%; }
+.run-panel .run-btn-label { font-size: 1.02rem; }
+.run-panel-title { font-size: 1.5rem; }
+.run-panel .run-result { font-size: 1.8rem; }

@@ -330,6 +330,15 @@ function buildCourse(diff: Difficulty): Obstacle[] {
   return list;
 }
 
+/** ハートの図形（文字の「♥」は、スマホで、絵文字になり、色がかえられないので、線で描く） */
+function heartPath(ctx: CanvasRenderingContext2D, s: number) {
+  ctx.beginPath();
+  ctx.moveTo(0, s * 0.38);
+  ctx.bezierCurveTo(s * 0.7, -s * 0.02, s * 0.4, -s * 0.62, 0, -s * 0.2);
+  ctx.bezierCurveTo(-s * 0.4, -s * 0.62, -s * 0.7, -s * 0.02, 0, s * 0.38);
+  ctx.closePath();
+}
+
 /** 鳥の絵ができるまでの、仮の鳥（左向き。羽ばたく） */
 function drawPlaceholderBird(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, tone: 'low' | 'high', frame: number) {
   const body = tone === 'low' ? '#7a3b2e' : '#4a6fa5';
@@ -748,14 +757,13 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         ctx.save();
         ctx.translate(24 + i * 34 + 15, 112 + 17);
         ctx.scale(k, k);
-        ctx.font = '30px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        heartPath(ctx, 28);
         ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(40, 20, 20, 0.75)';
-        ctx.strokeText('♥', 0, 0);
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(40, 20, 20, 0.8)';
+        ctx.stroke();
         ctx.fillStyle = lost ? (just ? `rgba(255, 90, 110, ${0.4 + 0.6 * (g.flash / 0.7)})` : 'rgba(70, 45, 45, 0.55)') : '#ff6b8b';
-        ctx.fillText('♥', 0, 0);
+        ctx.fill();
         ctx.restore();
       }
       // ぶつかった直後、画面のふちが、ほんのり、赤くなる
@@ -783,9 +791,19 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     return () => cancelAnimationFrame(raf);
   }, [loaded, changePhase]);
 
+  // 一時停止メニュー（スタート前にも開ける。「つづける」で、もとの状態に、もどる）
+  const pausedFrom = useRef<'ready' | 'playing'>('playing');
   const togglePause = () => {
-    if (phaseRef.current === 'playing') changePhase('paused');
-    else if (phaseRef.current === 'paused') startCountdown();
+    if (phaseRef.current === 'playing') {
+      pausedFrom.current = 'playing';
+      changePhase('paused');
+    } else if (phaseRef.current === 'ready') {
+      pausedFrom.current = 'ready';
+      changePhase('paused');
+    } else if (phaseRef.current === 'paused') {
+      if (pausedFrom.current === 'ready') changePhase('ready');
+      else startCountdown();
+    }
   };
 
   return (
@@ -823,6 +841,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             <div className="run-panel">
             <p className="run-panel-title">一時停止中</p>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}><span className="run-btn-label">つづける</span></button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}><span className="run-btn-label">閉じる</span></button>
             </div>
           </div>
         )}
@@ -832,17 +851,17 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             <div className="run-panel">
             <p className="run-panel-title run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}><span className="run-btn-label">閉じる</span></button>
             </div>
           </div>
         )}
 
         <div className="run-top-buttons" onPointerDown={(e) => e.stopPropagation()}>
-          {(phase === 'playing' || phase === 'paused') && (
+          {(phase === 'ready' || phase === 'playing' || phase === 'paused') && (
             <button type="button" onClick={togglePause} aria-label="一時停止">
               <img src={`${BASE}${phase === 'paused' ? 'ui_play_btn' : 'ui_pause_btn'}.png`} alt="" />
             </button>
           )}
-          <button type="button" className="run-close" onClick={onClose}>閉じる</button>
         </div>
         <span className="run-lives-sr" aria-live="polite">のこり {lives}</span>
       </div>
