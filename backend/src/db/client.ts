@@ -4,10 +4,18 @@ import { Pool } from 'pg';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost/ai_fortune',
   max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 20000,
+  // 外部のDB（Render）は、しばらく使わないと接続が切れ、つなぎ直しに数秒かかることがある。2秒では短く、診断の結果の保存に失敗していた
+  connectionTimeoutMillis: 15000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
   // Render のような外部 PostgreSQL は SSL が必須
   ssl: process.env.DATABASE_URL?.includes('render.com') ? { rejectUnauthorized: false } : false,
+});
+
+// 使われていない接続が、DB側から切られても、プログラム全体が、止まらないようにする
+pool.on('error', (err) => {
+  console.error('[db] pool error (ignored):', err.message);
 });
 
 /**

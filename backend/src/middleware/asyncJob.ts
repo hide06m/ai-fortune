@@ -59,13 +59,13 @@ export function asyncJob(kindOf: (req: Request) => string) {
           } catch {
             body = { success: false, error: 'BAD_RESPONSE', message: '診断の結果を読み取れませんでした。もう一度お試しください。' }
           }
-          await finishJob(jobId, r.statusCode ?? 500, body).catch((e) => console.error('[asyncJob] finishJob failed:', e))
+          await finishJob(jobId, r.statusCode ?? 500, body, req.user!.userId).catch((e) => console.error('[asyncJob] finishJob failed:', e))
         })
       }
     )
     inner.on('error', async (error) => {
       console.error('[asyncJob] inner request failed:', error)
-      await finishJob(jobId, 503, { success: false, error: 'JOB_FAILED', message: '診断を続けられませんでした。もう一度お試しください。' }).catch(() => {})
+      await finishJob(jobId, 503, { success: false, error: 'JOB_FAILED', message: '診断を続けられませんでした。もう一度お試しください。' }, req.user!.userId).catch(() => {})
     })
     inner.write(payload)
     inner.end()
