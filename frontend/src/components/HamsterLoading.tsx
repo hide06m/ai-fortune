@@ -109,6 +109,9 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint }: 
           <p className="estimate">いま占いの依頼が混み合っています。順番に試していますので画面を閉じずにこのままお待ちください（{elapsedSec}秒）</p>
         )}
         {hint && <p className="estimate">{hint}</p>}
+        {elapsedSec >= 90 && (
+          <p className="estimate">かなり時間がかかっています。うまくいかないときは「待たずに他のことをする」を押してください。診断の結果は「診断の記録」に残っていることもあります。</p>
+        )}
         {detachable && elapsedSec >= 3 && (
           <div className="hamster-minigame">
             <button type="button" className="hamster-minigame-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>

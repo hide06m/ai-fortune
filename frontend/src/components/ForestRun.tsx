@@ -23,7 +23,7 @@ const JUMP_V = -760;
 const MUSUBI_FACE_DX = 26; // 顔の中心は、体の中心より、少し前（右）にある
 const MUSUBI_SINK = 12; // ムスビの足もとを、地面に、少しうめる
 const FRONT_DROP = 16; // 地面より前に描くもの（切り株・ゴール）の足もとを地面の線から下げる量（根が地面にのって見える）
-const GATE_DROP = 18; // ゴールの門の足もとを、地面の線から下げる量（切り株より、少なめ）
+const GATE_DROP = 16; // ゴールの門の足もとを、地面の線から下げる量（切り株より、少なめ）
 const GROUND_EDGE = 6; // 障害物の底を、地面の線から、さらに下へ置く量
 const GATE_H = 240; // ゴールの門の高さ
 const GATE_PASS = 170; // 門のまん中を過ぎてから、クリアにするまでの距離
@@ -153,7 +153,7 @@ interface ObstacleKind {
 
 // 幅 w・高さ h は、画面上の大きさ。hx/hy は、当たり判定を絵より小さくする割合
 const KINDS: Record<string, ObstacleKind> = {
-  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.02, front: true, drop: 20 },
+  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.02, front: true, drop: 22 },
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
   stump_l: { img: 'run_stump_l', w: 74, h: 122, hx: 0.65, hy: 0.85, sink: 0.02, front: true },
   rock_l: { img: 'run_rock_l', w: 74, h: 114, hx: 0.65, hy: 0.85, sink: 0.08 },
