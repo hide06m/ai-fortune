@@ -61,8 +61,9 @@ import { submitMusubiConsult } from './api/musubi'
 import { getLatestResult } from './api/results'
 import { SeimeiResultCard } from './components/SeimeiResultCard'
 import { MBTI_TYPES } from './data/mbtiTypes'
-import { startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
+import { getWaitingJobId, startBackgroundJobWatcher, subscribeDetach } from './api/asyncJob'
 import { JobToast } from './components/JobToast'
+import { ForestRun } from './components/ForestRun'
 import { HomePage } from './components/HomePage'
 import { pickAfterResultLines } from './data/homeLines'
 import { ResultCharacter } from './components/ResultCharacter'
@@ -177,6 +178,15 @@ function AppContent() {
 
   // 石（診断に使う仮想通貨）
   const [stoneBalance, setStoneBalance] = useState<number | null>(null)
+  // ミニゲームの報酬など、画面の外から、石の数が変わったとき
+  useEffect(() => {
+    const onBalance = (e: Event) => {
+      const b = (e as CustomEvent<number>).detail
+      if (typeof b === 'number') setStoneBalance(b)
+    }
+    window.addEventListener('stone-balance', onBalance)
+    return () => window.removeEventListener('stone-balance', onBalance)
+  }, [])
   const [stoneBonusMessage, setStoneBonusMessage] = useState('')
   const [watchingAd, setWatchingAd] = useState(false)
   // 今日あと何回、広告視聴ボーナスを受け取れるか（0なら、ボタンを押せなくする）
@@ -2398,10 +2408,23 @@ function SettingsButton() {
   )
 }
 
+/** 診断を待っている間の、ミニゲーム。読み込み画面のボタンから開く。診断ができても、遊びおえるまで、閉じない */
+function MiniGameHost() {
+  const [jobId, setJobId] = useState<string | null | undefined>(undefined)
+  useEffect(() => {
+    const open = () => setJobId(getWaitingJobId())
+    window.addEventListener('open-minigame', open)
+    return () => window.removeEventListener('open-minigame', open)
+  }, [])
+  if (jobId === undefined) return null
+  return <ForestRun jobId={jobId} onClose={() => setJobId(undefined)} />
+}
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AppContent />
+      <MiniGameHost />
       <JobToast onView={(kind) => window.dispatchEvent(new CustomEvent('open-latest', { detail: kind }))} />
       <SettingsButton />
     </GoogleOAuthProvider>

@@ -71,6 +71,17 @@ export function subscribeWaiting(listener: () => void): () => void {
   return () => waitingListeners.delete(listener);
 }
 
+/** いま、この画面で結果を待っている診断の、ジョブ番号（なければ null）。ミニゲームの報酬を、結びつけるために使う */
+export function getWaitingJobId(): string | null {
+  const j = [...waiting.values()].find((x) => x.kind !== 'compat' && !detached.has(x.id));
+  return j ? j.id : null;
+}
+
+/** このジョブを、まだ、この画面で待っているか */
+export function isJobWaiting(id: string): boolean {
+  return waiting.has(id) && !detached.has(id);
+}
+
 export function hasDetachableWaiting(): boolean {
   return [...waiting.values()].some((j) => j.kind !== 'compat' && !detached.has(j.id));
 }
@@ -194,4 +205,10 @@ export function startBackgroundJobWatcher(): () => void {
     stopped = true;
     window.clearInterval(timer);
   };
+}
+
+// 開発中の確認用：画面で使っているものと、同じ部品を、ブラウザの開発ツールから、使えるようにする
+if (import.meta.env.DEV) {
+  const w = window as unknown as { __asyncJob?: unknown };
+  w.__asyncJob ??= { fetchDiagnosis, getWaitingJobId };
 }

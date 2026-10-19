@@ -289,6 +289,20 @@ export async function initializeDatabase() {
       )
     `);
 
+    // ミニゲームの報酬：診断1回につき、1回まで。1日の上限あり（日本時間）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS minigame_rewards (
+        job_id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        game VARCHAR(30) NOT NULL,
+        difficulty VARCHAR(12) NOT NULL,
+        stones INT NOT NULL,
+        day DATE NOT NULL DEFAULT ((NOW() AT TIME ZONE 'Asia/Tokyo')::date),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_minigame_rewards_user_day ON minigame_rewards(user_id, day)`);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

@@ -4,6 +4,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { claimMinigameReward, type RewardResult } from '../api/minigame';
+import { isJobWaiting, subscribeWaiting } from '../api/asyncJob';
 
 const W = 540;
 const H = 960;
@@ -381,7 +383,13 @@ function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, off
   for (let x = start, n = 0; x < W && n < 40; x += w, n++) dFull(ctx, img, Math.floor(x), y, Math.ceil(w) + 2, h);
 }
 
-export function ForestRun({ onClose }: { onClose: () => void }) {
+interface ForestRunProps {
+  onClose: () => void;
+  /** 診断を待っている間に遊ぶときの、診断のジョブ番号。あれば、クリアで、ルーンストーンがもらえる */
+  jobId?: string | null;
+}
+
+export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<Images | null>(null);
   const phaseRef = useRef<Phase>('ready');
@@ -791,6 +799,33 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     return () => cancelAnimationFrame(raf);
   }, [loaded, changePhase]);
 
+  // 診断を待っている間に遊んでいて、診断ができたら、お知らせを出す
+  const [diagnosisDone, setDiagnosisDone] = useState(false);
+  useEffect(() => {
+    if (!jobId) return;
+    const check = () => {
+      if (!isJobWaiting(jobId)) setDiagnosisDone(true);
+    };
+    check();
+    return subscribeWaiting(check);
+  }, [jobId]);
+
+  // クリアしたら、ルーンストーンを、もらう（診断を待っているとき）。もらえた量は、ゴールのパネルに出す
+  const [reward, setReward] = useState<RewardResult | null>(null);
+  useEffect(() => {
+    if (phase === 'ready' || phase === 'countdown') setReward(null);
+    if (phase !== 'clear' || !jobId) return;
+    let cancelled = false;
+    claimMinigameReward(jobId, difficultyRef.current).then((r) => {
+      if (cancelled || !r) return;
+      setReward(r);
+      if (typeof r.balance === 'number') window.dispatchEvent(new CustomEvent('stone-balance', { detail: r.balance }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, jobId]);
+
   // 一時停止メニュー（スタート前にも開ける。「つづける」で、もとの状態に、もどる）
   const pausedFrom = useRef<'ready' | 'playing'>('playing');
   const togglePause = () => {
@@ -852,12 +887,29 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
           <div className="run-overlay">
             <div className="run-panel">
             <p className="run-panel-title run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
+            {phase === 'clear' && jobId && reward && (
+              <p className="run-reward">
+                {reward.granted > 0
+                  ? `ルーンストーン +${reward.granted}（今日は、あと${reward.remaining ?? 0}個）`
+                  : reward.reason === 'daily_limit'
+                    ? '今日の、ルーンストーンは、もらい終わりました'
+                    : reward.reason === 'already'
+                      ? 'この診断の分は、もらいました'
+                      : ''}
+              </p>
+            )}
             <div className="run-panel-buttons">
               <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}><span className="run-btn-label">もういちど</span></button>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}><span className="run-btn-label">閉じる</span></button>
             </div>
             </div>
           </div>
+        )}
+
+        {diagnosisDone && (
+          <button type="button" className="run-done-banner" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
+            ✨ 占いが、できました。結果を見る
+          </button>
         )}
 
         <div className="run-top-buttons" onPointerDown={(e) => e.stopPropagation()}>
