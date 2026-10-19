@@ -575,3 +575,8 @@
 .run-panel .run-btn-label { font-size: 1.02rem; }
 .run-panel-title { font-size: 1.5rem; }
 .run-panel .run-result { font-size: 1.8rem; }
+
+/* 木のボタンの文字：板の、まん中に、そろえる（葉っぱ・苔の飛び出しぶんの、すき間を、減らす） */
+.run-btn,
+.run-difficulty button.run-btn,
+.run-difficulty button.run-btn.is-on { padding: 7% 9% 6%; }
