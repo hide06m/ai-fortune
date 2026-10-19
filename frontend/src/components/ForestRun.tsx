@@ -458,19 +458,31 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     });
   }, []);
 
-  // 操作：キー（スペース・↑）
+  // 操作：スペースキー（ジャンプ・スタート）。スタート前は、カーソルキー（←→↑↓）で、難易度を選べる
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
+      if (e.code === 'Space') {
         e.preventDefault();
-        jump();
+        if (!e.repeat) jump();
       } else if (e.code === 'Escape') {
         onClose();
+      } else if (phaseRef.current === 'ready' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+        e.preventDefault();
+        // 難易度は、2×2 の並び（かんたん・ふつう／むずかしい・エクストラ）
+        const i = DIFF_ORDER.indexOf(difficultyRef.current);
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        let nc = col;
+        let nr = row;
+        if (e.code === 'ArrowLeft') nc = (col + 1) % 2;
+        else if (e.code === 'ArrowRight') nc = (col + 1) % 2;
+        else nr = (row + 1) % 2;
+        chooseDifficulty(DIFF_ORDER[nr * 2 + nc]);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [jump, onClose]);
+  }, [jump, onClose, chooseDifficulty]);
 
   // ゲームのループ
   useEffect(() => {
@@ -719,7 +731,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         {loaded && phase === 'ready' && (
           <div className="run-overlay run-overlay-ready">
             <p>タップで、ジャンプ</p>
-            <small>（スペース・↑キーでも）</small>
+            <small>（スペースキーでも）　難易度は ←→↑↓ で選べます</small>
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={difficulty === d ? 'is-on' : ''} onClick={() => chooseDifficulty(d)}>
