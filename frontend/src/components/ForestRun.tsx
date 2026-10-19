@@ -124,7 +124,7 @@ const FLYERS: Record<string, FlyerKind> = {
 };
 const BIRD_FRAMES = 4;
 
-const RUN_RATE = 9; // 走りのコマを進める速さ（コマ/秒）。コマが少ないので、となりのコマと、なめらかにつなぐ
+const RUN_RATE = 9; // 走りのコマを進める速さ（コマ/秒）
 const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
@@ -593,8 +593,6 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
       // ムスビ
       let name: string;
-      let name2: string | null = null; // 走りのとき、次のコマ（なめらかにつなぐ）
-      let mix = 0;
       if (phaseNow === 'clear') name = 'musubi_cheer_front_1';
       else if (phaseNow === 'miss') name = 'musubi_sad_front';
       else if (g.hitTimer > 0) name = 'musubi_hit_right';
@@ -604,10 +602,6 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
         const ph = (phaseNow === 'playing' ? g.time : 0) * RUN_RATE * (g.speed / 300);
         const fi = Math.floor(ph);
         name = RUN_FRAMES[fi % RUN_FRAMES.length];
-        if (phaseNow === 'playing') {
-          name2 = RUN_FRAMES[(fi + 1) % RUN_FRAMES.length];
-          mix = ph - fi;
-        }
       }
       const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
       const drawM = (nm: string, alpha: number) => {
@@ -631,7 +625,6 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
       };
       if (!blink) {
         drawM(name, 1);
-        if (name2 && mix > 0.03) drawM(name2, mix);
       }
 
       // 空を飛ぶ障害物（ムスビより前に描く）。絵があれば絵を、なければ、仮の鳥を描く

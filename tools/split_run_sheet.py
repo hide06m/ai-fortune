@@ -52,7 +52,9 @@ def cut_sheet(sheet):
 
 def main():
     # 高解像度版：musubi_run_sheet_hq1.png, _hq2.png … があれば、その順に全部使う（コマは、シートの順につなぐ）
-    hq = sorted(GAMES.glob('musubi_run_sheet_hq*.png'))
+    # 1コマずつ作った絵（musubi_run_f1.png … f8.png）があれば、それを最優先（姿勢ガイド方式）
+    singles = sorted(GAMES.glob('musubi_run_f[0-9].png'))
+    hq = singles or sorted(GAMES.glob('musubi_run_sheet_hq*.png'))
     big = GAMES / 'musubi_run_sheet_2x.png'
     if hq:
         srcs = hq

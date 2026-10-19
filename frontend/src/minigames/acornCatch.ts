@@ -213,20 +213,13 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
 
   // ムスビ
   let name: string;
-  let name2: string | null = null;
-  let mix = 0;
   if (info.phase === 'clear') name = 'musubi_cheer_front_1';
   else if (info.phase === 'miss') name = 'musubi_sad_front';
   else if (s.hitTimer > 0) name = 'musubi_hit_right';
   else {
-    // 走りのコマは、少ないので、となりのコマと、なめらかにつなぐ
     const ph = s.moving ? s.anim * RUN_RATE : 0;
     const i = Math.floor(ph);
     name = RUN_FRAMES[i % RUN_FRAMES.length];
-    if (s.moving) {
-      name2 = RUN_FRAMES[(i + 1) % RUN_FRAMES.length];
-      mix = ph - i;
-    }
   }
   const drawM = (nm: string, alpha: number) => {
     const mi = imgs[nm];
@@ -251,7 +244,6 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
     ctx.restore();
   };
   drawM(name, 1);
-  if (name2 && mix > 0.03) drawM(name2, mix);
 
   // +点の表示
   ctx.font = '900 30px "Zen Maru Gothic", sans-serif';

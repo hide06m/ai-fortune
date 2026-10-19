@@ -479,3 +479,57 @@ Using the attached character as the exact reference (same face, grey-and-white h
 OUTPUT: flat solid pure blue (#0000FF) background, no ground, no shadow, no text, no frame, no blue inside the character. Very high resolution.
 ```
 → 4枚できたら、`raw/` に入れて教えてください（走りが、8コマになります）。
+
+---
+## ★ ムスビの走り：一から作り直し（2026-10-20・最新版。上の走りの案は、使わない）
+
+### 調べたこと（アニメーションの走りの基準）
+走りの1歩（片足分）は、**4つの姿勢**の繰り返しで、左右で8コマにするのが標準（Animator's Survival Kit 系の「run cycle」）。
+| 番号 | 姿勢 | 体の高さ | ポイント |
+|---|---|---|---|
+| 1 | 接地（CONTACT） | 中 | 前の足が、ほぼ伸びたまま、かかとから着く。後ろの足は、ひざを曲げて、後ろにある。**腕は、足と逆**（前の足と逆の腕が、前） |
+| 2 | 沈み（DOWN／RECOIL） | **いちばん低い** | 着いた足のひざが深く曲がり、体重を受けとめる。後ろの足は、かかとを、おしりの方へ引きあげる |
+| 3 | すれちがい（PASSING） | 高め | 支えの足は、ほぼまっすぐ。後ろの足が、ひざを曲げたまま、体の下を前へ通りすぎる。腕は、体の近く |
+| 4 | 跳ね（UP／HIGH POINT） | **いちばん高い** | 後ろの足が地面をけり、**両足が地面から離れる**。前の足は、ひざを高く、前へ出す。腕は、いちばん大きく振れる |
+| 5〜8 | 1〜4 の、手前と奥の手足を、入れかえたもの | | 横から見ると、**どちらの足が、手前か**が、左右の違い。ここを、AIは、描き分けられない（hq1/hq2が同じ絵になった原因）。→ ガイド図の、**赤＝手前、青＝奥**で、はっきり、指定する |
+- 走りは、歩きより、**体が前に傾き**、**両足が浮く瞬間**がある。体の上下は、4（高）と2（低）で、体の高さの約8〜10%。
+- マント・しっぽは、体の動きより、**少し遅れて**動く（2：後ろにふくらむ／4：ふわっと持ち上がる／1と5：前に向かって流れる）。
+
+### 新しい作り方：姿勢ガイド図を添付して、1コマずつ（8回）
+**姿勢ガイド図**を、`tools/make_run_pose_guides.py` で作ってあります。
+- 場所：`frontend/public/assets/games/pose_guides/run_pose_1.png … run_pose_8.png`（3:4。8枚をならべた `run_pose_all.png` も）
+- 見方：**赤の太い線＝カメラに近い側（手前）の腕と脚**、**青の細い線＝奥の腕と脚**、丸＝頭、灰色＝背骨（前傾）、緑の線＝地面。右向き。
+- 姿勢の角度は、骨格図なので、**ムスビの頭が大きい、ずんぐりした体型は、そのまま**にして、**手足の曲がり方・前後の位置・体の高さ・傾き**だけを、ガイドに合わせる。
+
+**1コマごとに、添付するもの（4つ）**
+1. `run_pose_N.png`（N＝1〜8）… **姿勢の手本**
+2. `musubi_idle_right`（ムスビの顔・色・服の見本）
+3. `musubi_run_sheet_hq1` の、気に入っている1コマ（絵柄・線の太さ・質感の見本）。**2コマ目以降は、直前にできたコマも**添付（色・大きさを、そろえるため）
+4. （うまくいかないとき）もう一度、`run_pose_N.png` だけ添付し直し、文の頭に「FOLLOW THE POSE GUIDE EXACTLY」を足す
+
+【アスペクト比】3:4　【解像度】最大　【保存名】`musubi_run_f1` … `musubi_run_f8`（`raw/` に、青背景のまま入れる）
+**必ず、1コマずつ、別の会話（または、毎回、新しい生成）で作る。**（同じ会話で、続けて作ると、前の絵に引きずられて、同じ姿勢になる）
+
+**共通の文（COMMON）**
+```
+Use the first attached image as a strict POSE GUIDE: it is a stick-figure skeleton seen from the side, facing right. The RED thick limbs are the limbs on the side NEAREST to the camera; the BLUE thin limbs are the limbs on the FAR side, partly hidden behind the body. Copy its pose exactly: the bend angle and the front/back position of every arm and leg, the height of the body above the ground line, the forward lean of the torso, and the head position. The guide only defines the pose, not the proportions or the look.
+
+Draw the character from the other attached images (same face, same grey-and-white hamster, same olive-green hooded cloak with the small leaf brooch, same pink hands and feet, same chubby proportions with the large head and short legs, same line weight, texture, colors and lighting) performing exactly that pose, facing right, as ONE full-body frame of a side-view run cycle. The short chubby legs and pink feet must be clearly visible below the hem of the cloak and match the guide's red (near) and blue (far) legs; the near (red) leg is drawn in front of the cloak hem, the far (blue) leg partly behind it. The small pink hands match the guide's arms. The cloak hem and the tail trail slightly behind the body's motion. Happy expression, mouth slightly open, same in every frame. Same character size and the same camera distance in every frame. Keep the ground line OUT of the picture, but the lowest foot of the character in frames 1, 2, 3, 5, 6, 7 must reach the same baseline near the bottom of the picture; in frames 4 and 8 both feet are above that baseline.
+
+OUTPUT: very high resolution, 3:4. The whole background is flat solid pure blue (#0000FF), no gradient, no ground, no shadow, no guide lines, no text, no border, no watermark. Do not use any blue in the character.
+```
+**各コマの追加文（COMMON の後ろに足す）**
+```
+FRAME 1 — CONTACT (near leg forward): the near (red) leg is reaching forward, almost straight, the heel just touching the ground; the far (blue) leg is behind with the knee bent and the foot lifted. The near arm is swung back with the elbow bent, the far arm swung forward. Body at middle height, leaning forward.
+FRAME 2 — DOWN: the lowest point of the body. The near (red) leg is planted with the knee deeply bent, taking the weight; the far (blue) leg is behind with the heel pulled up toward the rump. The cloak bulges backward. Arms continue their swing.
+FRAME 3 — PASSING: the near (red) leg stands almost straight under the body; the far (blue) leg swings forward under the body with the knee bent and the foot tucked near the supporting knee. Arms are close to the body with the hands in front of the chest. Body fairly high.
+FRAME 4 — UP (airborne): the highest point. BOTH FEET ARE OFF THE GROUND. The near (red) leg has just pushed off and trails behind, extended, with the toe pointing down; the far (blue) leg is reaching forward with the knee high. The near arm is swung forward, the far arm back. The cloak floats up lightly.
+FRAME 5 — CONTACT (far leg forward): same as frame 1, but the legs and arms swap roles: now the far (blue) leg is forward and nearly straight with the heel touching, and the near (red) leg is behind with the knee bent. The near (red) arm is swung forward, the far (blue) arm back.
+FRAME 6 — DOWN: same as frame 2 with the roles swapped: the far (blue) leg is planted with the knee deeply bent (it is partly hidden behind the cloak), the near (red) leg is behind with the heel pulled up.
+FRAME 7 — PASSING: same as frame 3 with the roles swapped: the far (blue) leg stands under the body, the near (red) leg swings forward with the knee bent in front of the cloak hem.
+FRAME 8 — UP (airborne): same as frame 4 with the roles swapped: both feet off the ground; the far (blue) leg trails behind, the near (red) leg reaches forward with the knee high, in front of the cloak.
+```
+※ 手前と奥の入れかわり（5〜8）は、横向きだと、見た目の差が小さい。出てきた絵が、1〜4と同じに見えるときは、**1〜4を、左右反転した絵を、そのまま使ってもよい**（私が、取りこみ時に、反転で作ることもできる。その場合、4コマ作れば、8コマになる）。
+
+### できたら
+`raw/` に `musubi_run_f1.png`〜`f8.png`（または、4コマでも可）を入れて、教えてください。取りこみ（切り出し・大きさ・色・位置そろえ）と、8コマに合わせたゲーム側の変更は、私がやる。
