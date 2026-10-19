@@ -610,7 +610,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       }
       const d = g.dist;
       const far = imgs['runbg_far'];
-      drawLoop(ctx, far, d * 0.12, GY - 360, 700, 700 * (far.naturalHeight / (far.naturalWidth || 1)));
+      drawLoop(ctx, far, d * 0.12, GY - 435, 700, 700 * (far.naturalHeight / (far.naturalWidth || 1)));
       const mid = imgs['runbg_mid2_loop'];
       const midH = 250;
       drawLoopPlain(ctx, mid, d * 0.4, GY - midH + 40, midH * (mid.naturalWidth / (mid.naturalHeight || 1)), midH);
@@ -767,14 +767,16 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
 
         {loaded && phase === 'ready' && (
           <div className="run-overlay run-overlay-ready">
+            <div className="run-ready-top">
             <p>タップで、ジャンプ</p>
-            <small>（スペースキーでも）　難易度は ←→↑↓ で選べます</small>
+            <small>PC：スペースキー／難易度は ←→↑↓</small>
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={difficulty === d ? 'is-on' : ''} onClick={() => chooseDifficulty(d)}>
                   {DIFFS[d].label}
                 </button>
               ))}
+            </div>
             </div>
             <p className="run-start">タップで、スタート</p>
           </div>

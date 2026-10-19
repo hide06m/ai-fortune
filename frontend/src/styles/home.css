@@ -325,3 +325,8 @@
 .run-difficulty button { min-width: 0; padding: 0.55rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .run-difficulty button small { font-size: 0.7rem; opacity: 0.85; }
 .run-difficulty button.is-on { border-color: #ffd166; background: rgba(110, 70, 190, 0.85); }
+
+/* スタート前：説明と難易度は、空のあたり（上）に。「タップで、スタート」は、下のまま */
+.run-ready-top { position: absolute; top: 15%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.run-ready-top { top: 19%; }
+.run-ready-top small { font-size: 0.78rem; opacity: 0.85; }
