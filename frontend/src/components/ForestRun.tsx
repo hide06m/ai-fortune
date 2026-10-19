@@ -141,15 +141,17 @@ interface ObstacleKind {
   hx: number;
   hy: number;
   low?: boolean;
+  /** 地面より前（手前）に描く：根が、地面の上に、見えるように、うめない（切り株・ゴールの門） */
+  front?: boolean;
   /** 地面にうめる割合（根や足もとが、地面の上に見えないように、下の部分を、地面の中にかくす） */
   sink: number;
 }
 
 // 幅 w・高さ h は、画面上の大きさ。hx/hy は、当たり判定を絵より小さくする割合
 const KINDS: Record<string, ObstacleKind> = {
-  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.2 },
+  stump_s: { img: 'run_stump_s', w: 92, h: 67, hx: 0.7, hy: 0.8, sink: 0.02, front: true },
   rock_s: { img: 'run_rock_s', w: 92, h: 62, hx: 0.7, hy: 0.8, sink: 0.14 },
-  stump_l: { img: 'run_stump_l', w: 74, h: 122, hx: 0.65, hy: 0.85, sink: 0.1 },
+  stump_l: { img: 'run_stump_l', w: 74, h: 122, hx: 0.65, hy: 0.85, sink: 0.02, front: true },
   rock_l: { img: 'run_rock_l', w: 74, h: 114, hx: 0.65, hy: 0.85, sink: 0.08 },
   log: { img: 'run_log2', w: 176, h: 60, hx: 0.75, hy: 0.8, sink: 0.08 },
   puddle: { img: 'run_puddle', w: 160, h: 19, hx: 0.85, hy: 1, low: true, sink: 0.45 },
@@ -667,13 +669,12 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
         const sw = gate.naturalWidth / 2;
         dI(ctx, gate, half === 'left' ? 0 : sw, 0, sw, gate.naturalHeight, gx + (half === 'left' ? 0 : gw2 / 2), GY - GATE_H + 8, gw2 / 2, GATE_H);
       };
-      drawGateHalf('left');
-
-      // 障害物：低いもの（水たまり）以外は、地面より先に描き、地面の草が、足もとにかぶさって、うまって見えるようにする
-      const drawObstacles = (low: boolean) => {
+      // 障害物：石・キノコ・丸太は、地面より先に描き、地面の草が、足もとにかぶさって、うまって見えるようにする。
+      // 切り株と水たまりは、地面より前に描く（切り株の根が、地面の上に、見えるように）
+      const drawObstacles = (after: boolean) => {
         for (const o of g.obstacles) {
           const k = KINDS[o.kind];
-          if (!k || !!k.low !== low) continue;
+          if (!k || !!(k.low || k.front) !== after) continue;
           const im = imgs[k.img];
           const x = world(o.x);
           if (!im.naturalWidth || x > W + 20 || x + k.w < -20) continue;
@@ -692,6 +693,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
       drawLoopPlain(ctx, gr, d, GY - 4, gw, gh);
 
       drawObstacles(true);
+      drawGateHalf('left'); // 門の左半分は、地面より前で、ムスビの後ろ
 
       // ムスビ
       let name: string;

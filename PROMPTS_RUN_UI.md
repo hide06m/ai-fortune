@@ -93,3 +93,32 @@ STYLE: a large rectangular wooden board panel with a thick wooden frame made of 
 - 辺のまん中にも苔が出た → `Moss only at the left and right ends and the top-left corner; the middle of the long edges is plain wood.`
 
 できたら `frontend/public/assets/games/raw/` に、保存名で入れてください。高画質なら `_2x` を付けて同じ名前で。私が、背景を抜いて、9分割（border-image）で、ボタンとパネルに組み込みます。
+
+---
+
+## 追加：待ち画面のボタンと、「占いができました」の板（シンプル）
+2026-10-20。どちらも、**木・苔・葉の、控えめな板**。文字は、あとから載せるので、中は無地。`COMMON`/`OUTPUT` は、上のものをそのまま使う。
+
+### B6 ui_wait_btn（待ち画面の「ミニゲームで待つ」ボタン）
+診断を待つ画面（紫の背景）の上に載る。背景が、明るい紫なので、**木の色は、少し濃いめ**にして、板の輪郭を、はっきりさせる。
+【添付】`ui_wood_btn`（形・質感の見本）　【アスペクト比】21:9　【保存名】`ui_wait_btn`
+```
+[COMMON]
+
+STYLE: a wide horizontal rounded wooden plank button in the same style, size and shape as the attached wooden button, but a slightly darker warm brown wood so it stands out clearly against a light purple background. Soft moss on the top-left corner and one small leaf at the right end. The center is completely plain wood, empty, for text.
+
+[OUTPUT]
+```
+
+### B7 ui_done_banner（「占いができました。結果を見る」の板）
+画面の上に出る、お知らせ。少し横に長く、**うれしい知らせ**だと分かるよう、**苔が少し多め・小さな新芽（黄緑の葉）を、左右に1枚ずつ**。ただし、派手にしない。
+【添付】`ui_wood_btn_on`（苔の多い状態の見本）　【アスペクト比】21:9　【保存名】`ui_done_banner`
+```
+[COMMON]
+
+STYLE: a wide horizontal wooden plank banner, a little longer than the attached mossy button, made of one smooth board with soft green moss along the top edge and a tiny fresh yellow-green sprout of two leaves at each end (left and right), as a quiet, cheerful notice. Calm and natural, no glow, no sparkles. The center is completely plain wood, empty, for text.
+
+[OUTPUT]
+```
+
+できたら `raw` に、保存名で入れてください。高画質は、そのまま（`_2x` は不要です）。私が、背景を抜いて、ボタンと、お知らせに、組み込みます。
