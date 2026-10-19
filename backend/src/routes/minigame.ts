@@ -4,7 +4,7 @@
  *   POST /api/minigame/reward  クリアの報告 → 石を渡す（診断を待っている間だけ・1日に1回だけ）
  *
  * 画面（クライアント）の「クリアした」という報告は、うたがうこともできるので、次の条件で、渡しすぎを防ぐ。
- *  - 診断のジョブが、本人のもので、待っている間（または、できてから2分以内）であること
+ *  - 診断のジョブが、本人のもので、待っている間（または、できてから10分以内。ゲームを開いたのは、待っている間なので）であること
  *  - ジョブの受付から、クリアに必要な最短の時間（20秒）以上たっていること
  *  - 1日に1回だけ（日本時間の朝4時に切り替わる）。何個もらえる難易度でも、1回だけ
  *  - 同じ診断のジョブでは、1回だけ（1日1回なので、当然）
@@ -58,11 +58,21 @@ router.post('/reward', requireAuth, async (req: Request, res: Response) => {
        FROM diagnosis_jobs WHERE id = $1 AND user_id = $2`,
       [jobId, userId]
     )
-    if (job.rows.length === 0) return res.json({ success: true, granted: 0, reason: 'no_job' })
+    if (job.rows.length === 0) {
+      console.log('[minigame] no reward: no_job', { jobId })
+      return res.json({ success: true, granted: 0, reason: 'no_job' })
+    }
     const j = job.rows[0]
-    const waiting = j.status === 'running' || Number(j.since_finish) <= 120
-    if (!waiting) return res.json({ success: true, granted: 0, reason: 'not_waiting' })
-    if (Number(j.age) < MIN_PLAY_SECONDS) return res.json({ success: true, granted: 0, reason: 'too_fast' })
+    // 診断が早く終わっても（20秒ほど）、ゲームは、30秒以上かかる。ゲームを開いたのは、診断を待っている間なので、できてから10分までは、有効にする
+    const waiting = j.status === 'running' || Number(j.since_finish) <= 600
+    if (!waiting) {
+      console.log('[minigame] no reward: not_waiting', { jobId, sinceFinish: j.since_finish })
+      return res.json({ success: true, granted: 0, reason: 'not_waiting' })
+    }
+    if (Number(j.age) < MIN_PLAY_SECONDS) {
+      console.log('[minigame] no reward: too_fast', { jobId, age: j.age })
+      return res.json({ success: true, granted: 0, reason: 'too_fast' })
+    }
 
     const n = await earnedToday(userId)
     const room = Math.max(0, MINIGAME_DAILY_LIMIT - n)
