@@ -586,4 +586,4 @@
 .run-difficulty button.run-btn.is-on { padding: 11% 9% 5%; }
 
 /* 一時停止・結果パネルの、ボタンの文字：少しだけ、下げる（中間の位置） */
-.run-panel .run-btn { padding: 9% 9% 5%; }
+.run-panel .run-btn { padding: 8% 9% 5.5%; }
