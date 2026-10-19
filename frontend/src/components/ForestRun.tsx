@@ -128,7 +128,7 @@ function loadDifficulty(): Difficulty {
   }
 }
 
-type Phase = 'ready' | 'playing' | 'paused' | 'clear' | 'miss';
+type Phase = 'ready' | 'countdown' | 'playing' | 'paused' | 'clear' | 'miss';
 
 interface ObstacleKind {
   img: string;
@@ -183,7 +183,7 @@ const IMAGE_NAMES = [
   'musubi_cheer_front_1',
   'musubi_sad_front',
   'runbg_sky',
-  'runbg_far',
+  'runbg_far_loop',
   'runbg_mid2_loop',
   'runbg_near_loop',
   'run_ground_loop',
@@ -365,25 +365,6 @@ function drawPlaceholderBird(ctx: CanvasRenderingContext2D, cx: number, cy: numb
   ctx.restore();
 }
 
-/** 左右を交互に反転して、横にならべる（端の絵がつながらないため） */
-function drawLoop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
-  if (!img.naturalWidth) return;
-  const start = -(((offset % (w * 2)) + w * 2) % (w * 2));
-  for (let i = 0; start + i * w < W + w && i < 40; i++) {
-    const x = start + i * w;
-    const flip = i % 2 === 1;
-    ctx.save();
-    if (flip) {
-      ctx.translate(x + w, y);
-      ctx.scale(-1, 1);
-      dFull(ctx, img, 0, 0, w, h);
-    } else {
-      dFull(ctx, img, x, y, w, h);
-    }
-    ctx.restore();
-  }
-}
-
 /** つなぎ目を混ぜてある絵（_loop）を、反転せずに、そのまま、横に並べる */
 function drawLoopPlain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, offset: number, y: number, w: number, h: number) {
   if (!img.naturalWidth) return;
@@ -442,6 +423,24 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     setLives(DIFFS[difficultyRef.current].lives);
   }, []);
 
+  // スタート・一時停止からの再開は、3・2・1 のカウントダウンのあとに、はじまる
+  const [count, setCount] = useState<number | null>(null);
+  const countTimers = useRef<number[]>([]);
+  const startCountdown = useCallback(() => {
+    countTimers.current.forEach((t) => window.clearTimeout(t));
+    changePhase('countdown');
+    setCount(3);
+    countTimers.current = [
+      window.setTimeout(() => setCount(2), 800),
+      window.setTimeout(() => setCount(1), 1600),
+      window.setTimeout(() => {
+        setCount(null);
+        changePhase('playing');
+      }, 2400),
+    ];
+  }, [changePhase]);
+  useEffect(() => () => countTimers.current.forEach((t) => window.clearTimeout(t)), []);
+
   const chooseDifficulty = useCallback((d: Difficulty) => {
     difficultyRef.current = d;
     setDifficulty(d);
@@ -461,7 +460,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
   const jump = useCallback(() => {
     const g = game.current;
     if (phaseRef.current === 'ready') {
-      changePhase('playing');
+      startCountdown();
       return;
     }
     if (phaseRef.current !== 'playing') return;
@@ -469,7 +468,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       g.vy = JUMP_V;
       g.onGround = false;
     }
-  }, [changePhase]);
+  }, [changePhase, startCountdown]);
 
   // 開発中の確認用：ブラウザの開発ツールから、ゲームの状態を見られるようにする
   useEffect(() => {
@@ -609,8 +608,8 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
         dFull(ctx, sky, (W - sky.naturalWidth * s) / 2, 0, sky.naturalWidth * s, sky.naturalHeight * s);
       }
       const d = g.dist;
-      const far = imgs['runbg_far'];
-      drawLoop(ctx, far, d * 0.12, GY - 435, 700, 700 * (far.naturalHeight / (far.naturalWidth || 1)));
+      const far = imgs['runbg_far_loop'];
+      drawLoopPlain(ctx, far, d * 0.12, GY - 435, 700 * (far.naturalWidth / (far.naturalHeight || 1)) * (768 / 1376), 700 * (768 / 1376));
       const mid = imgs['runbg_mid2_loop'];
       const midH = 250;
       drawLoopPlain(ctx, mid, d * 0.4, GY - midH + 40, midH * (mid.naturalWidth / (mid.naturalHeight || 1)), midH);
@@ -755,7 +754,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
 
   const togglePause = () => {
     if (phaseRef.current === 'playing') changePhase('paused');
-    else if (phaseRef.current === 'paused') changePhase('playing');
+    else if (phaseRef.current === 'paused') startCountdown();
   };
 
   return (
@@ -772,27 +771,33 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
             <small>PC：スペースキー／難易度は ←→↑↓</small>
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
-                <button key={d} type="button" className={difficulty === d ? 'is-on' : ''} onClick={() => chooseDifficulty(d)}>
+                <button key={d} type="button" className={`run-btn${difficulty === d ? ' is-on' : ''}`} onClick={() => chooseDifficulty(d)}>
                   {DIFFS[d].label}
                 </button>
               ))}
             </div>
             </div>
-            <p className="run-start">タップで、スタート</p>
+            <p className="run-start">タップでスタート</p>
+          </div>
+        )}
+
+        {phase === 'countdown' && count !== null && (
+          <div className="run-overlay run-overlay-count">
+            <span key={count} className="run-count">{count}</span>
           </div>
         )}
 
         {phase === 'paused' && (
           <div className="run-overlay">
             <p>一時停止中</p>
-            <button type="button" className="daily-btn" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}>つづける</button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}>つづける</button>
           </div>
         )}
 
         {(phase === 'clear' || phase === 'miss') && (
           <div className="run-overlay">
             <p className="run-result">{phase === 'clear' ? 'ゴール！' : 'ざんねん…'}</p>
-            <button type="button" className="daily-btn" onPointerDown={(e) => e.stopPropagation()} onClick={restart}>もういちど</button>
+            <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={restart}>もういちど</button>
           </div>
         )}
 
