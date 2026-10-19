@@ -7,6 +7,7 @@
  * 表の基準値に、生年月日と曜日による小さなゆらぎ（−1〜+1）を足す。同じ人・同じ日は、何度見ても、同じ結果になる。
  * 医学・金銭の断定はせず、「傾向」として、前向きな言い方にする。
  */
+import { gameDayJapan } from '../time/gameDay.js'
 
 export interface DailyFortune {
   /** 今日（日本時間）YYYY-MM-DD */
@@ -102,9 +103,9 @@ const reduceToDigit = (n: number): number => {
   return n
 }
 
-/** 日本時間の今日（YYYY-MM-DD） */
+/** 今日（YYYY-MM-DD）。日本時間の朝4時に、切り替わる（time/gameDay.ts） */
 export function todayInJapan(now: Date = new Date()): string {
-  return new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10)
+  return gameDayJapan(now)
 }
 
 export function computeDailyFortune(birthDate: string, day: string): DailyFortune | null {

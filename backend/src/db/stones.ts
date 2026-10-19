@@ -13,6 +13,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { query, getPool } from './client.js'
+import { GAME_DAY_START_SQL } from '../time/gameDay.js'
 
 export type StoneReason =
   | 'login_bonus'
@@ -42,7 +43,7 @@ export async function getStoneBalance(userId: string): Promise<number> {
 async function hasTransactionToday(userId: string, reason: StoneReason): Promise<boolean> {
   const result = await query(
     `SELECT 1 FROM stone_transactions
-     WHERE user_id = $1 AND reason = $2 AND created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo')
+     WHERE user_id = $1 AND reason = $2 AND created_at >= ${GAME_DAY_START_SQL}
      LIMIT 1`,
     [userId, reason]
   )
@@ -55,7 +56,7 @@ async function hasTransactionToday(userId: string, reason: StoneReason): Promise
 async function countTransactionsToday(userId: string, reason: StoneReason): Promise<number> {
   const result = await query(
     `SELECT COUNT(*)::int AS count FROM stone_transactions
-     WHERE user_id = $1 AND reason = $2 AND created_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo')`,
+     WHERE user_id = $1 AND reason = $2 AND created_at >= ${GAME_DAY_START_SQL}`,
     [userId, reason]
   )
   return result.rows[0].count

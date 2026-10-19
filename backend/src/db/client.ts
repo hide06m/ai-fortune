@@ -297,7 +297,7 @@ export async function initializeDatabase() {
         game VARCHAR(30) NOT NULL,
         difficulty VARCHAR(12) NOT NULL,
         stones INT NOT NULL,
-        day DATE NOT NULL DEFAULT ((NOW() AT TIME ZONE 'Asia/Tokyo')::date),
+        day DATE NOT NULL DEFAULT (((NOW() AT TIME ZONE 'Asia/Tokyo') - INTERVAL '4 hours')::date),
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);

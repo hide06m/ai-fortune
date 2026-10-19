@@ -11,6 +11,7 @@ import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
 import { computeDailyFortune, todayInJapan } from '../fortune/dailyFortune.js'
+import { GAME_DAY_START_SQL } from '../time/gameDay.js'
 import { isValidPastDate } from '../fortune/dateCheck.js'
 import { getStoneBalance, grantMissionReward } from '../db/stones.js'
 
@@ -31,7 +32,7 @@ const MISSIONS: MissionDef[] = [
 const ALL_BONUS = 1
 
 /** 日本時間の今日の始まり（timestamptz） */
-const JST_DAY_START = `(date_trunc('day', NOW() AT TIME ZONE 'Asia/Tokyo') AT TIME ZONE 'Asia/Tokyo')`
+const JST_DAY_START = GAME_DAY_START_SQL
 
 async function doneToday(userId: string, id: MissionDef['id'], day: string): Promise<boolean> {
   if (id === 'fortune') {

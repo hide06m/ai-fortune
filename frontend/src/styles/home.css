@@ -617,3 +617,7 @@
   cursor: pointer;
 }
 .run-reward { margin: 0; font-size: 0.9rem; font-weight: 700; color: #cfe6a2; text-shadow: 0 1px 3px rgba(20, 30, 8, 0.9); text-align: center; }
+
+/* ミニゲーム：診断の待ち画面（z-index 9999）より、前に出す */
+.run-backdrop { z-index: 10000; }
+.run-reward-hint { color: #d9ecb0; }

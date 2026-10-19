@@ -124,9 +124,9 @@ const DIFFICULTY_KEY = 'forestRun.difficulty';
 function loadDifficulty(): Difficulty {
   try {
     const v = localStorage.getItem(DIFFICULTY_KEY) as Difficulty | null;
-    return v && v in DIFFS ? v : 'easy';
+    return v && v in DIFFS ? v : 'normal'; // はじめは、ふつう
   } catch {
-    return 'easy';
+    return 'normal';
   }
 }
 
@@ -853,6 +853,7 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
             <div className="run-ready-top">
             <p>タップでジャンプ</p>
             <small>PC：スペースキー／難易度は ←→↑↓</small>
+            {jobId && <small className="run-reward-hint">クリアで、ルーンストーン（1日1回・ふつう 1／むずかしい 2／エクストラ 5）</small>}
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={`run-btn${difficulty === d ? ' is-on' : ''}`} onClick={() => chooseDifficulty(d)}>
@@ -890,12 +891,14 @@ export function ForestRun({ onClose, jobId = null }: ForestRunProps) {
             {phase === 'clear' && jobId && reward && (
               <p className="run-reward">
                 {reward.granted > 0
-                  ? `ルーンストーン +${reward.granted}（今日は、あと${reward.remaining ?? 0}個）`
+                  ? `ルーンストーン +${reward.granted}（今日の分は、これで、おしまい）`
                   : reward.reason === 'daily_limit'
-                    ? '今日の、ルーンストーンは、もらい終わりました'
+                    ? '今日の、ルーンストーンは、もらいました'
                     : reward.reason === 'already'
-                      ? 'この診断の分は、もらいました'
-                      : ''}
+                      ? '今日の、ルーンストーンは、もらいました'
+                      : reward.reason === 'no_reward'
+                        ? 'かんたんでは、ルーンストーンは、もらえません'
+                        : ''}
               </p>
             )}
             <div className="run-panel-buttons">

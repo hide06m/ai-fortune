@@ -35,7 +35,9 @@ describe('今日の運勢', () => {
   })
 
   it('日本時間の今日（UTCの夕方は、翌日）', () => {
-    expect(todayInJapan(new Date('2026-10-17T15:30:00Z'))).toBe('2026-10-18')
-    expect(todayInJapan(new Date('2026-10-17T14:59:00Z'))).toBe('2026-10-17')
+    // 日本時間の朝4時に、日が切り替わる（UTC では、前日の19時）
+    expect(todayInJapan(new Date('2026-10-17T19:00:00Z'))).toBe('2026-10-18') // 日本時間 10/18 04:00
+    expect(todayInJapan(new Date('2026-10-17T18:59:00Z'))).toBe('2026-10-17') // 日本時間 10/18 03:59
+    expect(todayInJapan(new Date('2026-10-17T15:30:00Z'))).toBe('2026-10-17') // 日本時間 10/18 00:30（まだ前の日）
   })
 })
