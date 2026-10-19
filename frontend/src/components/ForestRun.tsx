@@ -124,6 +124,7 @@ const FLYERS: Record<string, FlyerKind> = {
 };
 const BIRD_FRAMES = 4;
 
+const RUN_RATE = 9; // 走りのコマを進める速さ（コマ/秒）。コマが少ないので、となりのコマと、なめらかにつなぐ
 const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 const MUSUBI_NAMES = [...RUN_FRAMES, 'musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_cheer_front_1', 'musubi_sad_front'];
 const IMAGE_NAMES = [
@@ -592,30 +593,45 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
       // ムスビ
       let name: string;
+      let name2: string | null = null; // 走りのとき、次のコマ（なめらかにつなぐ）
+      let mix = 0;
       if (phaseNow === 'clear') name = 'musubi_cheer_front_1';
       else if (phaseNow === 'miss') name = 'musubi_sad_front';
       else if (g.hitTimer > 0) name = 'musubi_hit_right';
       else if (!g.onGround) name = g.vy < 0 ? 'musubi_jump_up_right' : 'musubi_fall_right';
       else if (g.landTimer > 0) name = 'musubi_land_right';
-      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 9 * (g.speed / 300)) % RUN_FRAMES.length];
-      const mi = imgs[name];
-      if (mi.naturalWidth) {
+      else {
+        const ph = (phaseNow === 'playing' ? g.time : 0) * RUN_RATE * (g.speed / 300);
+        const fi = Math.floor(ph);
+        name = RUN_FRAMES[fi % RUN_FRAMES.length];
+        if (phaseNow === 'playing') {
+          name2 = RUN_FRAMES[(fi + 1) % RUN_FRAMES.length];
+          mix = ph - fi;
+        }
+      }
+      const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
+      const drawM = (nm: string, alpha: number) => {
+        const mi = imgs[nm];
+        if (!mi || !mi.naturalWidth) return;
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
-        // （切り出しの基準は、幅300。高画質版（2倍）でも、同じ大きさになるよう、画像の幅で割る）
-        const sc = (name.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[name]?.a ?? 1);
+        // （切り出しの基準は、幅300。高画質版でも、同じ大きさになるよう、画像の幅で割る）
+        const sc = (nm.startsWith('musubi_walk') ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[nm]?.a ?? 1);
         const mw = mi.naturalWidth * sc;
         const mh = mi.naturalHeight * sc;
-        const blink = phaseNow === 'playing' && g.invuln > 0 && Math.floor(g.invuln * 14) % 2 === 0;
-        if (!blink) {
-          // 絵の下の透明な余白を除いて、足もとを、地面に合わせる（空中では、その分、上がる）
-          const b = boxes[name];
-          // 走り（歩き）のコマは、体の上下を、絵の中で、そろえてあるので、足もとの基準線（キャンバスの上から360）で、そろえる
-          const footY = name.startsWith('musubi_walk') ? mi.naturalHeight * (360 / 380) * sc : b ? (b.sy + b.sh) * sc : mh;
-          // 顔（白い口まわり）の中心の横位置を、どのコマでも、同じ場所にそろえる（コマごとに、位置がずれないように）
-          const faceX = sizeAdj[name]?.fx;
-          const left = faceX !== undefined ? MUSUBI_X + MUSUBI_FACE_DX - faceX * mw : MUSUBI_X - mw / 2;
-          dFull(ctx, mi, left, GY - g.y - footY + MUSUBI_SINK, mw, mh);
-        }
+        // 絵の下の透明な余白を除いて、足もとを、地面に合わせる（空中では、その分、上がる）
+        const b = boxes[nm];
+        // 走り（歩き）のコマは、体の上下を、絵の中で、そろえてあるので、足もとの基準線（キャンバスの上から360）で、そろえる
+        const footY = nm.startsWith('musubi_walk') ? mi.naturalHeight * (360 / 380) * sc : b ? (b.sy + b.sh) * sc : mh;
+        // 顔とマントの重心の中間を、どのコマでも、同じ場所にそろえる（コマごとに、位置がずれないように）
+        const faceX = sizeAdj[nm]?.fx;
+        const left = faceX !== undefined ? MUSUBI_X + MUSUBI_FACE_DX - faceX * mw : MUSUBI_X - mw / 2;
+        ctx.globalAlpha = alpha;
+        dFull(ctx, mi, left, GY - g.y - footY + MUSUBI_SINK, mw, mh);
+        ctx.globalAlpha = 1;
+      };
+      if (!blink) {
+        drawM(name, 1);
+        if (name2 && mix > 0.03) drawM(name2, mix);
       }
 
       // 空を飛ぶ障害物（ムスビより前に描く）。絵があれば絵を、なければ、仮の鳥を描く

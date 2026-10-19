@@ -13,6 +13,7 @@ const MUSUBI_H = 132;
 const MUSUBI_SINK = 12;
 const FACE_DX = 26;
 const CATCH_HALF = 62; // 受けとめられる、横の幅（ムスビの中心から）
+const RUN_RATE = 9; // 走りのコマを進める速さ（コマ/秒）
 const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 
 interface Conf {
@@ -183,11 +184,10 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
     const k = Math.max(W / sky.naturalWidth, H / sky.naturalHeight);
     dFull(ctx, sky, (W - sky.naturalWidth * k) / 2, 0, sky.naturalWidth * k, sky.naturalHeight * k);
   }
-  const t = s.anim;
   const far = imgs['runbg_far_loop'];
-  if (far && far.naturalWidth) drawLoopPlain(ctx, far, t * 4, GY - 435, 700 * (far.naturalWidth / far.naturalHeight) * (768 / 1376), 700 * (768 / 1376));
+  if (far && far.naturalWidth) drawLoopPlain(ctx, far, 0, GY - 435, 700 * (far.naturalWidth / far.naturalHeight) * (768 / 1376), 700 * (768 / 1376));
   const mid = imgs['runbg_mid2_loop'];
-  if (mid && mid.naturalWidth) drawLoopPlain(ctx, mid, t * 10, GY - 210, 250 * (mid.naturalWidth / mid.naturalHeight), 250);
+  if (mid && mid.naturalWidth) drawLoopPlain(ctx, mid, 0, GY - 210, 250 * (mid.naturalWidth / mid.naturalHeight), 250);
 
   const gr = imgs['run_ground_loop'];
   if (gr && gr.naturalWidth) {
@@ -213,30 +213,45 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
 
   // ムスビ
   let name: string;
+  let name2: string | null = null;
+  let mix = 0;
   if (info.phase === 'clear') name = 'musubi_cheer_front_1';
   else if (info.phase === 'miss') name = 'musubi_sad_front';
   else if (s.hitTimer > 0) name = 'musubi_hit_right';
-  else name = RUN_FRAMES[Math.floor(s.moving ? s.anim * 10 : 0) % RUN_FRAMES.length];
-  const mi = imgs[name];
-  if (mi && mi.naturalWidth) {
-    const isWalk = name.startsWith('musubi_walk');
-    const sc = (isWalk ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[name]?.a ?? 1);
+  else {
+    // 走りのコマは、少ないので、となりのコマと、なめらかにつなぐ
+    const ph = s.moving ? s.anim * RUN_RATE : 0;
+    const i = Math.floor(ph);
+    name = RUN_FRAMES[i % RUN_FRAMES.length];
+    if (s.moving) {
+      name2 = RUN_FRAMES[(i + 1) % RUN_FRAMES.length];
+      mix = ph - i;
+    }
+  }
+  const drawM = (nm: string, alpha: number) => {
+    const mi = imgs[nm];
+    if (!mi || !mi.naturalWidth) return;
+    const isWalk = nm.startsWith('musubi_walk');
+    const sc = (isWalk ? (MUSUBI_H / 290) * (300 / mi.naturalWidth) : MUSUBI_H / 945) * (sizeAdj[nm]?.a ?? 1);
     const mw = mi.naturalWidth * sc;
     const mh = mi.naturalHeight * sc;
-    if (!boxes[name]) boxes[name] = opaqueBox(mi);
-    const b = boxes[name];
+    if (!boxes[nm]) boxes[nm] = opaqueBox(mi);
+    const b = boxes[nm];
     const footY = isWalk ? mi.naturalHeight * (360 / 380) * sc : b ? (b.sy + b.sh) * sc : mh;
-    const faceX = sizeAdj[name]?.fx;
+    const faceX = sizeAdj[nm]?.fx;
     const left = faceX !== undefined ? FACE_DX - faceX * mw : -mw / 2;
-    const flip = s.dir === -1 && name !== 'musubi_cheer_front_1' && name !== 'musubi_sad_front';
+    const flip = s.dir === -1 && nm !== 'musubi_cheer_front_1' && nm !== 'musubi_sad_front';
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(s.x, 0);
     if (flip) ctx.scale(-1, 1);
     // 受けとめたとき、ちょっと、はずむ
     const bounce = s.catchTimer > 0 ? -Math.sin((s.catchTimer / 0.25) * Math.PI) * 6 : 0;
     dFull(ctx, mi, left, GY - footY + MUSUBI_SINK + bounce, mw, mh);
     ctx.restore();
-  }
+  };
+  drawM(name, 1);
+  if (name2 && mix > 0.03) drawM(name2, mix);
 
   // +点の表示
   ctx.font = '900 30px "Zen Maru Gothic", sans-serif';

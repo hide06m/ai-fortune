@@ -468,3 +468,14 @@ OUTPUT: very high resolution. The whole background is flat solid pure blue (#000
 ### 取りこみ（私がやる）
 `raw/` に入れる → `process_game_assets.py` → `split_run_sheet.py`（`musubi_run_sheet_hq*.png` があれば、それを使う。大きさは自動で決まる。最大3倍）→ `match_musubi_colors.py` → `musubi_sizes.py`。コマの順は、シートの順（hq1 → hq2 → hq3）。
 ※ 8コマ（A＋B）でも、今のゲームの走りは動くように、コマ数に合わせる（12コマ前提の箇所は、取りこみの時に直す）。
+
+### 走りが4コマでパラパラして見えるとき：「あいだのコマ」を足す（2026-10-20）
+今は、4コマの間を、プログラムで、なめらかにつないでいる（クロスフェード）が、足の動きは、絵が増えるほど自然になる。**1コマずつ**、となりの2コマを添付して、「そのまんなか」を作らせる（シート方式は、同じ絵が出やすいので、使わない）。
+
+【添付】となりあう2コマ（例：`musubi_walk_01` と `musubi_walk_02`）と、`musubi_idle_right`　【アスペクト比】3:4　【保存名】`musubi_between_12`（1と2のあいだ）、`_23`、`_34`、`_41`（4と1のあいだ）
+```
+Using the attached character as the exact reference (same face, grey-and-white hamster, olive-green hooded cloak with the small leaf brooch, pink hands and feet, same line weight, same colors, same lighting, same size and same facing direction: right), draw ONE new frame of a side-view run cycle that is the in-between pose exactly halfway between the two attached frames: every part of the body (head height, cloak, arms, each leg, tail) is placed halfway between its position in the first attached frame and its position in the second one. Do not copy either frame. Keep the head tilt and body lean halfway as well.
+
+OUTPUT: flat solid pure blue (#0000FF) background, no ground, no shadow, no text, no frame, no blue inside the character. Very high resolution.
+```
+→ 4枚できたら、`raw/` に入れて教えてください（走りが、8コマになります）。
