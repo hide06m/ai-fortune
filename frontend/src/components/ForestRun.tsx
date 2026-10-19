@@ -493,7 +493,10 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (!e.repeat) jump();
+        if (e.repeat) return;
+        // ゴール・ざんねんの画面では、スペースで「もういちど」
+        if (phaseRef.current === 'clear' || phaseRef.current === 'miss') restart();
+        else jump();
       } else if (e.code === 'Escape') {
         onClose();
       } else if (phaseRef.current === 'ready' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
@@ -512,7 +515,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [jump, onClose, chooseDifficulty]);
+  }, [jump, onClose, chooseDifficulty, restart]);
 
   // ゲームのループ
   useEffect(() => {

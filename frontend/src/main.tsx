@@ -6,6 +6,7 @@ import { PalmRelayCapturePage } from './pages/PalmRelayCapturePage.tsx'
 import { PalmLab } from './dev/PalmLab.tsx'
 import { PalmReport } from './dev/PalmReport.tsx'
 import { InvitePage } from './pages/InvitePage.tsx'
+import { ForestRun } from './components/ForestRun.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 // 手相診断のQR連携用：PCが表示したQRコードをスマホで読み取った際の着地ページ。
@@ -22,6 +23,9 @@ createRoot(document.getElementById('root')!).render(
       <PalmLab />
     ) : import.meta.env.DEV && window.location.pathname === '/palm-report' ? (
       <PalmReport />
+    ) : import.meta.env.DEV && window.location.pathname === '/forest-run' ? (
+      // 開発用：ログインなしで、森ランだけを開く（スマホでの確認用）
+      <ForestRun onClose={() => { window.location.href = '/' }} />
     ) : palmCaptureMatch ? (
       <PalmRelayCapturePage token={palmCaptureMatch[1]} />
     ) : inviteMatch ? (
