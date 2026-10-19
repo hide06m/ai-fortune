@@ -127,17 +127,32 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       console.log('[AUTH] client_id:', process.env.GOOGLE_CLIENT_ID ? '✓ set' : '✗ NOT SET')
       console.log('[AUTH] client_secret:', process.env.GOOGLE_CLIENT_SECRET ? '✓ set' : '✗ NOT SET')
 
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code: authCode,
-          client_id: process.env.GOOGLE_CLIENT_ID || '',
-          client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-          redirect_uri: 'http://localhost:5173',
-          grant_type: 'authorization_code'
-        }).toString()
-      })
+      // redirect_uri は、フロントの呼び出し方で決まる。ポップアップ方式なら "postmessage"、それ以外は、ページのオリジン。
+      // 本番では、本番のURLになるので、固定の localhost にせず、順に試す（認可コードは、不一致のときは、消費されない）
+      const reqOrigin = typeof req.headers.origin === 'string' && corsOrigins.includes(req.headers.origin) ? req.headers.origin : null
+      const redirectCandidates = [...new Set(['postmessage', reqOrigin, 'http://localhost:5173'].filter((v): v is string => !!v))]
+      let tokenResponse: globalThis.Response | null = null
+      for (const redirectUri of redirectCandidates) {
+        tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code: authCode,
+            client_id: process.env.GOOGLE_CLIENT_ID || '',
+            client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code'
+          }).toString()
+        })
+        if (tokenResponse.ok) {
+          console.log('[AUTH] redirect_uri accepted:', redirectUri)
+          break
+        }
+        const peek = await tokenResponse.clone().text()
+        console.warn(`[AUTH] redirect_uri "${redirectUri}" rejected:`, peek.replace(/\s+/g, ' ').slice(0, 160))
+        if (!peek.includes('redirect_uri_mismatch')) break // 別の理由（期限切れなど）は、やり直しても、同じ
+      }
+      if (!tokenResponse) return res.status(401).json({ error: 'Failed to exchange authorization code' })
 
       console.log('[AUTH] Token response status:', tokenResponse.status)
 
