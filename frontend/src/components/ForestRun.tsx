@@ -11,7 +11,6 @@ const GY = 730; // 走る面（地面の上の縁）
 const BASE = '/assets/games/';
 
 // 世界の長さ（px）と速さ（px/秒）
-const SPEED = 300;
 
 // ムスビ
 const MUSUBI_X = 120;
@@ -96,14 +95,16 @@ interface DifficultyConfig {
   birdGap: [number, number]; // 鳥と鳥の間隔
   groundGap: [number, number]; // 地面の障害物の間隔（絵の幅を足す前）
   bigWeight: number; // 大きい障害物（丸太・高い切り株・高い石）が出る割合
-  randomColor: boolean; // 鳥の色を、ランダムにする（高さと、色が、結びつかない）
+  /** 鳥の色：blue＝すべて青／byHeight＝低い鳥は赤茶・高い鳥は青／random＝ランダム（高さと、色が、結びつかない） */
+  tone: 'blue' | 'byHeight' | 'random';
+  speed: number; // はしる速さ（px/秒）
   clearRadius: number; // 鳥の前後で、地面の障害物を、取りのぞく範囲
 }
 const DIFFS: Record<Difficulty, DifficultyConfig> = {
-  easy: { label: 'かんたん', sub: '地面の障害物だけ・短め', length: 6000, birds: [], birdStart: 0, birdGap: [0, 0], groundGap: [400, 300], bigWeight: 0.12, randomColor: false, clearRadius: 0 },
-  normal: { label: 'ふつう', sub: '高い空の鳥が出る', length: 9000, birds: ['fly_high'], birdStart: 2000, birdGap: [1900, 800], groundGap: [360, 260], bigWeight: 0.22, randomColor: false, clearRadius: 400 },
-  hard: { label: 'むずかしい', sub: '低い空の鳥も出る・長め', length: 12000, birds: ['fly_high', 'fly_low'], birdStart: 1800, birdGap: [1500, 800], groundGap: [340, 240], bigWeight: 0.3, randomColor: false, clearRadius: 360 },
-  extra: { label: 'エクストラ', sub: '鳥の色がバラバラ・大きな障害物が多い・いちばん長い', length: 15000, birds: ['fly_high', 'fly_low'], birdStart: 1600, birdGap: [1150, 700], groundGap: [300, 200], bigWeight: 0.5, randomColor: true, clearRadius: 300 },
+  easy: { label: 'かんたん', sub: '地面の障害物だけ・短め', length: 6000, birds: [], birdStart: 0, birdGap: [0, 0], groundGap: [400, 300], bigWeight: 0.12, tone: 'blue', speed: 260, clearRadius: 0 },
+  normal: { label: 'ふつう', sub: '高い空の鳥が出る', length: 9000, birds: ['fly_high'], birdStart: 2000, birdGap: [1900, 800], groundGap: [360, 260], bigWeight: 0.22, tone: 'blue', speed: 300, clearRadius: 400 },
+  hard: { label: 'むずかしい', sub: '低い空の鳥も出る・長め', length: 13500, birds: ['fly_high', 'fly_low'], birdStart: 1800, birdGap: [1500, 800], groundGap: [340, 240], bigWeight: 0.3, tone: 'byHeight', speed: 340, clearRadius: 360 },
+  extra: { label: 'エクストラ', sub: '鳥の色がバラバラ・大きな障害物が多い・いちばん長い', length: 19000, birds: ['fly_high', 'fly_low'], birdStart: 1600, birdGap: [1150, 700], groundGap: [300, 200], bigWeight: 0.5, tone: 'random', speed: 380, clearRadius: 300 },
 };
 const DIFF_ORDER: Difficulty[] = ['easy', 'normal', 'hard', 'extra'];
 const BIG_KINDS = ['log', 'stump_l', 'rock_l'];
@@ -296,7 +297,7 @@ function buildCourse(diff: Difficulty): Obstacle[] {
     if (cfg.birds.length > 1 && kind === lastFly && Math.random() < 0.6) kind = cfg.birds.find((k) => k !== kind) ?? kind;
     lastFly = kind;
     // 鳥の色：ふだんは青。エクストラは、高さと関係なく、ランダム（赤茶の鳥が上に、青の鳥が下に、来ることもある）
-    const tone: 'blue' | 'red' = cfg.randomColor ? pick(['blue', 'red'] as const) : 'blue';
+    const tone: 'blue' | 'red' = cfg.tone === 'random' ? pick(['blue', 'red'] as const) : cfg.tone === 'byHeight' && kind === 'fly_low' ? 'red' : 'blue';
     list.push({ kind, x: fx, hit: false, tone });
     fx += cfg.birdGap[0] + Math.random() * cfg.birdGap[1];
   }
@@ -386,6 +387,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     lives: LIVES,
     obstacles: buildCourse(loadDifficulty()),
     length: DIFFS[loadDifficulty()].length,
+    speed: DIFFS[loadDifficulty()].speed,
     time: 0,
     dying: false,
   });
@@ -407,6 +409,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     g.lives = LIVES;
     g.obstacles = buildCourse(difficultyRef.current);
     g.length = DIFFS[difficultyRef.current].length;
+    g.speed = DIFFS[difficultyRef.current].speed;
     g.time = 0;
     g.dying = false;
     setLives(LIVES);
@@ -417,6 +420,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
     setDifficulty(d);
     game.current.obstacles = buildCourse(d);
     game.current.length = DIFFS[d].length;
+    game.current.speed = DIFFS[d].speed;
     try {
       localStorage.setItem(DIFFICULTY_KEY, d);
     } catch {
@@ -487,7 +491,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       // ───── 更新 ─────
       if (phaseNow === 'playing') {
         g.time += dt;
-        if (!g.dying) g.dist += SPEED * dt; // ミスが決まったら、前へ進むのを止めて、着地を待つ
+        if (!g.dying) g.dist += g.speed * dt; // ミスが決まったら、前へ進むのを止めて、着地を待つ
         if (!g.onGround) {
           g.vy += GRAVITY * dt;
           g.y -= g.vy * dt;
@@ -616,7 +620,7 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
       else if (g.hitTimer > 0) name = 'musubi_hit_right';
       else if (!g.onGround) name = g.vy < 0 ? 'musubi_jump_up_right' : 'musubi_fall_right';
       else if (g.landTimer > 0) name = 'musubi_land_right';
-      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 13) % RUN_FRAMES.length];
+      else name = RUN_FRAMES[Math.floor((phaseNow === 'playing' ? g.time : 0) * 13 * (g.speed / 300)) % RUN_FRAMES.length];
       const mi = imgs[name];
       if (mi.naturalWidth) {
         // 走り（歩き）のコマは、切り出した大きさが違うので、人物の高さが同じになるよう、倍率を変える
@@ -720,7 +724,6 @@ export function ForestRun({ onClose }: { onClose: () => void }) {
               {DIFF_ORDER.map((d) => (
                 <button key={d} type="button" className={difficulty === d ? 'is-on' : ''} onClick={() => chooseDifficulty(d)}>
                   {DIFFS[d].label}
-                  <small>{DIFFS[d].sub}</small>
                 </button>
               ))}
             </div>
