@@ -1,46 +1,46 @@
 {
  "musubi_walk_01": {
   "a": 0.9934,
-  "fx": 0.6364
+  "fx": 0.563
  },
  "musubi_walk_02": {
   "a": 1.0,
-  "fx": 0.6707
+  "fx": 0.4684
  },
  "musubi_walk_03": {
   "a": 1.0,
-  "fx": 0.6375
+  "fx": 0.5343
  },
  "musubi_walk_04": {
   "a": 1.0,
-  "fx": 0.6445
+  "fx": 0.4938
  },
  "musubi_jump_up_right": {
   "a": 0.95,
-  "fx": 0.6852
+  "fx": 0.4333
  },
  "musubi_fall_right": {
   "a": 0.9727,
-  "fx": 0.6655
+  "fx": 0.4484
  },
  "musubi_land_right": {
   "a": 0.9528,
-  "fx": 0.6703
+  "fx": 0.4805
  },
  "musubi_hit_right": {
   "a": 0.9231,
-  "fx": 0.5574
+  "fx": 0.5175
  },
  "musubi_sad_front": {
   "a": 0.9257,
-  "fx": 0.5219
+  "fx": 0.423
  },
  "musubi_cheer_front_1": {
   "a": 0.8783,
-  "fx": 0.526
+  "fx": 0.556
  },
  "musubi_idle_right": {
   "a": 0.9756,
-  "fx": 0.7172
+  "fx": 0.6287
  }
 }

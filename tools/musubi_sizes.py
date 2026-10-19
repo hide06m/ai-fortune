@@ -13,6 +13,7 @@ from PIL import Image
 
 GAMES = Path(__file__).resolve().parent.parent / 'frontend' / 'public' / 'assets' / 'games'
 MUSUBI_H = 132
+CLOAK_W = 0.6  # 走りのコマの、位置をそろえる点：顔とマントの重心の、混ぜ方（1に近いほど、マント寄り）
 WALK = [p.stem for p in sorted(GAMES.glob('musubi_walk_*.png'))]
 POSES = ['musubi_jump_up_right', 'musubi_fall_right', 'musubi_land_right', 'musubi_hit_right', 'musubi_sad_front', 'musubi_cheer_front_1', 'musubi_idle_right']
 
@@ -40,7 +41,21 @@ def face_metrics(name):
     ys.sort()
     chin = ys[int(len(ys) * 0.98)]
     sc = base_scale(name, im.width)
-    return (chin - bb[1]) * sc, (sum(xs) / len(xs)) / im.width
+    face_x = (sum(xs) / len(xs)) / im.width
+    if True:  # 全コマに適用（コマが変わったときに、顔が、ぴょこんと、ずれないように）
+        # 走りのコマは、体が前に傾くコマと、起きているコマがある。顔だけで位置をそろえると、傾いたコマで、おしり・マントが、後ろに、出すぎる。
+        # マント（オリーブ色）の重心も、基準に混ぜる（顔とマントの、まん中を、そろえる点にする）
+        cx, cn = 0, 0
+        for y in range(bb[1], bb[3]):
+            for x in range(bb[0], bb[2], 2):
+                r, g, b, al = px[x, y]
+                if al > 200 and g > r and g > b + 15 and r < 150:
+                    cx += x
+                    cn += 1
+        if cn:
+            cloak_x = cx / cn / im.width
+            face_x = face_x * (1 - CLOAK_W) + cloak_x * CLOAK_W
+    return (chin - bb[1]) * sc, face_x
 
 
 def main():
