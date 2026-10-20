@@ -7,7 +7,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Howl } from 'howler';
-import { getBgmVolume, getSeVolume, isBgmMuted, isSeMuted, subscribeAudioPrefs, duckMainBgm } from './audio';
+import { getBgmVolume, getSeVolume, isBgmMuted, isSeMuted, subscribeAudioPrefs, duckMainBgm, resumeAudio } from './audio';
 
 const BASE = '/assets/audio/';
 const WAV = new Set(['acorn_gold', 'heart_lost', 'mail_open', 'notice_chime', 'pause_close', 'pause_open', 'run_hit', 'run_land', 'ui_difficulty', 'ui_start']);
@@ -50,6 +50,7 @@ export function preloadSe(names: SeName[]) {
 
 export function playSe(name: SeName, opts: { volume?: number; rate?: number } = {}) {
   if (isSeMuted()) return;
+  resumeAudio();
   try {
     const h = howl(name);
     const id = h.play();

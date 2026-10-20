@@ -1,4 +1,4 @@
-import { Howl } from 'howler'
+import { Howl, Howler } from 'howler'
 
 const FOREST_BGM_VOLUME = 0.2025
 
@@ -51,6 +51,32 @@ export function duckMainBgm(on: boolean) {
   } else if (duckCount > 0 && --duckCount === 0) {
     duckedHowls.forEach((h) => h.play())
     duckedHowls = []
+  }
+}
+
+// ───── スマホで、スリープ・ホーム画面に戻る・ほかのアプリに切りかえる、のあと、音を戻す ─────
+// ブラウザは、画面が見えない間、音の仕組み（AudioContext）を、止める。戻ったときに、自動では、再開しない（特に iPhone の Safari）。
+// 戻ったとき・画面にさわったとき・音が鳴るべきときに、止まっていたら、再開する。
+export function resumeAudio() {
+  resumeAudioContext()
+}
+function resumeAudioContext() {
+  const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
+  if (ctx && ctx.state !== 'running') {
+    ctx.resume().catch(() => undefined)
+  }
+}
+if (typeof document !== 'undefined') {
+  if (import.meta.env.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
+  const onBack = () => {
+    if (document.visibilityState === 'visible') resumeAudioContext()
+  }
+  document.addEventListener('visibilitychange', onBack)
+  window.addEventListener('pageshow', resumeAudioContext)
+  window.addEventListener('focus', resumeAudioContext)
+  // 戻ってすぐは、ブラウザが、再開を認めないことがある。次に画面にさわったとき（指・クリック・キー）に、再開する
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) {
+    window.addEventListener(ev, resumeAudioContext, { passive: true, capture: true })
   }
 }
 
@@ -241,6 +267,7 @@ export function stopAmbientLoop() {
 
 // ノック音を再生
 export function playKnock() {
+  resumeAudioContext()
   knockSound?.play()
 }
 
