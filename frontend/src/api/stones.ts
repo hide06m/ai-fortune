@@ -78,3 +78,20 @@ export async function getStoneSummary(): Promise<StoneSummary> {
   if (!response.ok) throw new Error(`API error: ${response.status}`);
   return response.json();
 }
+
+export interface LoginCalendar {
+  success: boolean;
+  month: string;
+  today: string;
+  days: string[];
+  streak: number;
+  nextMilestone: { day: number; stones: number } | null;
+  milestones: { day: number; stones: number }[];
+}
+
+export async function getLoginCalendar(month?: string): Promise<LoginCalendar> {
+  const q = month ? `?month=${encodeURIComponent(month)}` : '';
+  const response = await fetch(`${API_URL}/api/stones/login-calendar${q}`, { method: 'GET', headers: authHeaders() });
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  return response.json();
+}

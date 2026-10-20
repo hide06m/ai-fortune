@@ -14,6 +14,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { query, getPool } from './client.js'
 import { GAME_DAY_START_SQL, GAME_DAY_DATE_SQL } from '../time/gameDay.js'
+import { createMessage } from './inbox.js'
 
 export type StoneReason =
   | 'login_bonus'
@@ -122,7 +123,81 @@ export async function claimDailyLoginBonus(
     return { granted: false, balance: await getStoneBalance(userId) }
   }
   const balance = await applyStoneChange(userId, 1, 'login_bonus')
+  // ログインカレンダーに記録して、連続ログインのごほうび（受信箱に届く）を確かめる
+  try {
+    await recordLoginDay(userId)
+  } catch (error) {
+    console.error('[stones] recordLoginDay failed:', error)
+  }
   return { granted: true, balance }
+}
+
+/** 連続ログインのごほうび：N日目に、受信箱へ、石つきのお知らせが届く */
+export const STREAK_MILESTONES: Record<number, number> = { 3: 1, 7: 3, 14: 5, 30: 10 }
+
+/** 今日をログイン日に記録し、連続日数に応じて、ごほうびを受信箱へ */
+async function recordLoginDay(userId: string): Promise<void> {
+  await query(`INSERT INTO login_days (user_id, day) VALUES ($1, ${GAME_DAY_DATE_SQL}) ON CONFLICT DO NOTHING`, [userId])
+  const { streak, streakStart } = await getLoginStreak(userId)
+  const reward = STREAK_MILESTONES[streak]
+  if (!reward || !streakStart) return
+  const ins = await query(
+    'INSERT INTO login_streak_rewards (user_id, streak_start, milestone) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING milestone',
+    [userId, streakStart, streak]
+  )
+  if (ins.rows.length === 0) return
+  await createMessage({
+    userId,
+    kind: 'gift',
+    title: `連続ログイン${streak}日のごほうび`,
+    body: `${streak}日つづけて来てくれてありがとう。ルーンストーンを${reward}個お贈りします。`,
+    stones: reward,
+    expiresInDays: 30,
+  })
+}
+
+/** 連続ログイン日数（今日、または、昨日までの、つながり）と、その始まりの日 */
+export async function getLoginStreak(userId: string): Promise<{ streak: number; streakStart: string | null; today: string }> {
+  const r = await query(
+    `SELECT to_char(day, 'YYYY-MM-DD') AS d, to_char(${GAME_DAY_DATE_SQL}, 'YYYY-MM-DD') AS today FROM login_days WHERE user_id = $1 ORDER BY day DESC LIMIT 400`,
+    [userId]
+  )
+  const today = (r.rows[0]?.today as string) ?? ''
+  const days: string[] = r.rows.map((x) => x.d)
+  const toNum = (d: string) => Math.round(Date.parse(d + 'T00:00:00Z') / 86400000)
+  if (days.length === 0 || !today) return { streak: 0, streakStart: null, today }
+  let cur = toNum(days[0])
+  const t = toNum(today)
+  if (t - cur > 1) return { streak: 0, streakStart: null, today } // 昨日も今日も来ていない：途切れた
+  let streak = 1
+  let start = days[0]
+  for (let i = 1; i < days.length; i++) {
+    if (toNum(days[i]) === cur - 1) {
+      streak++
+      cur = toNum(days[i])
+      start = days[i]
+    } else break
+  }
+  return { streak, streakStart: start, today }
+}
+
+/** 指定した月のカレンダー（ログインした日）。month は 'YYYY-MM'。省略すると、今月 */
+export async function getLoginCalendar(userId: string, month?: string) {
+  const { streak, today } = await getLoginStreak(userId)
+  const ym = month && /^\d{4}-\d{2}$/.test(month) ? month : (today || '').slice(0, 7)
+  const r = await query(
+    `SELECT to_char(day, 'YYYY-MM-DD') AS d FROM login_days WHERE user_id = $1 AND to_char(day, 'YYYY-MM') = $2 ORDER BY day`,
+    [userId, ym]
+  )
+  const next = Object.keys(STREAK_MILESTONES).map(Number).sort((a, c) => a - c).find((m) => m > streak) ?? null
+  return {
+    month: ym,
+    today,
+    days: r.rows.map((x) => x.d as string),
+    streak,
+    nextMilestone: next ? { day: next, stones: STREAK_MILESTONES[next] } : null,
+    milestones: Object.entries(STREAK_MILESTONES).map(([day, stones]) => ({ day: Number(day), stones })),
+  }
 }
 
 /**

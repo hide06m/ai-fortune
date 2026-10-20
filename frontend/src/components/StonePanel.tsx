@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getStoneSummary, watchAdForStone, type StoneSummary } from '../api/stones';
+import { getLoginCalendar, getStoneSummary, watchAdForStone, type LoginCalendar, type StoneSummary } from '../api/stones';
 import { showRewardedAd } from '../ads/rewardedAd';
 
 const REASON_LABEL: Record<string, string> = {
@@ -21,6 +21,57 @@ const REASON_LABEL: Record<string, string> = {
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** ログインカレンダー：今月の、ログインした日に印。連続日数と、つぎのごほうび */
+function LoginCalendarView() {
+  const [cal, setCal] = useState<LoginCalendar | null>(null);
+  useEffect(() => {
+    getLoginCalendar()
+      .then(setCal)
+      .catch(() => undefined);
+  }, []);
+  if (!cal) return null;
+  const [y, m] = cal.month.split('-').map(Number);
+  const first = new Date(y, m - 1, 1).getDay();
+  const last = new Date(y, m, 0).getDate();
+  const done = new Set(cal.days.map((d) => Number(d.slice(8, 10))));
+  const todayNum = cal.today.slice(0, 7) === cal.month ? Number(cal.today.slice(8, 10)) : -1;
+  const cells: (number | null)[] = [...Array(first).fill(null), ...Array.from({ length: last }, (_, i) => i + 1)];
+  return (
+    <div className="login-cal">
+      <h4>
+        ログインカレンダー　{y}年{m}月
+      </h4>
+      <div className="login-cal-grid">
+        {['日', '月', '火', '水', '木', '金', '土'].map((w) => (
+          <span key={w} className="login-cal-week">
+            {w}
+          </span>
+        ))}
+        {cells.map((d, i) => (
+          <span key={i} className={`login-cal-day${d && done.has(d) ? ' is-done' : ''}${d === todayNum ? ' is-today' : ''}`}>
+            {d ?? ''}
+          </span>
+        ))}
+      </div>
+      <p className="login-cal-streak">
+        連続ログイン <b>{cal.streak}</b> 日
+        {cal.nextMilestone && (
+          <small>
+            　あと{cal.nextMilestone.day - cal.streak}日で ルーンストーン+{cal.nextMilestone.stones}
+          </small>
+        )}
+      </p>
+      <p className="login-cal-ms">
+        {cal.milestones.map((x) => (
+          <span key={x.day} className={cal.streak >= x.day ? 'is-reached' : ''}>
+            {x.day}日 +{x.stones}
+          </span>
+        ))}
+      </p>
+    </div>
+  );
 }
 
 export function StonePanel({ onClose, onBalance }: { onClose: () => void; onBalance?: (balance: number) => void }) {
@@ -96,6 +147,8 @@ export function StonePanel({ onClose, onBalance }: { onClose: () => void; onBala
               {adLeft <= 0 ? '今日の広告は終わりました' : '広告を見てルーンストーン+1'}
             </button>
             <p className="stone-manage-note">毎日朝4時に更新されます</p>
+
+            <LoginCalendarView />
 
             <h4>最近の増減</h4>
             {summary.history.length === 0 ? (

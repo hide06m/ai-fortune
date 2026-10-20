@@ -337,6 +337,24 @@ export async function initializeDatabase() {
       )
     `);
 
+    // ログインカレンダー：ログインボーナスを受け取った日（朝4時区切りのゲーム日）と、連続ログインのごほうび
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS login_days (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day DATE NOT NULL,
+        PRIMARY KEY (user_id, day)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS login_streak_rewards (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        streak_start DATE NOT NULL,
+        milestone INT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, streak_start, milestone)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

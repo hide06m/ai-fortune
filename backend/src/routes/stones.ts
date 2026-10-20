@@ -8,7 +8,7 @@
 
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus, getAdWatchRemaining, getStoneSummary } from '../db/stones.js'
+import { getStoneBalance, claimDailyLoginBonus, claimAdWatchBonus, getAdWatchRemaining, getStoneSummary, getLoginCalendar } from '../db/stones.js'
 
 const router = Router()
 
@@ -61,6 +61,16 @@ router.get('/summary', requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[API] Failed to get stone summary:', error)
     res.status(500).json({ success: false, error: 'Failed to get stone summary' })
+  }
+})
+
+router.get('/login-calendar', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any).userId
+    res.json({ success: true, ...(await getLoginCalendar(userId, typeof req.query.month === 'string' ? req.query.month : undefined)) })
+  } catch (error) {
+    console.error('[API] Failed to get login calendar:', error)
+    res.status(500).json({ success: false, error: 'Failed to get login calendar' })
   }
 })
 

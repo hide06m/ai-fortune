@@ -698,3 +698,16 @@ button.home-stone-chip:active { transform: translateY(1px); }
 .inbox-reward span { flex: 1; }
 .inbox-reward .is-done { color: #8fe3a8; font-weight: 600; }
 .inbox-body { margin: 4px 2px 6px; font-size: 0.88rem; line-height: 1.7; white-space: pre-line; opacity: 0.92; }
+
+/* ログインカレンダー */
+.login-cal { margin-top: 12px; }
+.login-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.login-cal-week { font-size: 0.7rem; opacity: 0.6; }
+.login-cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; background: rgba(255, 255, 255, 0.05); }
+.login-cal-day.is-done { background: linear-gradient(180deg, #8a6a2f, #5d4520); color: #fff3d0; font-weight: 700; }
+.login-cal-day.is-today { outline: 2px solid #8fe3a8; }
+.login-cal-streak { margin: 8px 0 2px; text-align: center; }
+.login-cal-streak b { font-size: 1.3rem; color: #ffd866; }
+.login-cal-streak small { opacity: 0.75; }
+.login-cal-ms { margin: 2px 0 8px; display: flex; justify-content: center; gap: 10px; font-size: 0.75rem; opacity: 0.75; }
+.login-cal-ms .is-reached { color: #8fe3a8; opacity: 1; }
