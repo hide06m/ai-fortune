@@ -38,6 +38,11 @@ export interface TutorialStepStoneGift {
   type: 'stoneGift'
 }
 
+/** 呼び名を決める入力（ムスビに、名前を聞かれる） */
+export interface TutorialStepNameInput {
+  type: 'nameInput'
+}
+
 export interface TutorialStepHandoff {
   type: 'handoff'
   action: 'doorKnock' | 'gotoForm'
@@ -48,6 +53,7 @@ export type TutorialStep =
   | TutorialStepDialogue
   | TutorialStepItemReveal
   | TutorialStepStoneGift
+  | TutorialStepNameInput
   | TutorialStepHandoff
 
 /**
@@ -71,6 +77,9 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'おや、人が来るのは久しぶりだね' },
   { type: 'dialogue', character: 'musubi', image: 'ham003', speaker: null, text: 'ここは占いの館、あるいはただの通り道さ' },
   { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: 'ムスビ', text: 'ボクはここの案内人の"ムスビ"。君の心をほんの少しだけ照らす灯りになれればいいと思っているけれど、名前なんてものはこの森ではコーヒー一杯分の価値もないよ。よろしくね' },
+  { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'とはいえ、呼び名がないと、話しづらいね。君のことは、なんて呼べばいいかな' },
+  { type: 'nameInput' },
+  { type: 'dialogue', character: 'musubi', image: 'ham001', speaker: 'ムスビ', text: '{name}、か。いい響きだ。覚えておくよ' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ボクたちは、あらゆる世界の歴史や、使い捨てのライターの構造、あるいは過去の過ちについて研究しているんだ' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'ここには時々迷いや悩みを持った人々を引き寄せられるようにやってくる' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'キミみたいにね' },

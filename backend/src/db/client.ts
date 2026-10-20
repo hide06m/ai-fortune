@@ -371,6 +371,7 @@ export async function initializeDatabase() {
         background_id VARCHAR(40)
       )
     `);
+    await client.query(`ALTER TABLE user_profile ADD COLUMN IF NOT EXISTS nickname VARCHAR(40)`);
     // ウィークリーミッションの、受け取り済み
     await client.query(`
       CREATE TABLE IF NOT EXISTS weekly_claims (

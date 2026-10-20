@@ -1842,3 +1842,11 @@ h1 {
 /* 新規登録ボーナスの表示（最初の会話） */
 .item-reveal-gift { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .item-reveal-caption { margin: 0; color: #fff4d0; font-size: 1.05rem; letter-spacing: 0.08em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8); }
+
+/* 呼び名を決める入力（最初の会話） */
+.name-input-row { display: flex; gap: 8px; margin-top: 10px; }
+.name-input-row input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.12); color: #fff; font: inherit; font-size: 1.05rem; }
+.name-input-row input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.name-input-row button { flex: none; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(255, 224, 150, 0.7); background: linear-gradient(180deg, #8a6a2f, #5d4520); color: #fff3d0; font-weight: 700; font: inherit; cursor: pointer; }
+.name-input-row button:disabled { opacity: 0.45; cursor: default; }
+.name-input-error { margin: 8px 0 0; color: #ffb0a0; font-size: 0.88rem; }

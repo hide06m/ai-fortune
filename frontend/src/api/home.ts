@@ -40,6 +40,8 @@ export const equipItem = (itemId: string) => call<ShopSnapshot>('/api/shop/equip
 
 export interface HomeProfile {
   success: boolean;
+  /** 呼び名（まだ決めていなければ null） */
+  nickname: string | null;
   title: { id: string; name: string } | null;
   background: { id: string; image?: string } | null;
 }
@@ -48,6 +50,8 @@ export const getHomeProfile = () => call<HomeProfile>('/api/shop/profile');
 // ───── 出会いのガチャ ─────
 export interface GachaInfo {
   success: boolean;
+  /** 解放されているか（解放前は、ひけない） */
+  enabled: boolean;
   cost: number;
   refund: number;
   total: number;
@@ -90,3 +94,6 @@ export interface WeeklySnapshot {
 }
 export const getWeekly = () => call<WeeklySnapshot>('/api/weekly');
 export const claimWeekly = (id: string) => call<WeeklySnapshot>(`/api/weekly/${id}/claim`, 'POST');
+
+// ───── 呼び名 ─────
+export const saveNickname = (name: string) => call<{ success: boolean; nickname?: string; message?: string }>('/api/profile/nickname', 'POST', { name });

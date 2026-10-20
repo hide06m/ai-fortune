@@ -6,7 +6,7 @@ import { StonePanel } from './StonePanel';
 import { InboxPanel } from './InboxPanel';
 import { ShopPanel } from './ShopPanel';
 import { GachaPanel } from './GachaPanel';
-import { getHomeProfile, type HomeProfile } from '../api/home';
+import { getGachaInfo, getHomeProfile, type HomeProfile } from '../api/home';
 import { getInbox, type InboxMessage } from '../api/inbox';
 import { useEffect, useState } from 'react';
 import '../styles/home.css';
@@ -83,6 +83,13 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
       .catch(() => undefined);
   };
   useEffect(refreshProfile, []);
+  // 森での出会い（ガチャ）が解放されているか（解放前は、鍵のしるし）
+  const [gachaLocked, setGachaLocked] = useState(false);
+  useEffect(() => {
+    getGachaInfo()
+      .then((i) => setGachaLocked(i.success && i.enabled === false))
+      .catch(() => undefined);
+  }, []);
   const [latest, setLatest] = useState<LatestResultSummary[]>([]);
 
   // 来るたびに、解放済みの占い師から1人が出てきて、ひとこと話す
@@ -125,7 +132,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
         </button>
         <span className="home-email">
           {profile?.title && <b className="home-title">{profile.title.name}</b>}
-          {email}
+          {profile?.nickname || email}
         </span>
       </div>
 
@@ -179,7 +186,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
             🛍 交換所
           </button>
           <button type="button" className="home-btn" onClick={() => setPanel('gacha')}>
-            🌲 森での出会い
+            {gachaLocked ? '🔒' : '🌲'} 森での出会い
           </button>
           <button type="button" className="home-btn home-btn-quiet" onClick={onLogout}>
             ログアウト

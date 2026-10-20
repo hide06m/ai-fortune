@@ -69,6 +69,7 @@ import { acornCatchSpec } from './minigames/acornCatch'
 import { ForestRun } from './components/ForestRun'
 import { StoneGift } from './components/StoneGift'
 import { HelpPanel } from './components/HelpPanel'
+import { saveNickname } from './api/home'
 import { startMiniBgm, stopMiniBgm, useMainBgmDuck } from './sound'
 import { HomePage } from './components/HomePage'
 import { pickAfterResultLines } from './data/homeLines'
@@ -239,6 +240,11 @@ function AppContent() {
   const [tutorialStepIndex, setTutorialStepIndex] = useState(0)
   // 新規登録ボーナスで渡した石の数（最初の会話で、枠つきの表示で、はっきり伝える）
   const [signupBonus, setSignupBonus] = useState(3)
+  // 呼び名（最初の会話で、ムスビに聞かれて決める）
+  const [playerName, setPlayerName] = useState('')
+  const [nameDraft, setNameDraft] = useState('')
+  const [nameBusy, setNameBusy] = useState(false)
+  const [nameError, setNameError] = useState('')
 
   // 新キャラクターとの「初対面イベント」（解放後、次のキャラ選択画面アクセス時に一度だけ再生）
   // ログイン後、最初に占い師選択へ入ったときだけ、全キャラの初対面を確認する（以降は、ムスビの解放イベントだけ）
@@ -529,7 +535,7 @@ function AppContent() {
           ? introLines[introStep]?.text ?? ''
           : screen === 'tutorial' && currentTutorialStep &&
             (currentTutorialStep.type === 'narration' || currentTutorialStep.type === 'dialogue')
-          ? currentTutorialStep.text
+          ? currentTutorialStep.text.replace(/\{name\}/g, playerName || 'あなた')
           : ''
 
   // このステップを「。」で分割せず一度に表示するか（不自然な分割を避けるための逃げ道）
@@ -1399,6 +1405,53 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           <div className="item-reveal-gift">
             <StoneGift amount={signupBonus} />
             <p className="item-reveal-caption">新規登録ボーナス</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (step.type === 'nameInput') {
+      const submitName = async () => {
+        if (nameBusy) return
+        setNameBusy(true)
+        setNameError('')
+        try {
+          const r = await saveNickname(nameDraft)
+          if (r.success && r.nickname) {
+            setPlayerName(r.nickname)
+            handleTutorialAdvance()
+          } else {
+            setNameError(r.message || '呼び名を決められませんでした')
+          }
+        } catch {
+          setNameError('呼び名を決められませんでした。もう一度お試しください')
+        } finally {
+          setNameBusy(false)
+        }
+      }
+      return (
+        <div className="vn-scene" style={{ backgroundImage: `url(${background})` }}>
+          <div className="vn-character-bust-wrap">
+            <CrossfadeImage src="/assets/characters/0-musubi/ham002.webp" alt="musubi" />
+          </div>
+          <div className="vn-dialogue-box name-input-box">
+            <div className="vn-speaker-name">ムスビ</div>
+            <p className="vn-dialogue-text">君の呼び名を、教えておくれ</p>
+            <div className="name-input-row">
+              <input
+                value={nameDraft}
+                maxLength={12}
+                autoFocus
+                placeholder="12文字まで"
+                aria-label="呼び名"
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && nameDraft.trim() && submitName()}
+              />
+              <button type="button" disabled={!nameDraft.trim() || nameBusy} onClick={submitName}>
+                {nameBusy ? '…' : 'これにする'}
+              </button>
+            </div>
+            {nameError && <p className="name-input-error">{nameError}</p>}
           </div>
         </div>
       )

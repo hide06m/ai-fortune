@@ -74,9 +74,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 router.get('/profile', requireAuth, async (req: Request, res: Response) => {
   try {
     const eq = await equipped(req.user!.userId)
+    const nick = await query('SELECT nickname FROM user_profile WHERE user_id = $1', [req.user!.userId])
     const title = SHOP_ITEMS.find((i) => i.id === eq.title)
     const bg = SHOP_ITEMS.find((i) => i.id === eq.background)
-    res.json({ success: true, title: title ? { id: title.id, name: title.name } : null, background: bg ? { id: bg.id, image: bg.image } : null })
+    res.json({ success: true, nickname: nick.rows[0]?.nickname ?? null, title: title ? { id: title.id, name: title.name } : null, background: bg ? { id: bg.id, image: bg.image } : null })
   } catch (error) {
     res.status(500).json({ success: false, error: 'failed' })
   }

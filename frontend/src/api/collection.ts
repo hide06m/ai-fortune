@@ -14,6 +14,8 @@ export interface CollectionItem {
 
 export interface CollectionData {
   success: boolean;
+  /** 森での出会い（ガチャ）が、解放されているか */
+  gachaEnabled?: boolean;
   mbti: CollectionItem[];
   love: CollectionItem[];
   sukuyou: CollectionItem[];

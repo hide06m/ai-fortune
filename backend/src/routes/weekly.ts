@@ -9,6 +9,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
 import { GAME_WEEK_START_SQL, GAME_WEEK_DATE_SQL } from '../time/gameDay.js'
 import { getStoneBalance, grantStones } from '../db/stones.js'
+import { GACHA_ENABLED } from './gacha.js'
 
 const router = Router()
 
@@ -23,7 +24,7 @@ interface WeeklyDef {
 
 const count = async (sql: string, userId: string): Promise<number> => Number((await query(sql, [userId])).rows[0]?.n ?? 0)
 
-const MISSIONS: WeeklyDef[] = [
+const ALL_MISSIONS: WeeklyDef[] = [
   {
     id: 'login5',
     title: '今週5日ログインする',
@@ -57,6 +58,9 @@ const MISSIONS: WeeklyDef[] = [
     progress: (u) => count(`SELECT COUNT(*)::int AS n FROM minigame_rewards WHERE user_id = $1 AND created_at >= ${GAME_WEEK_START_SQL}`, u),
   },
 ]
+
+/** 「出会い」のミッションは、森での出会いが解放されるまで、出さない */
+const MISSIONS: WeeklyDef[] = GACHA_ENABLED ? ALL_MISSIONS : ALL_MISSIONS.filter((m) => m.id !== 'encounter2')
 
 async function claimedSet(userId: string): Promise<Set<string>> {
   const r = await query(`SELECT mission_id FROM weekly_claims WHERE user_id = $1 AND week = ${GAME_WEEK_DATE_SQL}`, [userId])

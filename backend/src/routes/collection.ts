@@ -10,6 +10,7 @@ import { query } from '../db/client.js'
 import { getStats, listCollection } from '../db/collection.js'
 import { LOVE_BASE_CHARACTERS } from '../fortune/loveType64.js'
 import { SHUKU_LIST } from '../fortune/data/sukuyouData.js'
+import { GACHA_ENABLED } from './gacha.js'
 
 const router = Router()
 
@@ -25,6 +26,7 @@ router.get('/collection', requireAuth, async (req: Request, res: Response) => {
     const sukuyou = by('sukuyou')
     res.json({
       success: true,
+      gachaEnabled: GACHA_ENABLED,
       mbti: MBTI_CODES.map((code) => ({ code, collected: mbti.has(code), count: mbti.get(code)?.count ?? 0 })),
       love: Object.entries(LOVE_BASE_CHARACTERS).map(([code, c]) => ({ code, name: c.name, collected: love.has(code), count: love.get(code)?.count ?? 0 })),
       sukuyou: SHUKU_LIST.map((s) => ({ code: s.name, reading: s.reading, collected: sukuyou.has(s.name), count: sukuyou.get(s.name)?.count ?? 0 })),

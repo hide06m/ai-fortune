@@ -14,6 +14,9 @@ import { SHUKU_LIST } from '../fortune/data/sukuyouData.js'
 
 const router = Router()
 
+/** 解放前は、ひけない。本番では GACHA_ENABLED=true で解放する（開発環境では、いつも解放） */
+export const GACHA_ENABLED = process.env.GACHA_ENABLED === 'true' || process.env.NODE_ENV !== 'production'
+
 export const GACHA_COST = 3
 const DUPLICATE_REFUND = 1
 /** まだ出会っていないタイプの、出やすさ（出会い済みは 1） */
@@ -56,7 +59,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const all = allEntries()
     const owned = await ownedKeys(userId)
     const got = all.filter((e) => owned.has(`${e.kind}:${e.code}`)).length
-    res.json({ success: true, cost: GACHA_COST, refund: DUPLICATE_REFUND, total: all.length, collected: got, complete: got >= all.length, balance: await getStoneBalance(userId) })
+    res.json({ success: true, enabled: GACHA_ENABLED, cost: GACHA_COST, refund: DUPLICATE_REFUND, total: all.length, collected: got, complete: got >= all.length, balance: await getStoneBalance(userId) })
   } catch (error) {
     console.error('[API] gacha info failed:', error)
     res.status(500).json({ success: false, error: 'failed' })
@@ -65,6 +68,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 
 router.post('/pull', requireAuth, async (req: Request, res: Response) => {
   try {
+    if (!GACHA_ENABLED) return res.status(403).json({ success: false, error: 'LOCKED', message: 'まだ解放されていません' })
     const userId = req.user!.userId
     const all = allEntries()
     const owned = await ownedKeys(userId)

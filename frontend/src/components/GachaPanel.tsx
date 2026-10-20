@@ -57,14 +57,19 @@ export function GachaPanel({ onClose, onBalance }: { onClose: () => void; onBala
   };
 
   const image = result?.kind === 'mbti' ? `/assets/results/mbti/${result.code}.webp` : result?.kind === 'love' ? `/assets/results/lovetype/${result.code}.webp` : null;
-  const canPull = !!info && !info.complete && info.balance >= info.cost && !busy;
+  const locked = !!info && info.enabled === false;
+  const canPull = !!info && !locked && !info.complete && info.balance >= info.cost && !busy;
 
   return (
     <div className="home-panel-backdrop" onClick={onClose}>
       <div className="home-panel gacha-panel" onClick={(e) => e.stopPropagation()}>
         <h3>🌲 森での出会い</h3>
-        <p className="gacha-lead">ルーンストーンを使うと、森の中で、だれかに出会えます。出会ったタイプは図鑑に残ります。</p>
-        {info && (
+        {locked ? (
+          <p className="gacha-lead">🔒 森での出会いは、準備中です。もうすぐ、森のどこかで、だれかに出会えるようになります。</p>
+        ) : (
+          <p className="gacha-lead">ルーンストーンを使うと、森の中で、だれかに出会えます。出会ったタイプは図鑑に残ります。</p>
+        )}
+        {info && !locked && (
           <p className="gacha-progress">
             出会った数　<b>{info.collected}</b> / {info.total}
           </p>
@@ -80,7 +85,7 @@ export function GachaPanel({ onClose, onBalance }: { onClose: () => void; onBala
         )}
 
         <button type="button" className="gacha-pull" disabled={!canPull} onClick={pull}>
-          {info?.complete ? 'すべてのタイプに出会いました' : busy ? '森を歩いています' : `森を歩く（ルーンストーン ${info?.cost ?? 3}個）`}
+          {locked ? '準備中' : info?.complete ? 'すべてのタイプに出会いました' : busy ? '森を歩いています' : `森を歩く（ルーンストーン ${info?.cost ?? 3}個）`}
         </button>
         {info && !info.complete && info.balance < info.cost && <p className="gacha-note">ルーンストーンが足りません</p>}
         {error && <p className="daily-error">{error}</p>}

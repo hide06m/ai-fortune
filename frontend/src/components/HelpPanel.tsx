@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { clearToken, isAuthenticated } from '../api';
 import { deleteMyAccount } from '../api/account';
+import { saveNickname } from '../api/home';
 import { LEGAL } from '../pages/legalConfig';
 
 const FAQ: { q: string; a: string }[] = [
@@ -48,6 +49,12 @@ export function HelpPanel({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const authed = isAuthenticated();
+  const [nick, setNick] = useState('');
+  const [nickMsg, setNickMsg] = useState('');
+  const changeNick = async () => {
+    const r = await saveNickname(nick).catch(() => ({ success: false, message: '変更できませんでした' }));
+    setNickMsg(r.success ? '呼び名を変えました（ホームを開きなおすと反映されます）' : r.message || '変更できませんでした');
+  };
 
   const remove = async () => {
     setBusy(true);
@@ -113,6 +120,13 @@ export function HelpPanel({ onClose }: { onClose: () => void }) {
 
         {tab === 'account' && authed && (
           <div className="help-body">
+            <p>呼び名を変える</p>
+            <input value={nick} maxLength={12} onChange={(e) => setNick(e.target.value)} placeholder="新しい呼び名（12文字まで）" aria-label="新しい呼び名" />
+            <button type="button" className="help-close" disabled={!nick.trim()} onClick={changeNick}>
+              呼び名を変える
+            </button>
+            {nickMsg && <p className="help-note">{nickMsg}</p>}
+            <hr style={{ margin: '16px 0', border: 0, borderTop: '1px solid rgba(255,255,255,0.2)' }} />
             <p>アカウントを削除すると、診断の記録・ルーンストーン・縁帳・図鑑など、すべてのデータが消え、元に戻せません。</p>
             <p className="help-note">確認のため、下の欄に「削除」と入力してください。</p>
             <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="削除" aria-label="確認の入力" />
