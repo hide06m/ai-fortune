@@ -149,6 +149,8 @@ export interface GoogleAuthResponse {
   success: boolean
   token?: string
   isNewUser?: boolean
+  /** 新規登録ボーナスで渡した石の数 */
+  signupBonus?: number
   user?: {
     userId: string
     email: string

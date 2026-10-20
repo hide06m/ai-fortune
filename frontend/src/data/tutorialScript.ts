@@ -33,6 +33,11 @@ export interface TutorialStepItemReveal {
   // クリックでアイテム表示を閉じ、そのまま次のステップへ進む（キャプションは後続のdialogueステップ側で持つ）
 }
 
+/** 新規登録ボーナスなど、石をもらったことを、枠つきの表示で、はっきり伝える（枚数は、サーバーから届いた値） */
+export interface TutorialStepStoneGift {
+  type: 'stoneGift'
+}
+
 export interface TutorialStepHandoff {
   type: 'handoff'
   action: 'doorKnock' | 'gotoForm'
@@ -42,6 +47,7 @@ export type TutorialStep =
   | TutorialStepNarration
   | TutorialStepDialogue
   | TutorialStepItemReveal
+  | TutorialStepStoneGift
   | TutorialStepHandoff
 
 /**
@@ -81,6 +87,9 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '知りたいのは、生まれた年と月と日。それから、わかれば、生まれた時間と、生まれた場所ね' },
   { type: 'dialogue', character: 'natsume', image: 'natsume003', speaker: 'ナツメ', text: '時間は、朝か夜かくらいの目安で大丈夫。わからなければ、わからないと言ってくれればいいわ' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'それと、いま気になっていることがあれば、それも聞かせてちょうだい' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: '初めて来てくれた人には、ルーンストーンを渡す決まりなの。はい、どうぞ' },
+  { type: 'stoneGift' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'ルーンストーンは占いに使う石。私の占いなら、ひとつで足りるわ。残りは取っておいてね' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: '挨拶代わりに占ってみましょうか' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'アナタのことを教えてくれます？' },
   { type: 'handoff', action: 'gotoForm' },
@@ -91,9 +100,8 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
  */
 export const TUTORIAL_AFTER_RESULT_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: 'フフフ、どうだったかしら？いつでも相談してね' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'そうだ、これを' },
-  { type: 'itemReveal', image: '/assets/stone.webp' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'それはルーンストーン、また相談したいときはその石をつかってちょうだい' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'ルーンストーンは、使った分だけ減るわ。残りの数は、ホームの石の数をおすと見られるわよ' },
+  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'また相談したいときは、その石をつかってちょうだい' },
   { type: 'dialogue', character: 'natsume', image: 'natsume003', speaker: 'ナツメ', text: '今日はありがとうね' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'どうだった？ 何かにぶつかった時は彼女に相談するといいよ。今は留守にしているけれど、この館には他にも奇妙で、少しばかり風変わりな同居人たちがいるんだ。また来る機会があれば、いずれ引き合わせるよ' },
 ]

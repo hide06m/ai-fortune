@@ -1838,3 +1838,7 @@ h1 {
 .cal-grid button.is-on { background: #6f8f4e; color: #fff; border-color: #4d6a33; }
 .cal-grid button:disabled { opacity: 0.3; cursor: not-allowed; }
 .cal-week { margin-bottom: 4px; font-size: 0.78rem; opacity: 0.7; }
+
+/* 新規登録ボーナスの表示（最初の会話） */
+.item-reveal-gift { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.item-reveal-caption { margin: 0; color: #fff4d0; font-size: 1.05rem; letter-spacing: 0.08em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8); }

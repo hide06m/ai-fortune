@@ -165,8 +165,10 @@ export async function spendStoneForGift(userId: string): Promise<number> {
 /**
  * 新規登録ボーナス（初回のみ、+3石。初回診断のハードルを下げる）
  */
+export const SIGNUP_BONUS_STONES = 3
+
 export async function grantSignupBonus(userId: string): Promise<number> {
-  return applyStoneChange(userId, 3, 'signup_bonus')
+  return applyStoneChange(userId, SIGNUP_BONUS_STONES, 'signup_bonus')
 }
 
 /**

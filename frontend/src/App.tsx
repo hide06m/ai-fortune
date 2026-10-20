@@ -234,6 +234,8 @@ function AppContent() {
   // 初回ログイン（サインアップ）チュートリアル
   const [tutorialSegment, setTutorialSegment] = useState<'intro' | 'meeting' | 'after-result' | 'meet-character' | null>(null)
   const [tutorialStepIndex, setTutorialStepIndex] = useState(0)
+  // 新規登録ボーナスで渡した石の数（最初の会話で、枠つきの表示で、はっきり伝える）
+  const [signupBonus, setSignupBonus] = useState(3)
 
   // 新キャラクターとの「初対面イベント」（解放後、次のキャラ選択画面アクセス時に一度だけ再生）
   // ログイン後、最初に占い師選択へ入ったときだけ、全キャラの初対面を確認する（以降は、ムスビの解放イベントだけ）
@@ -628,6 +630,7 @@ function AppContent() {
     setMode('authenticated')
 
     if (response.isNewUser) {
+      if (typeof response.signupBonus === 'number' && response.signupBonus > 0) setSignupBonus(response.signupBonus)
       // ✅ 初回ログイン（サインアップ）：チュートリアルを開始
       console.log('✅ New user — starting tutorial')
       startTutorial()
@@ -1373,6 +1376,21 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
           <div className="item-reveal-frame-wrap">
             <img src="/assets/ui/flame101.webp" alt="" className="item-reveal-frame" />
             <img src={step.image} alt="" className="item-reveal-item" />
+          </div>
+        </div>
+      )
+    }
+
+    if (step.type === 'stoneGift') {
+      return (
+        <div
+          className="vn-scene item-reveal-scene"
+          style={{ backgroundImage: `url(${background})` }}
+          onClick={handleTutorialAdvance}
+        >
+          <div className="item-reveal-gift">
+            <StoneGift amount={signupBonus} />
+            <p className="item-reveal-caption">新規登録ボーナス</p>
           </div>
         </div>
       )

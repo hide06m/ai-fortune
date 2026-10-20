@@ -32,7 +32,7 @@ import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCh
 import { INTIMACY_UNLOCKS, CharacterId, DIAGNOSIS_STONE_COST } from './types/character.js'
 import ttsRoutes from './routes/tts.js'
 import stonesRoutes from './routes/stones.js'
-import { grantSignupBonus, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
+import { grantSignupBonus, SIGNUP_BONUS_STONES, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
 import readingsRoutes from './routes/readings.js'
 import { saveReading, findDuplicateReading } from './db/readings.js'
 import compatibilityRoutes from './routes/compatibility.js'
@@ -227,6 +227,8 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       success: true,
       token,
       isNewUser,
+      // 新規登録ボーナスで渡した石の数（初回ログインで、画面で、伝えるため）
+      signupBonus: isNewUser ? SIGNUP_BONUS_STONES : 0,
       user: {
         userId: user.id,
         email: user.email,
@@ -295,7 +297,7 @@ app.post('/api/auth/dev-login', async (req: Request, res: Response) => {
       )
     }
     const token = generateToken({ userId: user.id, email: user.email, googleId: user.google_id })
-    res.json({ success: true, token, isNewUser, user: { userId: user.id, email: user.email, name: user.name } })
+    res.json({ success: true, token, isNewUser, signupBonus: isNewUser ? SIGNUP_BONUS_STONES : 0, user: { userId: user.id, email: user.email, name: user.name } })
   } catch (error) {
     console.error('Dev login error:', error)
     res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'dev login failed' })

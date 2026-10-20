@@ -27,10 +27,10 @@ interface Conf {
   speed: number; // ムスビの最高速（px/秒）
 }
 const CONF: Record<Difficulty, Conf> = {
-  easy: { target: 12, timeLimit: 45, interval: 0.95, fall: 250, poison: 0.1, gold: 0.05, big: 0.2, speed: 520 },
-  normal: { target: 20, timeLimit: 45, interval: 0.78, fall: 320, poison: 0.2, gold: 0.06, big: 0.2, speed: 520 },
-  hard: { target: 30, timeLimit: 45, interval: 0.62, fall: 400, poison: 0.28, gold: 0.07, big: 0.2, speed: 540 },
-  extra: { target: 42, timeLimit: 45, interval: 0.5, fall: 480, poison: 0.34, gold: 0.08, big: 0.22, speed: 560 },
+  easy: { target: 26, timeLimit: 45, interval: 0.62, fall: 330, poison: 0.15, gold: 0.05, big: 0.2, speed: 520 },
+  normal: { target: 62, timeLimit: 45, interval: 0.45, fall: 470, poison: 0.3, gold: 0.06, big: 0.2, speed: 520 },
+  hard: { target: 78, timeLimit: 45, interval: 0.37, fall: 550, poison: 0.35, gold: 0.07, big: 0.2, speed: 520 },
+  extra: { target: 96, timeLimit: 45, interval: 0.3, fall: 660, poison: 0.4, gold: 0.08, big: 0.22, speed: 520 },
 };
 
 type ItemKind = 'acorn' | 'acorn_big' | 'acorn_gold' | 'mushroom';
@@ -114,7 +114,7 @@ function init(diff: Difficulty, imgs: Images): AcornState {
     seed: (Date.now() ^ 0x9e3779b9) >>> 0,
     conf: CONF[diff],
   };
-  if (import.meta.env.DEV) (window as unknown as { __acorn?: AcornState }).__acorn = st; // 開発用：自動操縦のテストで、状態を読む
+  if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) (window as unknown as { __acorn?: AcornState }).__acorn = st; // 開発用：自動操縦のテストで、状態を読む
   return st;
 }
 
@@ -291,7 +291,7 @@ export const acornCatchSpec: MiniGameSpec<AcornState> = {
     'run_ground_loop',
   ],
   lives: { easy: 4, normal: 3, hard: 2, extra: 1 },
-  hint: '落ちてくる どんぐりを うけとめよう。赤いキノコは さけてね',
+  hint: '落ちてくる どんぐりを うけとめよう。キノコは さけてね',
   pcHint: 'ゆびを おいた方へ うごく ／ ← → キーでも うごく',
   init,
   update,
