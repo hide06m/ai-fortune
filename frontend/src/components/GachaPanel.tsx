@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { MBTI_TYPES } from '../data/mbtiTypes';
 import { getCollection } from '../api/collection';
+import { playSe } from '../sound';
 import { getGachaInfo, pullGacha, type GachaInfo, type GachaResult } from '../api/home';
 
 const KIND_LABEL = { mbti: '性格タイプ', love: '恋愛タイプ', sukuyou: '宿曜（本命宿）' } as const;
@@ -34,6 +35,7 @@ export function GachaPanel({ onClose, onBalance }: { onClose: () => void; onBala
     setBusy(true);
     setError('');
     setResult(null);
+    playSe('gacha_walk');
     const r = await pullGacha();
     if (!r.success || !r.kind || !r.code) {
       setError(r.message || '引けませんでした');
@@ -48,6 +50,7 @@ export function GachaPanel({ onClose, onBalance }: { onClose: () => void; onBala
       name = z?.love.find((x) => x.code === r.code)?.name ?? r.code;
     }
     setResult({ ...r, name });
+    playSe(r.isNew ? 'gacha_new' : 'gacha_dup');
     if (typeof r.balance === 'number') onBalance?.(r.balance);
     await load();
     setBusy(false);

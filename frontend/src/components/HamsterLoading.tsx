@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/hamster-loading.css';
 import { pickRandomLoadingMessage } from '../data/loadingMessages';
+import { setGearSound } from '../sound';
 import { detachWaitingJobs, hasDetachableWaiting, subscribeWaiting } from '../api/asyncJob';
 
 const FRAME_COUNT = 18;
@@ -43,6 +44,12 @@ export function HamsterLoading({ isVisible = true, showEstimate = true, hint, no
   const [elapsedSec, setElapsedSec] = useState(0);
   const [detachable, setDetachable] = useState(() => hasDetachableWaiting());
   useEffect(() => subscribeWaiting(() => setDetachable(hasDetachableWaiting())), []);
+  // 歯車の音：2〜3秒のあたりを、くりかえす（ミニゲームが開いている間は、止まる）
+  useEffect(() => {
+    if (!isVisible) return;
+    setGearSound(true);
+    return () => setGearSound(false);
+  }, [isVisible]);
   useEffect(() => {
     const t = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => clearInterval(t);

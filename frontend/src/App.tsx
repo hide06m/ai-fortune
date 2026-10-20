@@ -69,6 +69,7 @@ import { acornCatchSpec } from './minigames/acornCatch'
 import { ForestRun } from './components/ForestRun'
 import { StoneGift } from './components/StoneGift'
 import { HelpPanel } from './components/HelpPanel'
+import { startMiniBgm, stopMiniBgm, useMainBgmDuck } from './sound'
 import { HomePage } from './components/HomePage'
 import { pickAfterResultLines } from './data/homeLines'
 import { ResultCharacter } from './components/ResultCharacter'
@@ -2470,6 +2471,15 @@ function MiniGameHost() {
     window.addEventListener('open-minigame', open)
     return () => window.removeEventListener('open-minigame', open)
   }, [])
+  // 音：開いている間は、館のBGMを止める。選択画面の間は、選択画面のBGM
+  const hostOpen = jobId !== undefined
+  useMainBgmDuck(hostOpen)
+  useEffect(() => {
+    if (hostOpen && game === null) startMiniBgm('bgm_minigame_select')
+    return () => {
+      if (hostOpen && game === null) stopMiniBgm(false)
+    }
+  }, [hostOpen, game])
   if (jobId === undefined) return null
   const close = () => {
     setJobId(undefined)

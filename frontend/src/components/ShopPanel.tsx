@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { playSe } from '../sound';
 import { buyItem, equipItem, getShop, type ShopItem, type ShopSnapshot } from '../api/home';
 
 type Tab = 'title' | 'background';
@@ -32,6 +33,7 @@ export function ShopPanel({ onClose, onBalance, onChanged }: { onClose: () => vo
     const s = await buyItem(it.id);
     apply(s);
     if (s.success) {
+      playSe('shop_buy');
       // 買ったら、そのまま身につける
       apply(await equipItem(it.id));
       onChanged?.();

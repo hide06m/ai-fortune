@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { playSe, preloadSe, useMainBgmDuck, useMiniGameBgm } from '../sound';
 import { RES, boxes, dFull, dI, drawLoopPlain, heartPath, opaqueBox, sizeAdj } from '../minigames/canvasUtil';
 import { claimMinigameReward, type RewardResult } from '../api/minigame';
 import { StoneGift } from './StoneGift';
@@ -191,6 +192,7 @@ interface Obstacle {
   hit: boolean;
   tone?: 'blue' | 'red'; // 鳥の色
   mul?: number; // 鳥の速さの倍率
+  snd?: boolean; // 近づいたときの、鳴き声を、鳴らした
 }
 
 function pick<T>(arr: T[]): T {
@@ -320,7 +322,15 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
     dying: false,
     flash: 0, // ぶつかった直後の、ハートと画面の、知らせ（秒）
     lostIndex: -1, // いま、なくなった、ハートの番号
+    goalSound: false, // 門をくぐる音を、鳴らした
   });
+
+  // 音：館のBGMを止め、森ランのBGMを、進み具合に合わせて鳴らす（エクストラは、1.3倍の速さ）
+  useMainBgmDuck();
+  useMiniGameBgm('bgm_forestrun', difficulty === 'extra' ? 1.3 : 1, phase);
+  useEffect(() => {
+    preloadSe(['ui_tap', 'ui_difficulty', 'ui_start', 'count_go', 'pause_open', 'pause_close', 'heart_lost', 'clear_fanfare', 'miss_jingle', 'stone_get', 'notice_chime', 'run_jump', 'run_land', 'run_hit', 'run_bird', 'run_goal']);
+  }, []);
 
   const changePhase = useCallback((p: Phase) => {
     phaseRef.current = p;
@@ -345,6 +355,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
     g.dying = false;
     g.flash = 0;
     g.lostIndex = -1;
+    g.goalSound = false;
     setLives(DIFFS[difficultyRef.current].lives);
   }, []);
 
@@ -353,6 +364,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
   const countTimers = useRef<number[]>([]);
   const startCountdown = useCallback(() => {
     countTimers.current.forEach((t) => window.clearTimeout(t));
+    playSe('ui_start');
     changePhase('countdown');
     setCount(3);
     countTimers.current = [
@@ -360,6 +372,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
       window.setTimeout(() => setCount(1), 1600),
       window.setTimeout(() => {
         setCount(null);
+        playSe('count_go');
         changePhase('playing');
       }, 2400),
     ];
@@ -392,6 +405,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
     if (g.onGround && g.hitTimer <= 0) {
       g.vy = JUMP_V;
       g.onGround = false;
+      playSe('run_jump');
     }
   }, [changePhase, startCountdown]);
 
@@ -469,6 +483,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
             g.vy = 0;
             g.onGround = true;
             g.landTimer = 0.12;
+            playSe('run_land');
           }
         }
         if (g.dying && g.onGround) changePhase('miss');
@@ -488,6 +503,10 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
           if (fk) {
             // 画面に入ったら、こちらへ向かって、飛んでくる
             if (o.x - g.dist + MUSUBI_X < W + 60 && !g.dying) o.x -= fk.speed * (o.mul ?? 1) * dt;
+            if (!o.snd && o.x - g.dist + MUSUBI_X < W - 30) {
+              o.snd = true;
+              playSe('run_bird');
+            }
             if (o.hit) continue;
             const hm = DIFFS[difficultyRef.current].hit;
             const fhx = Math.min(1, fk.hx * hm);
@@ -502,6 +521,8 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
               g.lostIndex = g.lives;
               g.invuln = 1.2;
               g.hitTimer = 0.45;
+              playSe('run_hit');
+              playSe('heart_lost');
               setLives(g.lives);
               if (g.lives <= 0) g.dying = true;
             }
@@ -521,9 +542,15 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
             g.lostIndex = g.lives;
             g.invuln = 1.2;
             g.hitTimer = 0.45;
+            playSe('run_hit');
+            playSe('heart_lost');
             setLives(g.lives);
             if (g.lives <= 0) g.dying = true; // 空中なら、着地してから、ミスにする
           }
+        }
+        if (!g.goalSound && g.dist >= g.length) {
+          g.goalSound = true;
+          playSe('run_goal');
         }
         // ゴール：門のまん中がムスビの位置に来たあと、門をくぐり抜けてから、クリアにする
         // （空中でゴールしたときは、着地してから、クリアにする）
@@ -740,7 +767,16 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
   // 一時停止メニュー（スタート前にも開ける。「つづける」で、もとの状態に、もどる）
   const pausedFrom = useRef<'ready' | 'playing'>('playing');
+  useEffect(() => {
+    if (phase === 'clear') playSe('clear_fanfare');
+    else if (phase === 'miss') playSe('miss_jingle');
+  }, [phase]);
+  useEffect(() => {
+    if (diagnosisDone) playSe('notice_chime');
+  }, [diagnosisDone]);
+
   const togglePause = () => {
+    playSe(phaseRef.current === 'paused' ? 'pause_close' : 'pause_open');
     if (phaseRef.current === 'playing') {
       pausedFrom.current = 'playing';
       changePhase('paused');
@@ -755,7 +791,14 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
   return (
     <div className="run-backdrop">
-      <div className="run-stage" onPointerDown={jump}>
+      <div
+        className="run-stage"
+        onClickCapture={(e) => {
+          const b = (e.target as HTMLElement).closest('button');
+          if (b && !b.hasAttribute('data-nosound')) playSe(b.closest('.run-difficulty') ? 'ui_difficulty' : 'ui_tap');
+        }}
+        onPointerDown={jump}
+      >
         <canvas ref={canvasRef} width={W * RES} height={H * RES} className="run-canvas" />
 
         {!loaded && <div className="run-overlay">読み込んでいます…</div>}
@@ -789,7 +832,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
             <div className="run-panel">
             <p className="run-panel-title">一時停止中</p>
             <div className="run-panel-buttons">
-              <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}><span className="run-btn-label">つづける</span></button>
+              <button type="button" data-nosound className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}><span className="run-btn-label">つづける</span></button>
             <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}><span className="run-btn-label">閉じる</span></button>
             </div>
             </div>
@@ -845,7 +888,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
         <div className="run-top-buttons" onPointerDown={(e) => e.stopPropagation()}>
           {(phase === 'ready' || phase === 'playing' || phase === 'paused') && (
-            <button type="button" onClick={togglePause} aria-label="一時停止">
+            <button type="button" data-nosound onClick={togglePause} aria-label="一時停止">
               <img src={`${BASE}${phase === 'paused' ? 'ui_play_btn' : 'ui_pause_btn'}.png`} alt="" />
             </button>
           )}

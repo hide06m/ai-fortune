@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { claimMinigameReward, type RewardResult } from '../api/minigame';
 import { isJobWaiting, subscribeWaiting } from '../api/asyncJob';
 import { StoneGift } from '../components/StoneGift';
+import { playSe, preloadSe, useMainBgmDuck, useMiniGameBgm } from '../sound';
 import { RES, dFull, heartPath, loadImageList, loadMusubiScale } from './canvasUtil';
 
 export const W = 540;
@@ -49,6 +50,9 @@ export interface MiniGameSpec<S> {
   game: string;
   /** 難易度の保存先 */
   storageKey: string;
+  /** BGM のファイル名（拡張子なし）と、難易度ごとの再生速度 */
+  bgm: string;
+  bgmRate?: (diff: Difficulty) => number;
   imageNames: string[];
   /** 難易度ごとの、ハートの数 */
   lives: Record<Difficulty, number>;
@@ -96,6 +100,13 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
   // ハート・知らせ・進み具合（描画のために、毎コマ、読む）
   const meta = useRef({ lives: spec.lives[difficulty], maxLives: spec.lives[difficulty], flash: 0, lostIndex: -1, progress: 0, time: 0, outcome: null as null | 'clear' | 'miss' });
 
+  // 音：館のBGMを止め、ゲームのBGMを、進み具合に合わせて鳴らす
+  useMainBgmDuck();
+  useMiniGameBgm(spec.bgm, spec.bgmRate?.(difficulty) ?? 1, phase);
+  useEffect(() => {
+    preloadSe(['ui_tap', 'ui_difficulty', 'ui_start', 'count_go', 'pause_open', 'pause_close', 'heart_lost', 'clear_fanfare', 'miss_jingle', 'stone_get', 'notice_chime']);
+  }, []);
+
   const changePhase = useCallback((p: Phase) => {
     phaseRef.current = p;
     setPhase(p);
@@ -123,6 +134,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
 
   const startCountdown = useCallback(() => {
     countTimers.current.forEach((t) => window.clearTimeout(t));
+    playSe('ui_start');
     changePhase('countdown');
     setCount(3);
     countTimers.current = [
@@ -130,6 +142,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
       window.setTimeout(() => setCount(1), 1600),
       window.setTimeout(() => {
         setCount(null);
+        playSe('count_go');
         changePhase('playing');
       }, 2400),
     ];
@@ -142,6 +155,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
   }, [resetGame, changePhase]);
 
   const togglePause = () => {
+    playSe(phaseRef.current === 'paused' ? 'pause_close' : 'pause_open');
     if (phaseRef.current === 'playing') {
       pausedFrom.current = 'playing';
       changePhase('paused');
@@ -264,6 +278,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
         const m = meta.current;
         if (m.outcome) return;
         m.lives -= 1;
+        playSe('heart_lost');
         m.flash = 0.7;
         m.lostIndex = m.lives;
         if (m.lives <= 0) m.outcome = 'miss';
@@ -346,6 +361,14 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
     return () => cancelAnimationFrame(raf);
   }, [loaded, spec, changePhase]);
 
+  useEffect(() => {
+    if (phase === 'clear') playSe('clear_fanfare');
+    else if (phase === 'miss') playSe('miss_jingle');
+  }, [phase]);
+  useEffect(() => {
+    if (diagnosisDone) playSe('notice_chime');
+  }, [diagnosisDone]);
+
   const showSwitch = !!onSwitchGame && !diagnosisDone;
 
   return (
@@ -353,6 +376,10 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
       <div
         className="run-stage"
         ref={stageRef}
+        onClickCapture={(e) => {
+          const b = (e.target as HTMLElement).closest('button');
+          if (b && !b.hasAttribute('data-nosound')) playSe(b.closest('.run-difficulty') ? 'ui_difficulty' : 'ui_tap');
+        }}
         onPointerDown={(e) => {
           pressed.current = true;
           updatePointer(e);
@@ -403,7 +430,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
             <div className="run-panel">
               <p className="run-panel-title">一時停止中</p>
               <div className="run-panel-buttons">
-                <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}>
+                <button type="button" data-nosound className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={togglePause}>
                   <span className="run-btn-label">つづける</span>
                 </button>
                 <button type="button" className="run-btn run-btn-wide" onPointerDown={(e) => e.stopPropagation()} onClick={onClose}>
@@ -469,6 +496,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
           {(phase === 'ready' || phase === 'playing' || phase === 'paused' || phase === 'clear' || phase === 'miss') && (
             <button
               type="button"
+              data-nosound
               onClick={() => {
                 if (phase === 'clear' || phase === 'miss') {
                   onClose();

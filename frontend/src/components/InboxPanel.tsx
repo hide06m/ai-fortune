@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { claimAllInbox, claimInbox, getInbox, markInboxRead, type InboxMessage } from '../api/inbox';
 import { StoneGift } from './StoneGift';
+import { playSe } from '../sound';
 
 const KIND_LABEL: Record<string, string> = {
   notice: 'お知らせ',
@@ -46,6 +47,7 @@ export function InboxPanel({
       .catch(() => setError('読み込めませんでした'));
   }, [onChanged]);
   useEffect(() => load(), [load]);
+  useEffect(() => playSe('mail_open'), []);
 
   const open = (m: InboxMessage) => {
     setOpenId(openId === m.id ? null : m.id);

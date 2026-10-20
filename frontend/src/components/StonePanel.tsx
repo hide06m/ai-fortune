@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLoginCalendar, getStoneSummary, watchAdForStone, type LoginCalendar, type StoneSummary } from '../api/stones';
+import { playSe } from '../sound';
 import { isRealAdConfigured, showRewardedAd } from '../ads/rewardedAd';
 
 const REASON_LABEL: Record<string, string> = {
@@ -28,7 +29,10 @@ function LoginCalendarView() {
   const [cal, setCal] = useState<LoginCalendar | null>(null);
   useEffect(() => {
     getLoginCalendar()
-      .then(setCal)
+      .then((c) => {
+        setCal(c);
+        if (c.days.includes(c.today)) playSe('stamp');
+      })
       .catch(() => undefined);
   }, []);
   if (!cal) return null;

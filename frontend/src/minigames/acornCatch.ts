@@ -4,6 +4,7 @@
  */
 
 import { dFull, boxes, opaqueBox, sizeAdj, drawLoopPlain } from './canvasUtil';
+import { playSe, preloadSe } from '../sound';
 import type { Difficulty, GameApi, Images, InputState, MiniGameSpec } from './MiniGameShell';
 
 const W = 540;
@@ -71,6 +72,7 @@ export interface AcornState {
   pops: Pop[];
   seed: number;
   conf: Conf;
+  warned: boolean;
 }
 
 function rand(s: AcornState) {
@@ -96,6 +98,7 @@ function spawn(s: AcornState, imgs: Images) {
 }
 
 function init(diff: Difficulty, imgs: Images): AcornState {
+  preloadSe(['acorn_catch', 'acorn_big', 'acorn_gold', 'acorn_poison', 'acorn_miss', 'time_warn']);
   for (const n of ['acorn', 'acorn_big', 'acorn_gold', 'run_mushroom_1', 'run_mushroom_2', 'run_mushroom_3']) {
     if (imgs[n] && imgs[n].naturalWidth && !boxes[n]) boxes[n] = opaqueBox(imgs[n]);
   }
@@ -113,6 +116,7 @@ function init(diff: Difficulty, imgs: Images): AcornState {
     pops: [],
     seed: (Date.now() ^ 0x9e3779b9) >>> 0,
     conf: CONF[diff],
+    warned: false,
   };
   if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) (window as unknown as { __acorn?: AcornState }).__acorn = st; // 開発用：自動操縦のテストで、状態を読む
   return st;
@@ -156,6 +160,7 @@ function update(s: AcornState, dt: number, api: GameApi, input: InputState, diff
     if (cy >= headY && cy <= GY - 20 && Math.abs(it.x - s.x) < CATCH_HALF) {
       it.dead = true;
       if (it.kind === 'mushroom') {
+        playSe('acorn_poison');
         api.hurt();
         s.hitTimer = 0.5;
         s.pops.push({ x: it.x, y: headY - 10, text: '✕', color: '#ff6b6b', t: 0 });
@@ -163,16 +168,23 @@ function update(s: AcornState, dt: number, api: GameApi, input: InputState, diff
         const p = POINTS[it.kind];
         s.score += p;
         s.catchTimer = 0.25;
+        playSe(it.kind === 'acorn_gold' ? 'acorn_gold' : it.kind === 'acorn_big' ? 'acorn_big' : 'acorn_catch');
         s.pops.push({ x: it.x, y: headY - 10, text: `+${p}`, color: it.kind === 'acorn_gold' ? '#ffd84a' : '#fff4d0', t: 0 });
       }
     } else if (it.y + it.h > GY + 6) {
       it.dead = true; // 落ちてしまった（どんぐりを逃しても、ペナルティはない）
+      if (it.kind !== 'mushroom') playSe('acorn_miss');
     }
   }
   s.items = s.items.filter((i) => !i.dead);
   for (const p of s.pops) p.t += dt;
   s.pops = s.pops.filter((p) => p.t < 0.7);
 
+  // 残り10秒の合図（1回だけ）
+  if (!s.warned && c.timeLimit - s.elapsed <= 10) {
+    s.warned = true;
+    playSe('time_warn');
+  }
   api.setProgress(s.score / c.target);
   if (s.score >= c.target) api.clear();
   else if (s.elapsed >= c.timeLimit) api.fail();
@@ -274,6 +286,7 @@ function draw(ctx: CanvasRenderingContext2D, s: AcornState, imgs: Images, info: 
 export const acornCatchSpec: MiniGameSpec<AcornState> = {
   game: 'acorn_catch',
   storageKey: 'acornCatchDifficulty',
+  bgm: 'bgm_acorn',
   imageNames: [
     'acorn',
     'acorn_big',

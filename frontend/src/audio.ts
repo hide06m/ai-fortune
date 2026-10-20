@@ -29,6 +29,31 @@ let doorOpenSound2: Howl | null = null
 let bgmMuted = false
 let seMuted = false
 
+// 設定（音量・ON/OFF）が変わったことを、ほかの音（ミニゲームのBGMなど）に知らせる
+const prefListeners = new Set<() => void>()
+export function subscribeAudioPrefs(cb: () => void): () => void {
+  prefListeners.add(cb)
+  return () => prefListeners.delete(cb)
+}
+function notifyPrefs() {
+  prefListeners.forEach((cb) => cb())
+}
+
+// ミニゲームの間、館のBGMなどを、いったん止める（いま鳴っているものだけ。閉じたら、同じものを、再開する）
+let duckedHowls: Howl[] = []
+let duckCount = 0 // 重ねて呼ばれても、最初の1回で止め、最後の1回で戻す
+export function duckMainBgm(on: boolean) {
+  if (on) {
+    if (duckCount++ === 0) {
+      duckedHowls = [treeswayLoop, birdLoop, bgmLoop, forestBgmLoop].filter((h): h is Howl => !!h && h.playing())
+      duckedHowls.forEach((h) => h.pause())
+    }
+  } else if (duckCount > 0 && --duckCount === 0) {
+    duckedHowls.forEach((h) => h.play())
+    duckedHowls = []
+  }
+}
+
 // initAudio() の多重初期化ガード。
 // React StrictMode は開発時にマウント時のeffectを意図的に二重実行するため、
 // ガード無しでは Howl インスタンスが2セットできてしまい、古い方が「誰にも
@@ -87,6 +112,7 @@ export function setBgmVolume(volume: number) {
   // ルーム・森のBGMは、鳴っていないときに音量を変えると、フェードインの出発点がずれるので、鳴っているときだけ即時反映する
   if (bgmLoop?.playing()) bgmLoop.volume(BASE_VOLUME.roomBgm * bgmVolume)
   if (forestBgmLoop?.playing()) forestBgmLoop.volume(BASE_VOLUME.forestBgm * bgmVolume)
+  notifyPrefs()
 }
 
 /** 効果音の音量（0〜1）を変える。保存し、これから鳴る効果音に反映する */
@@ -100,6 +126,7 @@ export function setSeVolume(volume: number) {
   knockSound?.volume(BASE_VOLUME.knock * seVolume)
   doorOpenSound1?.volume(BASE_VOLUME.door * seVolume)
   doorOpenSound2?.volume(BASE_VOLUME.door * seVolume)
+  notifyPrefs()
 }
 
 export function setBgmMuted(muted: boolean) {
@@ -110,6 +137,7 @@ export function setBgmMuted(muted: boolean) {
     // 保存できなくても今回のセッション内では反映される
   }
   ;[treeswayLoop, birdLoop, bgmLoop, forestBgmLoop].forEach((h) => h?.mute(muted))
+  notifyPrefs()
 }
 
 export function setSeMuted(muted: boolean) {
@@ -120,6 +148,7 @@ export function setSeMuted(muted: boolean) {
     // 保存できなくても今回のセッション内では反映される
   }
   ;[knockSound, doorOpenSound1, doorOpenSound2].forEach((h) => h?.mute(muted))
+  notifyPrefs()
 }
 
 // 初期化
