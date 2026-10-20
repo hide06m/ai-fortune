@@ -219,6 +219,11 @@ export async function claimAdWatchBonus(
   if (countToday >= AD_WATCH_DAILY_LIMIT) {
     return { granted: false, balance: await getStoneBalance(userId), reason: 'DAILY_LIMIT_REACHED' }
   }
+  // 広告を見て、すぐ、また受け取る連打を、止める（ウェブの広告は、広告会社からの確認がないため、間隔でも守る）
+  if (!AD_TEST_MODE) {
+    const last = await query(`SELECT 1 FROM stone_transactions WHERE user_id = $1 AND reason = 'ad_watch' AND created_at > NOW() - INTERVAL '20 seconds' LIMIT 1`, [userId])
+    if (last.rows.length > 0) return { granted: false, balance: await getStoneBalance(userId), reason: 'TOO_FAST' }
+  }
   const balance = await applyStoneChange(userId, 1, 'ad_watch')
   return { granted: true, balance }
 }

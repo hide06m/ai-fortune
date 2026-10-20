@@ -16,6 +16,7 @@ import {
 } from './api'
 import { CHARACTER_MASTER_DATA, DIAGNOSIS_STONE_COST, KURI_CONSULT_STONE_COST, type CharacterId } from './types/character'
 import { getStoneBalance, claimDailyBonus, watchAdForStone } from './api/stones'
+import { showRewardedAd } from './ads/rewardedAd'
 import { getReadingHistory, getReadingDetail, type ReadingSummary } from './api/readings'
 import { callCompatibilityAPI, type CompatibilityResponse } from './api/compatibility'
 import { greetGuide, getNextUnmetCharacter, markCharacterMet } from './api/character'
@@ -370,7 +371,12 @@ function AppContent() {
     setWatchingAd(true)
     setError('')
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000)) // 広告視聴を模した待機
+      const outcome = await showRewardedAd(() => undefined)
+      if (outcome === 'no_ad') {
+        setError('いまは見られる広告がありません。しばらくしてからお試しください')
+        return
+      }
+      if (outcome !== 'viewed') return
       const result = await watchAdForStone()
       setStoneBalance(result.balance)
       if (typeof result.adRemaining === 'number') setAdRemaining(result.adRemaining)

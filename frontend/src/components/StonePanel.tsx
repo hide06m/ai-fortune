@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLoginCalendar, getStoneSummary, watchAdForStone, type LoginCalendar, type StoneSummary } from '../api/stones';
-import { showRewardedAd } from '../ads/rewardedAd';
+import { isRealAdConfigured, showRewardedAd } from '../ads/rewardedAd';
 
 const REASON_LABEL: Record<string, string> = {
   login_bonus: 'ログインボーナス',
@@ -99,9 +99,17 @@ export function StonePanel({ onClose, onBalance }: { onClose: () => void; onBala
     setMessage('');
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    const done = await showRewardedAd((p) => setAdSeconds(p.secondsLeft), ctrl.signal);
+    const outcome = await showRewardedAd((p) => setAdSeconds(p.secondsLeft), ctrl.signal);
     setAdSeconds(null);
-    if (!done) return;
+    if (outcome === 'no_ad') {
+      setError('いまは見られる広告がありません。しばらくしてからお試しください');
+      return;
+    }
+    if (outcome === 'error') {
+      setError('広告を読みこめませんでした');
+      return;
+    }
+    if (outcome !== 'viewed') return;
     try {
       const r = await watchAdForStone();
       if (r.granted) setMessage('ルーンストーンを1個もらいました');
@@ -175,7 +183,7 @@ export function StonePanel({ onClose, onBalance }: { onClose: () => void; onBala
         </button>
       </div>
 
-      {adSeconds !== null && (
+      {adSeconds !== null && !isRealAdConfigured && (
         <div className="stone-ad-overlay" onClick={(e) => e.stopPropagation()}>
           <div className="stone-ad-box">
             <p className="stone-ad-title">広告（仮の表示）</p>
