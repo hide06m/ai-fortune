@@ -35,6 +35,9 @@ import stonesRoutes from './routes/stones.js'
 import inboxRoutes from './routes/inbox.js'
 import adminRoutes from './routes/admin.js'
 import accountRoutes from './routes/account.js'
+import shopRoutes from './routes/shop.js'
+import gachaRoutes from './routes/gacha.js'
+import weeklyRoutes from './routes/weekly.js'
 import { createMessage } from './db/inbox.js'
 import { grantSignupBonus, SIGNUP_BONUS_STONES, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
 import readingsRoutes from './routes/readings.js'
@@ -606,6 +609,9 @@ app.use('/api/stones', stonesRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/account', accountRoutes)
+app.use('/api/shop', shopRoutes)
+app.use('/api/gacha', gachaRoutes)
+app.use('/api/weekly', weeklyRoutes)
 
 // ========== Reading History Routes ==========
 app.use('/api/readings', readingsRoutes)

@@ -26,6 +26,10 @@ export type StoneReason =
   | 'mission_reward'
   | 'minigame_reward'
   | 'inbox_reward'
+  | 'shop'
+  | 'gacha'
+  | 'gacha_refund'
+  | 'weekly_reward'
 
 // 広告のテストモード：何回でも見られる（本物の広告をつなぐ前の動作確認用）。
 // 開発環境（NODE_ENV が production 以外）では、いつも有効。本番では、環境変数 AD_TEST_MODE=true のときだけ。
@@ -256,6 +260,16 @@ export async function grantSignupBonus(userId: string): Promise<number> {
  */
 export async function grantMissionReward(userId: string, amount: number): Promise<number> {
   return applyStoneChange(userId, amount, 'mission_reward')
+}
+
+/** 石を使う（足りないときは INSUFFICIENT_STONES を投げる） */
+export async function spendStones(userId: string, amount: number, reason: StoneReason): Promise<number> {
+  return applyStoneChange(userId, -Math.abs(amount), reason)
+}
+
+/** 石を渡す */
+export async function grantStones(userId: string, amount: number, reason: StoneReason): Promise<number> {
+  return applyStoneChange(userId, Math.abs(amount), reason)
 }
 
 /**

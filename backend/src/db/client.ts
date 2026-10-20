@@ -355,6 +355,32 @@ export async function initializeDatabase() {
       )
     `);
 
+    // 交換所：持っているアイテム（称号・ホームの背景）と、いま身につけているもの
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_items (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        item_id VARCHAR(40) NOT NULL,
+        acquired_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, item_id)
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_profile (
+        user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        title_id VARCHAR(40),
+        background_id VARCHAR(40)
+      )
+    `);
+    // ウィークリーミッションの、受け取り済み
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS weekly_claims (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        week DATE NOT NULL,
+        mission_id VARCHAR(30) NOT NULL,
+        PRIMARY KEY (user_id, week, mission_id)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

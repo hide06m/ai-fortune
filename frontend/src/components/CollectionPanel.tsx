@@ -55,14 +55,7 @@ export function CollectionPanel({ onClose }: { onClose: () => void }) {
         {failed && <p className="daily-error">読み込めませんでした。時間をおいてもう一度お試しください。</p>}
         {!failed && !zukan && !achv && <p className="home-panel-empty">読み込んでいます…</p>}
 
-        {tab === 'zukan' && (
-          <div className="zukan-preparing">
-            <p>🔒 図鑑は準備中です。</p>
-            <p>性格タイプ16・恋愛タイプ16・宿曜27宿の図鑑を作っています。自分の診断結果ではなく「ほかの人のタイプ」に出会って集めていく形を考えています。</p>
-          </div>
-        )}
-
-        {false &&
+        {tab === 'zukan' &&
           zukan &&
           (['mbti', 'love', 'sukuyou'] as Section[]).map((s) => (
             <section key={s}>
@@ -77,6 +70,8 @@ export function CollectionPanel({ onClose }: { onClose: () => void }) {
             </section>
           ))}
 
+
+        {tab === 'zukan' && zukan && <p className="zukan-hint">ホームの「森での出会い」で、いろいろなタイプに出会えます。</p>}
 
         {tab === 'achv' && achv && (
           <ul className="achv-list">

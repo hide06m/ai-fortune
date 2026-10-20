@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { BirthDateSelects } from './CounselingScene';
 import { claimMission, getDaily, markFortuneViewed, saveBirthDate, type DailySnapshot } from '../api/daily';
+import { claimWeekly, getWeekly, type WeeklySnapshot } from '../api/home';
 
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -21,6 +22,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
   const [birth, setBirth] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [weekly, setWeekly] = useState<WeeklySnapshot | null>(null);
 
   const apply = (s: DailySnapshot) => {
     if (!s.success) {
@@ -55,6 +57,21 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
   const claim = async (id: string) => {
     setBusy(true);
     apply(await claimMission(id));
+    setBusy(false);
+  };
+
+  useEffect(() => {
+    getWeekly()
+      .then((w) => w.success && setWeekly(w))
+      .catch(() => undefined);
+  }, []);
+  const claimWeeklyMission = async (id: string) => {
+    setBusy(true);
+    const w = await claimWeekly(id);
+    if (w.success) {
+      setWeekly(w);
+      onBalance(w.balance);
+    }
     setBusy(false);
   };
 
@@ -135,7 +152,35 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                 )}
               </li>
             </ul>
-            <p className="daily-note">ミッションは毎日日本時間の0時にリセットされます。</p>
+            <p className="daily-note">ミッションは毎日朝4時にリセットされます。</p>
+          </>
+        )}
+
+        {weekly && (
+          <>
+            <h3 className="daily-missions-title">🗓 今週のミッション</h3>
+            <ul className="daily-missions">
+              {weekly.missions.map((m) => (
+                <li key={m.id} className={m.claimed ? 'is-claimed' : m.done ? 'is-done' : ''}>
+                  <div>
+                    <b>{m.title}</b>
+                    <small>
+                      {m.desc}（{m.progress} / {m.target}）
+                    </small>
+                  </div>
+                  {m.claimed ? (
+                    <span className="daily-got">受け取り済み</span>
+                  ) : m.done ? (
+                    <button type="button" className="daily-btn" disabled={busy} onClick={() => claimWeeklyMission(m.id)}>
+                      石 +{m.reward}
+                    </button>
+                  ) : (
+                    <span className="daily-todo">石 +{m.reward}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="daily-note">毎週月曜の朝4時にリセットされます。</p>
           </>
         )}
 

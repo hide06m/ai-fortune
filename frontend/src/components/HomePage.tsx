@@ -4,6 +4,9 @@
 
 import { StonePanel } from './StonePanel';
 import { InboxPanel } from './InboxPanel';
+import { ShopPanel } from './ShopPanel';
+import { GachaPanel } from './GachaPanel';
+import { getHomeProfile, type HomeProfile } from '../api/home';
 import { getInbox, type InboxMessage } from '../api/inbox';
 import { useEffect, useState } from 'react';
 import '../styles/home.css';
@@ -49,7 +52,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
   const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone' | 'inbox'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone' | 'inbox' | 'shop' | 'gacha'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -72,6 +75,14 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
       .catch(() => undefined);
   };
   useEffect(refreshInbox, []);
+  // 交換所で身につけた、称号とホームの背景
+  const [profile, setProfile] = useState<HomeProfile | null>(null);
+  const refreshProfile = () => {
+    getHomeProfile()
+      .then((p) => p.success && setProfile(p))
+      .catch(() => undefined);
+  };
+  useEffect(refreshProfile, []);
   const [latest, setLatest] = useState<LatestResultSummary[]>([]);
 
   // 来るたびに、解放済みの占い師から1人が出てきて、ひとこと話す
@@ -106,13 +117,16 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   const image = shown === 0 ? `/assets/characters/${folder}/ham001.webp` : `/assets/characters/${folder}/${prefix}${shown === 1 ? '002' : '001'}.webp`;
 
   return (
-    <div className="vn-scene home-scene" style={{ backgroundImage: 'url(/assets/room001.jpg)' }}>
+    <div className="vn-scene home-scene" style={{ backgroundImage: `url(${profile?.background?.image ?? '/assets/room001.jpg'})` }}>
       <div className="home-top">
         <button type="button" className="home-stone-chip" onClick={() => setPanel('stone')} aria-label="ルーンストーンの管理画面を開く">
           <img src="/assets/stone.webp" alt="" />
           <span>{stoneBalance === null ? '—' : stoneBalance} 個</span>
         </button>
-        <span className="home-email">{email}</span>
+        <span className="home-email">
+          {profile?.title && <b className="home-title">{profile.title.name}</b>}
+          {email}
+        </span>
       </div>
 
       {homeNotice && (
@@ -161,6 +175,12 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           <button type="button" className="home-btn" onClick={() => setPanel('inbox')}>
             📬 受信箱{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}
           </button>
+          <button type="button" className="home-btn" onClick={() => setPanel('shop')}>
+            🛍 交換所
+          </button>
+          <button type="button" className="home-btn" onClick={() => setPanel('gacha')}>
+            🌲 森での出会い
+          </button>
           <button type="button" className="home-btn home-btn-quiet" onClick={onLogout}>
             ログアウト
           </button>
@@ -181,6 +201,10 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           onChanged={(unread, claimable) => setInboxBadge(unread + claimable)}
         />
       )}
+
+      {panel === 'shop' && <ShopPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} onChanged={refreshProfile} />}
+
+      {panel === 'gacha' && <GachaPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} />}
 
       {panel === 'stone' && <StonePanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} />}
 

@@ -15,3 +15,9 @@ export const GAME_DAY_DATE_SQL = `((NOW() AT TIME ZONE 'Asia/Tokyo') - INTERVAL 
 export function gameDayJapan(now: Date = new Date()): string {
   return new Date(now.getTime() + 9 * 3600 * 1000 - DAY_START_HOUR * 3600 * 1000).toISOString().slice(0, 10)
 }
+
+/** SQL：今週（月曜の朝4時はじまり）の始まり（timestamptz）。ウィークリーミッション用 */
+export const GAME_WEEK_START_SQL = `((date_trunc('week', (NOW() AT TIME ZONE 'Asia/Tokyo') - INTERVAL '${DAY_START_HOUR} hours') + INTERVAL '${DAY_START_HOUR} hours') AT TIME ZONE 'Asia/Tokyo')`
+
+/** SQL：今週の、月曜の日付（DATE）。受け取りの記録の、週の目印 */
+export const GAME_WEEK_DATE_SQL = `date_trunc('week', (NOW() AT TIME ZONE 'Asia/Tokyo') - INTERVAL '${DAY_START_HOUR} hours')::date`
