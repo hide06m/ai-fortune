@@ -711,3 +711,21 @@ button.home-stone-chip:active { transform: translateY(1px); }
 .login-cal-streak small { opacity: 0.75; }
 .login-cal-ms { margin: 2px 0 8px; display: flex; justify-content: center; gap: 10px; font-size: 0.75rem; opacity: 0.75; }
 .login-cal-ms .is-reached { color: #8fe3a8; opacity: 1; }
+
+/* ヘルプ・お問い合わせ・アカウント */
+.help-backdrop { position: fixed; inset: 0; z-index: 9000; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.help-panel { width: min(480px, 100%); max-height: 86vh; overflow-y: auto; box-sizing: border-box; padding: 14px 16px 16px; border-radius: 14px; background: rgba(20, 12, 40, 0.98); border: 2px solid rgba(201, 162, 75, 0.75); color: #fff; text-align: left; }
+.help-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.help-tabs button { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; font-size: 0.88rem; cursor: pointer; }
+.help-tabs button.is-on { background: linear-gradient(180deg, #8a6a2f, #5d4520); border-color: rgba(255, 224, 150, 0.7); font-weight: 700; }
+.help-faq { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.help-faq button { width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.07); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.help-faq p { margin: 6px 4px 8px; font-size: 0.88rem; line-height: 1.75; opacity: 0.92; }
+.help-body { font-size: 0.92rem; line-height: 1.8; }
+.help-body a { color: #ffd866; }
+.help-note { opacity: 0.75; font-size: 0.82rem; }
+.help-body input { width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.08); color: #fff; font: inherit; }
+.help-danger { display: block; width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid #ff8a8a; background: #7a2230; color: #fff; font-weight: 700; cursor: pointer; }
+.help-danger:disabled { opacity: 0.4; cursor: default; }
+.help-error { color: #ffb0a0; }
+.help-close { display: block; width: 100%; margin-top: 14px; padding: 9px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.3); background: transparent; color: #fff; font: inherit; cursor: pointer; }

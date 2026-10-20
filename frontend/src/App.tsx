@@ -67,6 +67,7 @@ import { MiniGameShell } from './minigames/MiniGameShell'
 import { acornCatchSpec } from './minigames/acornCatch'
 import { ForestRun } from './components/ForestRun'
 import { StoneGift } from './components/StoneGift'
+import { HelpPanel } from './components/HelpPanel'
 import { HomePage } from './components/HomePage'
 import { pickAfterResultLines } from './data/homeLines'
 import { ResultCharacter } from './components/ResultCharacter'
@@ -2354,6 +2355,7 @@ function SettingsButton() {
   // 音量は 0〜100（％）で扱う。保存は audio.ts 側（0〜1）
   const [bgmVol, setBgmVol] = useState(Math.round(getBgmVolume() * 100))
   const [seVol, setSeVol] = useState(Math.round(getSeVolume() * 100))
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const changeBgmVolume = (percent: number) => {
     setBgmVol(percent)
@@ -2426,8 +2428,20 @@ function SettingsButton() {
             />
             <span className="settings-volume-value">{seVol}%</span>
           </label>
+          <button
+            type="button"
+            className="settings-toggle-row"
+            onClick={() => {
+              setHelpOpen(true)
+              setOpen(false)
+            }}
+          >
+            <span>ヘルプ・お問い合わせ</span>
+            <span>›</span>
+          </button>
         </div>
       )}
+      {helpOpen && <HelpPanel onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }

@@ -34,6 +34,7 @@ import ttsRoutes from './routes/tts.js'
 import stonesRoutes from './routes/stones.js'
 import inboxRoutes from './routes/inbox.js'
 import adminRoutes from './routes/admin.js'
+import accountRoutes from './routes/account.js'
 import { createMessage } from './db/inbox.js'
 import { grantSignupBonus, SIGNUP_BONUS_STONES, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
 import readingsRoutes from './routes/readings.js'
@@ -604,6 +605,7 @@ app.use('/api/tts', ttsRoutes)
 app.use('/api/stones', stonesRoutes)
 app.use('/api/inbox', inboxRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/account', accountRoutes)
 
 // ========== Reading History Routes ==========
 app.use('/api/readings', readingsRoutes)
