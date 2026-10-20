@@ -13,8 +13,8 @@ const MUSUBI_H = 132;
 const MUSUBI_SINK = 12;
 const FACE_DX = 26;
 const CATCH_HALF = 62; // 受けとめられる、横の幅（ムスビの中心から）
-const RUN_RATE = 9; // 走りのコマを進める速さ（コマ/秒）
-const RUN_FRAMES = Array.from({ length: 4 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
+const RUN_RATE = 12; // 走りのコマを進める速さ（コマ/秒）
+const RUN_FRAMES = Array.from({ length: 8 }, (_, i) => `musubi_walk_${String(i + 1).padStart(2, '0')}`);
 
 interface Conf {
   target: number; // 集める点数

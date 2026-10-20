@@ -33,6 +33,7 @@ def cut_sheet(sheet):
     a = sheet.split()[-1].point(lambda v: 255 if v > 128 else 0)
     rows = runs([a.crop((0, y, W, y + 1)).getbbox() is not None for y in range(H)])
     crops = []
+    bottoms = []
     for (y0, y1) in rows:
         band = a.crop((0, y0, W, y1))
         cols = runs([band.crop((x, 0, x + 1, y1 - y0)).getbbox() is not None for x in range(W)])
@@ -45,9 +46,11 @@ def cut_sheet(sheet):
                     r, g, b, al = px0[xx, yy]
                     if al and b > r + 40 and b > g + 40:
                         px0[xx, yy] = (r, g, b, 0)
-            frame = frame.crop(frame.split()[-1].getbbox())
+            bb = frame.split()[-1].getbbox()
+            frame = frame.crop(bb)
             crops.append(frame)
-    return crops
+            bottoms.append(y0 + bb[3])  # 絵の中での、いちばん下の位置
+    return crops, bottoms
 
 
 def main():
@@ -61,11 +64,13 @@ def main():
     else:
         srcs = [big if big.exists() else GAMES / 'musubi_run_sheet.png']
     crops = []
+    bottoms = []
     for src in srcs:
         sheet = Image.open(src).convert('RGBA')
-        part = cut_sheet(sheet)
+        part, bot = cut_sheet(sheet)
         print('source', src.name, sheet.size, '->', len(part), 'frames')
         crops += part
+        bottoms += bot
     # 出力の大きさの倍率：切り出したコマの、体の高さ（中央値）から決める。基準（k=1）は、体の高さ約290。
     # 大きすぎると、スマホで重いので、最大3倍（900×1140）まで
     hs = sorted(f.size[1] for f in crops)
@@ -94,8 +99,11 @@ def main():
     heights = sorted(head_height(f) for f in crops)
     median = heights[len(heights) // 2]
     frames = []
-    for f in crops:
+    lifts = []
+    ref_bottom = max(bottoms)  # いちばん低い足（地面についている足）の位置
+    for f, bt in zip(crops, bottoms):
         kk = min(1.3, max(0.8, median / head_height(f)))
+        lifts.append((ref_bottom - bt) * kk)
         if abs(kk - 1) > 0.01:
             f = f.resize((round(f.size[0] * kk), round(f.size[1] * kk)), Image.LANCZOS)
         fa = f.split()[-1]
@@ -111,11 +119,13 @@ def main():
                     tot += 1
         frames.append((f, xs / tot if tot else fw / 2))
 
-    # 体の上下のゆれが大きすぎるので、頭の高さを、平均に近づける（足の高さは、そのぶん、動く）
-    tops = [BASE - f.size[1] for f, _ in frames]
+    # 体の上下のゆれ：1コマずつの絵（singles）は、絵の中での、体の上下・足の浮きを、そのまま残す。
+    # シートの絵は、ゆれが大きすぎるので、頭の高さを、平均に近づける（足の高さは、そのぶん、動く）
+    keep = 1.0 if singles else BOB_KEEP
+    tops = [BASE - f.size[1] - (lifts[i] if singles else 0) for i, (f, _) in enumerate(frames)]
     mean_top = sum(tops) / len(tops)
     for n, ((frame, cx), top) in enumerate(zip(frames, tops), start=1):
-        target_top = mean_top + (top - mean_top) * BOB_KEEP
+        target_top = mean_top + (top - mean_top) * keep
         canvas = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
         ox = int(round(CW / 2 - cx))
         canvas.alpha_composite(frame, (ox, int(round(target_top))))

@@ -17,6 +17,7 @@ def main():
     ap.add_argument('--thresh', type=int, default=60, help='背景色と見なす色の差の許容')
     ap.add_argument('--global-key', action='store_true', help='背景色に近い画素を、つながっていなくても、すべて透明にする（絵の中に、背景と同じ色の穴があるとき）')
     ap.add_argument('--black', action='store_true', help='黒背景の光の効果：明るさを透明度にする')
+    ap.add_argument('--no-crop', action='store_true', help='余白を切り詰めない（コマの、絵の中での、上下の位置を残したいとき）')
     ap.add_argument('--keep-margin', type=int, default=8, help='切り詰めた後に残す余白（px）')
     a = ap.parse_args()
 
@@ -40,7 +41,7 @@ def main():
                     c = pr[x, y]
                     po[x, y] = (min(255, c[0] * 255 // av), min(255, c[1] * 255 // av), min(255, c[2] * 255 // av), av)
         box = alpha.point(lambda v: 255 if v > 12 else 0).getbbox()
-        if box:
+        if box and not a.no_crop:
             m = a.keep_margin
             out = out.crop((max(0, box[0] - m), max(0, box[1] - m), min(w, box[2] + m), min(h, box[3] + m)))
         out.save(a.dst)
@@ -94,7 +95,7 @@ def main():
                     c[dom] = others + 4
                     pix[x, y] = (c[0], c[1], c[2], aa)
     box = alpha.point(lambda v: 255 if v > 8 else 0).getbbox()
-    if box:
+    if box and not a.no_crop:
         m = a.keep_margin
         box = (max(0, box[0] - m), max(0, box[1] - m), min(w, box[2] + m), min(h, box[3] + m))
         im = im.crop(box)
