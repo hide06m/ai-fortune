@@ -88,9 +88,7 @@ export function StonePanel({ onClose, onBalance }: { onClose: () => void; onBala
               </li>
               <li>
                 <span>広告</span>
-                <b>
-                  あと{adLeft}回／{summary.adLimit}回
-                </b>
+                <b>{summary.adTestMode ? 'テスト中（何回でも）' : `あと${adLeft}回／${summary.adLimit}回`}</b>
               </li>
             </ul>
 

@@ -66,6 +66,8 @@ export interface StoneSummary {
   loginBonusClaimed: boolean;
   adRemaining: number;
   adLimit: number;
+  /** テストモード：広告を何回でも見られる */
+  adTestMode?: boolean;
   /** 今日ミニゲームでもらった石 */
   minigameStonesToday: number;
   history: { amount: number; reason: string; createdAt: string }[];

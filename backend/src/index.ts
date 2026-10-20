@@ -32,6 +32,9 @@ import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCh
 import { INTIMACY_UNLOCKS, CharacterId, DIAGNOSIS_STONE_COST } from './types/character.js'
 import ttsRoutes from './routes/tts.js'
 import stonesRoutes from './routes/stones.js'
+import inboxRoutes from './routes/inbox.js'
+import adminRoutes from './routes/admin.js'
+import { createMessage } from './db/inbox.js'
 import { grantSignupBonus, SIGNUP_BONUS_STONES, spendStoneForDiagnosis, refundStoneForDiagnosis } from './db/stones.js'
 import readingsRoutes from './routes/readings.js'
 import { saveReading, findDuplicateReading } from './db/readings.js'
@@ -211,6 +214,14 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
       try {
         await grantSignupBonus(user.id)
         console.log(`[AUTH] Granted signup bonus for user: ${googleUser.email}`)
+        // 受信箱に、ようこその知らせ（もらった石の記録として残す。石は、すでに渡してある）
+        await createMessage({
+          userId: user.id,
+          kind: 'welcome',
+          title: 'ようこそ 占いの森へ',
+          body: `新規登録のお祝いに、ルーンストーンを${SIGNUP_BONUS_STONES}個お渡ししました。\nルーンストーンは占いに使えます。ホームの石の数をおすと、残りや増減の記録を見られます。\nどうぞごゆっくり。`,
+          stones: 0,
+        })
       } catch (error) {
         console.warn('[AUTH] Failed to grant signup bonus:', error)
       }
@@ -591,6 +602,8 @@ app.use('/api/tts', ttsRoutes)
 
 // ========== Stone (石) Routes ==========
 app.use('/api/stones', stonesRoutes)
+app.use('/api/inbox', inboxRoutes)
+app.use('/api/admin', adminRoutes)
 
 // ========== Reading History Routes ==========
 app.use('/api/readings', readingsRoutes)

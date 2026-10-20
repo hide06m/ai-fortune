@@ -311,6 +311,32 @@ export async function initializeDatabase() {
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_minigame_rewards_user_day ON minigame_rewards(user_id, day)`);
 
+    // 受信箱：運営からのお知らせ・お詫びの石の配布など。user_id が NULL のものは、全員向け
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS inbox_messages (
+        id UUID PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        kind VARCHAR(16) NOT NULL DEFAULT 'notice',
+        title VARCHAR(80) NOT NULL,
+        body TEXT NOT NULL,
+        reward_stones INT NOT NULL DEFAULT 0,
+        show_on_home BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMP
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_inbox_messages_user ON inbox_messages(user_id, created_at)`);
+    // 受信箱の、ユーザーごとの状態（既読・受け取り済み）。受け取りは、1通につき、1人1回（主キーで、二重に渡さない）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS inbox_states (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        message_id UUID NOT NULL REFERENCES inbox_messages(id) ON DELETE CASCADE,
+        read_at TIMESTAMP,
+        claimed_at TIMESTAMP,
+        PRIMARY KEY (user_id, message_id)
+      )
+    `);
+
     console.log('✅ Database initialized successfully');
     client.release();
   } catch (error) {

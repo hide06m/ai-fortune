@@ -1560,7 +1560,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
                   ? '広告再生中...'
                   : adRemaining === 0
                     ? '📺 本日の広告視聴は終了しました'
-                    : `📺 広告でルーンストーン+1${adRemaining !== null ? `（あと${adRemaining}回）` : ''}`}
+                    : `📺 広告でルーンストーン+1${adRemaining !== null && adRemaining <= 100 ? `（あと${adRemaining}回）` : ''}`}
               </button>
               {stoneBonusMessage && <span className="stone-bonus-message">{stoneBonusMessage}</span>}
             </div>

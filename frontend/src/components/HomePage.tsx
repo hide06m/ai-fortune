@@ -3,6 +3,8 @@
  */
 
 import { StonePanel } from './StonePanel';
+import { InboxPanel } from './InboxPanel';
+import { getInbox, type InboxMessage } from '../api/inbox';
 import { useEffect, useState } from 'react';
 import '../styles/home.css';
 import { CHARACTER_VISUAL } from '../data/characterVisuals';
@@ -47,7 +49,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
   const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone' | 'inbox'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -58,6 +60,18 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   useEffect(() => {
     getDaily().then(updateBadge);
   }, []);
+  // 受信箱：未読・受け取れる石があると赤い印。ホームに出すお知らせは、いちばん新しい1件
+  const [inboxBadge, setInboxBadge] = useState(0);
+  const [homeNotice, setHomeNotice] = useState<InboxMessage | null>(null);
+  const refreshInbox = () => {
+    getInbox()
+      .then((r) => {
+        setInboxBadge(r.messages.filter((m) => !m.read || (m.stones > 0 && !m.claimed)).length);
+        setHomeNotice(r.messages.find((m) => m.showOnHome && !m.read) ?? null);
+      })
+      .catch(() => undefined);
+  };
+  useEffect(refreshInbox, []);
   const [latest, setLatest] = useState<LatestResultSummary[]>([]);
 
   // 来るたびに、解放済みの占い師から1人が出てきて、ひとこと話す
@@ -101,6 +115,13 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
         <span className="home-email">{email}</span>
       </div>
 
+      {homeNotice && (
+        <button type="button" className="home-notice" onClick={() => setPanel('inbox')}>
+          <span>📢</span>
+          <b>{homeNotice.title}</b>
+        </button>
+      )}
+
       {characterId !== null && (
         <div
           className="vn-character-bust-wrap"
@@ -137,6 +158,9 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           <button type="button" className="home-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
             🎮 ミニゲーム<small>森ラン・どんぐりキャッチ</small>
           </button>
+          <button type="button" className="home-btn" onClick={() => setPanel('inbox')}>
+            📬 受信箱{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}
+          </button>
           <button type="button" className="home-btn home-btn-quiet" onClick={onLogout}>
             ログアウト
           </button>
@@ -145,6 +169,17 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
 
       {panel === 'daily' && (
         <DailyPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} onSnapshot={updateBadge} />
+      )}
+
+      {panel === 'inbox' && (
+        <InboxPanel
+          onClose={() => {
+            setPanel(null);
+            refreshInbox();
+          }}
+          onBalance={(b) => onStoneBalance?.(b)}
+          onChanged={(unread, claimable) => setInboxBadge(unread + claimable)}
+        />
       )}
 
       {panel === 'stone' && <StonePanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} />}

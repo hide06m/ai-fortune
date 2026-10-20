@@ -100,7 +100,6 @@ export const TUTORIAL_MEETING_STEPS: TutorialStep[] = [
  */
 export const TUTORIAL_AFTER_RESULT_STEPS: TutorialStep[] = [
   { type: 'dialogue', character: 'natsume', image: 'natsume004', speaker: 'ナツメ', text: 'フフフ、どうだったかしら？いつでも相談してね' },
-  { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'ルーンストーンは、使った分だけ減るわ。残りの数は、ホームの石の数をおすと見られるわよ' },
   { type: 'dialogue', character: 'natsume', image: 'natsume002', speaker: 'ナツメ', text: 'また相談したいときは、その石をつかってちょうだい' },
   { type: 'dialogue', character: 'natsume', image: 'natsume003', speaker: 'ナツメ', text: '今日はありがとうね' },
   { type: 'dialogue', character: 'musubi', image: 'ham002', speaker: 'ムスビ', text: 'どうだった？ 何かにぶつかった時は彼女に相談するといいよ。今は留守にしているけれど、この館には他にも奇妙で、少しばかり風変わりな同居人たちがいるんだ。また来る機会があれば、いずれ引き合わせるよ' },

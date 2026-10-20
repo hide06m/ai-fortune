@@ -24,8 +24,13 @@ export type StoneReason =
   | 'character_gift'
   | 'mission_reward'
   | 'minigame_reward'
+  | 'inbox_reward'
 
-export const AD_WATCH_DAILY_LIMIT = 5
+// 広告のテストモード：何回でも見られる（本物の広告をつなぐ前の動作確認用）。
+// 開発環境（NODE_ENV が production 以外）では、いつも有効。本番では、環境変数 AD_TEST_MODE=true のときだけ。
+// ⚠️ 本物の広告を公開するときは、本番の AD_TEST_MODE を、必ず、消すこと（石を、無限に、増やせてしまう）
+export const AD_TEST_MODE = process.env.AD_TEST_MODE === 'true' || process.env.NODE_ENV !== 'production'
+export const AD_WATCH_DAILY_LIMIT = AD_TEST_MODE ? 999 : 5
 
 /**
  * 現在の石残高を取得
@@ -179,6 +184,13 @@ export async function grantMissionReward(userId: string, amount: number): Promis
 }
 
 /**
+ * 受信箱の、石つきのお知らせを、受け取ったときの付与
+ */
+export async function grantInboxReward(userId: string, amount: number): Promise<number> {
+  return applyStoneChange(userId, amount, 'inbox_reward')
+}
+
+/**
  * ミニゲームの報酬（石）を付与する（履歴で、ミッションと区別できるよう、別の理由で記録）
  */
 export async function grantMinigameReward(userId: string, amount: number): Promise<number> {
@@ -205,6 +217,7 @@ export async function getStoneSummary(userId: string) {
     loginBonusClaimed,
     adRemaining,
     adLimit: AD_WATCH_DAILY_LIMIT,
+    adTestMode: AD_TEST_MODE,
     minigameStonesToday: mg.rows[0].stones as number,
     history: hist.rows.map((r) => ({ amount: r.amount as number, reason: r.reason as string, createdAt: new Date(r.created_at).toISOString() })),
   }

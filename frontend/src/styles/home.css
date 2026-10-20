@@ -64,6 +64,7 @@
   gap: 8px;
 }
 .home-btn {
+  position: relative;
   padding: 0.8rem 0.4rem;
   border-radius: 12px;
   border: 1px solid rgba(201, 162, 75, 0.75);
@@ -680,3 +681,20 @@ button.home-stone-chip:active { transform: translateY(1px); }
 .stone-ad-count { margin: 8px 0; font-size: 3rem; font-weight: 800; }
 .stone-ad-note { margin: 0 0 14px; font-size: 0.8rem; opacity: 0.7; }
 .stone-ad-box button { padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: #fff; cursor: pointer; }
+
+/* 受信箱 */
+.home-notice { position: absolute; top: 58px; left: 12px; right: 12px; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(255, 224, 150, 0.55); background: rgba(20, 12, 40, 0.88); color: #fff4d0; font: inherit; font-size: 0.85rem; text-align: left; cursor: pointer; }
+.home-notice b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-claim-all { display: block; width: 100%; margin: 0 0 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(255, 224, 150, 0.6); background: linear-gradient(180deg, #8a6a2f, #5d4520); color: #fff3d0; font-weight: 700; cursor: pointer; }
+.inbox-list li { border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 6px; }
+.inbox-list li.is-read .inbox-title { opacity: 0.7; font-weight: 400; }
+.home-panel .inbox-row { border: none; background: none; padding: 6px 2px; display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 6px 2px; background: none; border: none; color: inherit; font: inherit; text-align: left; cursor: pointer; position: relative; }
+.inbox-dot { position: absolute; left: -8px; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: #ff5a6e; }
+.inbox-kind { flex: none; font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.15); }
+.inbox-title { flex: 1; font-weight: 700; font-size: 0.92rem; }
+.inbox-row small { opacity: 0.6; }
+.inbox-reward { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0 2px; padding: 5px 8px; border-radius: 8px; background: rgba(255, 214, 102, 0.12); font-size: 0.85rem; }
+.home-panel .inbox-reward button { width: auto; flex: none; display: block; padding: 5px 16px; border-radius: 8px; border: 1px solid rgba(255, 224, 150, 0.6); background: #7a5d28; color: #fff3d0; font-weight: 700; cursor: pointer; }
+.inbox-reward span { flex: 1; }
+.inbox-reward .is-done { color: #8fe3a8; font-weight: 600; }
+.inbox-body { margin: 4px 2px 6px; font-size: 0.88rem; line-height: 1.7; white-space: pre-line; opacity: 0.92; }
