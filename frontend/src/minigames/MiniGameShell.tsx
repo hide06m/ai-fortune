@@ -382,11 +382,21 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
         }}
         onPointerDown={(e) => {
           pressed.current = true;
+          // 指がステージの外に出ても、動きを追いつづける（スマホで、途中で止まらないように）
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {
+            /* 使えない環境でも、遊べる */
+          }
           updatePointer(e);
           if (phaseRef.current === 'ready') startCountdown();
         }}
         onPointerMove={(e) => {
           if (pressed.current) updatePointer(e);
+        }}
+        onLostPointerCapture={() => {
+          pressed.current = false;
+          input.current.pointerX = null;
         }}
       >
         <canvas ref={canvasRef} width={W * RES} height={H * RES} className="run-canvas" />
