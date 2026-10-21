@@ -53,6 +53,12 @@ function loadAdSense(): Promise<void> {
     window.adBreak = window.adConfig = (o: unknown) => {
       (window.adsbygoogle as unknown[]).push(o);
     };
+    // index.html に、すでに AdSense のスクリプトがあるときは、もう一度は読みこまない（二重に読むと、警告が出る）
+    if (document.querySelector('script[src*="adsbygoogle.js"]')) {
+      window.adConfig?.({ preloadAdBreaks: 'on', sound: 'on' });
+      resolve();
+      return;
+    }
     const s = document.createElement('script');
     s.async = true;
     s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(CLIENT)}`;
