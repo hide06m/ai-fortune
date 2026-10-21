@@ -25,6 +25,8 @@ export interface ShopItem {
   image?: string;
   owned: boolean;
   equipped: boolean;
+  /** 実績で解放される称号のとき：実績の名前（買えない） */
+  achievement?: string;
 }
 export interface ShopSnapshot {
   success: boolean;
@@ -97,3 +99,24 @@ export const claimWeekly = (id: string) => call<WeeklySnapshot>(`/api/weekly/${i
 
 // ───── 呼び名 ─────
 export const saveNickname = (name: string) => call<{ success: boolean; nickname?: string; message?: string }>('/api/profile/nickname', 'POST', { name });
+
+// ───── 長期ミッション ─────
+export interface LongMission {
+  id: string;
+  title: string;
+  desc: string;
+  target: number;
+  reward: { stones: number; shards?: number };
+  progress: number;
+  done: boolean;
+  claimed: boolean;
+}
+export interface LongSnapshot {
+  success: boolean;
+  missions: LongMission[];
+  shards: number;
+  balance: number;
+  message?: string;
+}
+export const getLongMissions = () => call<LongSnapshot>('/api/missions/long');
+export const claimLongMission = (id: string) => call<LongSnapshot>(`/api/missions/long/${id}/claim`, 'POST');

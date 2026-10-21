@@ -372,6 +372,14 @@ export async function initializeDatabase() {
       )
     `);
     await client.query(`ALTER TABLE user_profile ADD COLUMN IF NOT EXISTS nickname VARCHAR(40)`);
+    // 長期ミッションの、受け取り済み（一度きり）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS long_claims (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        mission_id VARCHAR(30) NOT NULL,
+        PRIMARY KEY (user_id, mission_id)
+      )
+    `);
     // ウィークリーミッションの、受け取り済み
     await client.query(`
       CREATE TABLE IF NOT EXISTS weekly_claims (

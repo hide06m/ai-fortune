@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { BirthDateSelects } from './CounselingScene';
 import { claimMission, getDaily, markFortuneViewed, saveBirthDate, type DailySnapshot } from '../api/daily';
-import { claimWeekly, getWeekly, type WeeklySnapshot } from '../api/home';
+import { claimLongMission, claimWeekly, getLongMissions, getWeekly, type LongSnapshot, type WeeklySnapshot } from '../api/home';
 
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -23,6 +23,8 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [weekly, setWeekly] = useState<WeeklySnapshot | null>(null);
+  const [long, setLong] = useState<LongSnapshot | null>(null);
+  const [tab, setTab] = useState<'today' | 'week' | 'long'>('today');
 
   const apply = (s: DailySnapshot) => {
     if (!s.success) {
@@ -65,6 +67,20 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
       .then((w) => w.success && setWeekly(w))
       .catch(() => undefined);
   }, []);
+  useEffect(() => {
+    getLongMissions()
+      .then((l) => l.success && setLong(l))
+      .catch(() => undefined);
+  }, []);
+  const claimLong = async (id: string) => {
+    setBusy(true);
+    const l = await claimLongMission(id);
+    if (l.success) {
+      setLong(l);
+      onBalance(l.balance);
+    }
+    setBusy(false);
+  };
   const claimWeeklyMission = async (id: string) => {
     setBusy(true);
     const w = await claimWeekly(id);
@@ -80,11 +96,22 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
   return (
     <div className="home-panel-backdrop" onClick={onClose}>
       <div className="home-panel daily-panel" onClick={(e) => e.stopPropagation()}>
-        <h3>🌟 今日の運勢</h3>
-        {!snap && !error && <p className="home-panel-empty">読み込んでいます…</p>}
+        <div className="zukan-tabs">
+          <button type="button" className={tab === 'today' ? 'is-on' : ''} onClick={() => setTab('today')}>
+            今日
+          </button>
+          <button type="button" className={tab === 'week' ? 'is-on' : ''} onClick={() => setTab('week')}>
+            今週
+          </button>
+          <button type="button" className={tab === 'long' ? 'is-on' : ''} onClick={() => setTab('long')}>
+            ずっと
+          </button>
+        </div>
+        {tab === 'today' && <h3>🌟 今日の運勢</h3>}
+        {tab === 'today' && !snap && !error && <p className="home-panel-empty">読み込んでいます…</p>}
         {error && <p className="daily-error">{error}</p>}
 
-        {snap && !f && (
+        {tab === 'today' && snap && !f && (
           <div className="daily-birth">
             <p>今日の運勢を見るには生年月日を教えてください（この端末だけでなくアカウントに保存されます）。</p>
             <BirthDateSelects value={birth} onChange={setBirth} />
@@ -94,7 +121,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
           </div>
         )}
 
-        {f && (
+        {tab === 'today' && f && (
           <div className="daily-fortune">
             <div className="daily-fortune-head">
               <span className="daily-fortune-day">{f.day}</span>
@@ -115,7 +142,7 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
           </div>
         )}
 
-        {snap && (
+        {tab === 'today' && snap && (
           <>
             <h3 className="daily-missions-title">📋 今日のミッション</h3>
             <ul className="daily-missions">
@@ -156,7 +183,40 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
           </>
         )}
 
-        {weekly && (
+        {tab === 'long' && long && (
+          <>
+            <h3 className="daily-missions-title">🌲 ずっとミッション</h3>
+            <p className="daily-note">かけら：{long.shards} 個（これからのお楽しみに使います）</p>
+            <ul className="daily-missions">
+              {long.missions.map((m) => (
+                <li key={m.id} className={m.claimed ? 'is-claimed' : m.done ? 'is-done' : ''}>
+                  <div>
+                    <b>{m.title}</b>
+                    <small>
+                      {m.desc}（{m.progress} / {m.target}）
+                    </small>
+                  </div>
+                  {m.claimed ? (
+                    <span className="daily-got">受け取り済み</span>
+                  ) : m.done ? (
+                    <button type="button" className="daily-btn" disabled={busy} onClick={() => claimLong(m.id)}>
+                      石 +{m.reward.stones}
+                      {m.reward.shards ? `・かけら +${m.reward.shards}` : ''}
+                    </button>
+                  ) : (
+                    <span className="daily-todo">
+                      石 +{m.reward.stones}
+                      {m.reward.shards ? `・かけら +${m.reward.shards}` : ''}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="daily-note">一度だけ受け取れます。称号は、図鑑の「実績」を達成すると、手に入ります。</p>
+          </>
+        )}
+
+        {tab === 'week' && weekly && (
           <>
             <h3 className="daily-missions-title">🗓 今週のミッション</h3>
             <ul className="daily-missions">

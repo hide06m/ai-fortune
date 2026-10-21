@@ -16,7 +16,7 @@ export interface DailyFortune {
 }
 
 export interface DailyMission {
-  id: 'fortune' | 'diagnose' | 'gift';
+  id: string;
   title: string;
   desc: string;
   reward: number;

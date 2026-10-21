@@ -10,6 +10,7 @@ import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
 import { getStoneBalance, spendStones } from '../db/stones.js'
+import { computeAchievements } from '../missions/achievements.js'
 
 const router = Router()
 
@@ -22,6 +23,8 @@ export interface ShopItem {
   price: number
   /** 背景のとき：画像の場所 */
   image?: string
+  /** 実績で解放される称号のとき：実績の名前（買えない） */
+  achievement?: string
 }
 
 /** 品ぞろえ（価格 0 は、最初から持っている） */
@@ -39,10 +42,22 @@ export const SHOP_ITEMS: ShopItem[] = [
 const DEFAULT_TITLE = 'title_traveler'
 const DEFAULT_BG = 'bg_hall'
 
+/** 実績で解放される称号（実績を達成すると、手に入る。買えない） */
+async function achievementItems(userId: string): Promise<{ items: ShopItem[]; done: Set<string> }> {
+  const list = await computeAchievements(userId)
+  const items: ShopItem[] = list.map((a) => ({ id: `title_ach_${a.id}`, kind: 'title', name: a.title, desc: `実績「${a.title}」で解放`, price: 0, achievement: a.id }))
+  return { items, done: new Set(list.filter((a) => a.done).map((a) => `title_ach_${a.id}`)) }
+}
+
+async function allItems(userId: string): Promise<ShopItem[]> {
+  return [...SHOP_ITEMS, ...(await achievementItems(userId)).items]
+}
+
 async function ownedSet(userId: string): Promise<Set<string>> {
   const r = await query('SELECT item_id FROM user_items WHERE user_id = $1', [userId])
   const set = new Set<string>(r.rows.map((x) => x.item_id as string))
   for (const it of SHOP_ITEMS) if (it.price === 0) set.add(it.id)
+  for (const id of (await achievementItems(userId)).done) set.add(id)
   return set
 }
 
@@ -58,7 +73,7 @@ async function snapshot(userId: string) {
     success: true,
     balance: await getStoneBalance(userId),
     equipped: eq,
-    items: SHOP_ITEMS.map((it) => ({ ...it, owned: owned.has(it.id), equipped: it.id === eq.title || it.id === eq.background })),
+    items: (await allItems(userId)).map((it) => ({ ...it, owned: owned.has(it.id), equipped: it.id === eq.title || it.id === eq.background })),
   }
 }
 
@@ -75,7 +90,7 @@ router.get('/profile', requireAuth, async (req: Request, res: Response) => {
   try {
     const eq = await equipped(req.user!.userId)
     const nick = await query('SELECT nickname FROM user_profile WHERE user_id = $1', [req.user!.userId])
-    const title = SHOP_ITEMS.find((i) => i.id === eq.title)
+    const title = (await allItems(req.user!.userId)).find((i) => i.id === eq.title)
     const bg = SHOP_ITEMS.find((i) => i.id === eq.background)
     res.json({ success: true, nickname: nick.rows[0]?.nickname ?? null, title: title ? { id: title.id, name: title.name } : null, background: bg ? { id: bg.id, image: bg.image } : null })
   } catch (error) {
@@ -86,8 +101,9 @@ router.get('/profile', requireAuth, async (req: Request, res: Response) => {
 router.post('/buy', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId
-    const item = SHOP_ITEMS.find((i) => i.id === req.body?.itemId)
+    const item = (await allItems(userId)).find((i) => i.id === req.body?.itemId)
     if (!item) return res.status(400).json({ success: false, error: 'UNKNOWN_ITEM' })
+    if (item.achievement) return res.status(403).json({ success: false, error: 'LOCKED', message: '実績を達成すると、手に入ります' })
     if ((await ownedSet(userId)).has(item.id)) return res.status(409).json({ success: false, error: 'ALREADY_OWNED', message: 'もう持っています' })
     // 先に、石を使う（足りなければ、ここで止まる）。そのあとで、持ち物に入れる。入れられなければ、石を戻す
     try {
@@ -114,7 +130,7 @@ router.post('/buy', requireAuth, async (req: Request, res: Response) => {
 router.post('/equip', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId
-    const item = SHOP_ITEMS.find((i) => i.id === req.body?.itemId)
+    const item = (await allItems(userId)).find((i) => i.id === req.body?.itemId)
     if (!item) return res.status(400).json({ success: false, error: 'UNKNOWN_ITEM' })
     if (!(await ownedSet(userId)).has(item.id)) return res.status(403).json({ success: false, error: 'NOT_OWNED', message: 'まだ持っていません' })
     const col = item.kind === 'title' ? 'title_id' : 'background_id'

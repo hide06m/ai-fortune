@@ -4,48 +4,21 @@
  *   POST /api/daily/birthdate             … 生年月日を保存する（今日の運勢に使う）
  *   POST /api/daily/fortune/view          … 今日の運勢を見た、と記録する（ミッションの達成）
  *   POST /api/daily/missions/:id/claim    … ミッションの報酬（ルーンストーン）を受け取る
- * 「今日」は、日本時間の日付。
+ * 「今日」は、日本時間の朝4時はじまりの日。
+ * ミッション：「今日の運勢を見る」は固定。ほかは、候補から、毎日、ランダムに2つ（missions/defs.ts）。
  */
 
 import { Router, Request, Response } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
 import { computeDailyFortune, todayInJapan } from '../fortune/dailyFortune.js'
-import { GAME_DAY_START_SQL } from '../time/gameDay.js'
+import { todaysDaily } from '../missions/defs.js'
 import { isValidPastDate } from '../fortune/dateCheck.js'
 import { getStoneBalance, grantMissionReward } from '../db/stones.js'
 
 const router = Router()
 
-interface MissionDef {
-  id: 'fortune' | 'diagnose' | 'gift'
-  title: string
-  desc: string
-  reward: number
-}
-
-const MISSIONS: MissionDef[] = [
-  { id: 'fortune', title: '今日の運勢を見る', desc: '今日の運勢のカードを開く', reward: 1 },
-  { id: 'diagnose', title: '占いを1つする', desc: 'どの占い師の診断でも1回', reward: 1 },
-  { id: 'gift', title: 'ちょっとした挨拶をする', desc: '占い師に1回挨拶を渡す', reward: 1 },
-]
 const ALL_BONUS = 1
-
-/** 日本時間の今日の始まり（timestamptz） */
-const JST_DAY_START = GAME_DAY_START_SQL
-
-async function doneToday(userId: string, id: MissionDef['id'], day: string): Promise<boolean> {
-  if (id === 'fortune') {
-    const r = await query('SELECT 1 FROM daily_marks WHERE user_id = $1 AND day = $2 AND kind = $3', [userId, day, 'fortune_viewed'])
-    return r.rows.length > 0
-  }
-  if (id === 'gift') {
-    const r = await query(`SELECT 1 FROM stone_transactions WHERE user_id = $1 AND reason = 'character_gift' AND created_at >= ${JST_DAY_START} LIMIT 1`, [userId])
-    return r.rows.length > 0
-  }
-  const r = await query(`SELECT 1 FROM latest_results WHERE user_id = $1 AND saved_at >= ${JST_DAY_START} LIMIT 1`, [userId])
-  return r.rows.length > 0
-}
 
 async function claimedToday(userId: string, day: string): Promise<Set<string>> {
   const r = await query('SELECT mission_id FROM daily_mission_claims WHERE user_id = $1 AND day = $2', [userId, day])
@@ -65,8 +38,9 @@ async function snapshot(userId: string) {
   const birthDate = await knownBirthDate(userId)
   const fortune = birthDate ? computeDailyFortune(birthDate, day) : null
   const claimed = await claimedToday(userId, day)
+  const defs = todaysDaily(userId, day)
   const missions = await Promise.all(
-    MISSIONS.map(async (m) => ({ ...m, done: await doneToday(userId, m.id, day), claimed: claimed.has(m.id) }))
+    defs.map(async (m) => ({ id: m.id, title: m.title, desc: m.desc, reward: m.reward, done: await m.done(userId, day), claimed: claimed.has(m.id) }))
   )
   const allDone = missions.every((m) => m.claimed)
   return {
@@ -122,12 +96,12 @@ router.post('/missions/:id/claim', requireAuth, async (req: Request, res: Respon
     let reward = 0
     if (id === 'all') {
       const claimed = await claimedToday(userId, day)
-      if (!MISSIONS.every((m) => claimed.has(m.id))) return res.status(400).json({ success: false, error: 'NOT_READY', message: 'まだすべてのミッションを受け取っていません' })
+      if (!todaysDaily(userId, day).every((m) => claimed.has(m.id))) return res.status(400).json({ success: false, error: 'NOT_READY', message: 'まだすべてのミッションを受け取っていません' })
       reward = ALL_BONUS
     } else {
-      const m = MISSIONS.find((x) => x.id === id)
+      const m = todaysDaily(userId, day).find((x) => x.id === id)
       if (!m) return res.status(400).json({ success: false, error: 'UNKNOWN_MISSION' })
-      if (!(await doneToday(userId, m.id, day))) return res.status(400).json({ success: false, error: 'NOT_DONE', message: 'まだ達成していません' })
+      if (!(await m.done(userId, day))) return res.status(400).json({ success: false, error: 'NOT_DONE', message: 'まだ達成していません' })
       reward = m.reward
     }
     // 先に「受け取った」記録を入れる（二重に押されても、石は1回だけ）

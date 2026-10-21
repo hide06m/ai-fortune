@@ -75,6 +75,8 @@ export function ShopPanel({ onClose, onBalance, onChanged }: { onClose: () => vo
               </div>
               {it.equipped ? (
                 <span className="shop-state">身につけ中</span>
+              ) : it.achievement && !it.owned ? (
+                <span className="shop-state">実績で解放</span>
               ) : it.owned ? (
                 <button type="button" disabled={busy} onClick={() => equip(it)}>
                   身につける

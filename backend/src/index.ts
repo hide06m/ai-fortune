@@ -36,6 +36,7 @@ import inboxRoutes from './routes/inbox.js'
 import adminRoutes from './routes/admin.js'
 import accountRoutes from './routes/account.js'
 import shopRoutes from './routes/shop.js'
+import longMissionRoutes from './routes/longMissions.js'
 import profileRoutes from './routes/profile.js'
 import gachaRoutes from './routes/gacha.js'
 import weeklyRoutes from './routes/weekly.js'
@@ -611,6 +612,7 @@ app.use('/api/inbox', inboxRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/account', accountRoutes)
 app.use('/api/shop', shopRoutes)
+app.use('/api/missions/long', longMissionRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/gacha', gachaRoutes)
 app.use('/api/weekly', weeklyRoutes)
