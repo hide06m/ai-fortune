@@ -3,6 +3,8 @@
 {
   "name": "ai-fortune-web",
   "compatibility_date": "2026-10-01",
+  // 本番のドメイン（aozaru.net は Cloudflare の DNS で管理）
+  "routes": [{ "pattern": "uranai.aozaru.net", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
     // どのパスでも index.html を返す（/guide /privacy /invite/… /palm-capture/… など）
