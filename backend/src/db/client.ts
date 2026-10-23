@@ -171,16 +171,6 @@ export async function initializeDatabase() {
       ALTER TABLE readings ADD COLUMN IF NOT EXISTS love_type_result JSONB;
     `);
 
-    // 既存DB向け: met_at カラム（解放後、初対面イベントを再生済みかどうか。unlocked_atとは別で管理する）
-    await client.query(`
-      ALTER TABLE character_intimacy ADD COLUMN IF NOT EXISTS met_at TIMESTAMP;
-    `);
-    // 既存ユーザーのナツメ（チュートリアルで既に出会っている）は初対面イベント対象から除外する
-    await client.query(`
-      UPDATE character_intimacy SET met_at = unlocked_at
-      WHERE character_id = 1 AND met_at IS NULL AND unlocked_at IS NOT NULL;
-    `);
-
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_readings_user_id_created_at ON readings(user_id, created_at DESC);
     `);
@@ -214,6 +204,16 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
         UNIQUE(user_id, character_id)
       )
+    `);
+
+    // 既存DB向け: met_at カラム（解放後、初対面イベントを再生済みかどうか。unlocked_atとは別で管理する）
+    await client.query(`
+      ALTER TABLE character_intimacy ADD COLUMN IF NOT EXISTS met_at TIMESTAMP;
+    `);
+    // 既存ユーザーのナツメ（チュートリアルで既に出会っている）は初対面イベント対象から除外する
+    await client.query(`
+      UPDATE character_intimacy SET met_at = unlocked_at
+      WHERE character_id = 1 AND met_at IS NULL AND unlocked_at IS NOT NULL;
     `);
 
     // intimacy_points（ハート内の細かい進捗、0-1000）を追加。既存行は intimacy_level*100 で初期値を補完
