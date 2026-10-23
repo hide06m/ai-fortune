@@ -1196,6 +1196,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <div className={`landing-container${night ? ' landing-night' : ''}`}>
           <div className="legal-links">
+            <a href="/guide">占いの森について</a>
             <a href="/terms">利用規約</a>
             <a href="/privacy">プライバシーポリシー</a>
           </div>

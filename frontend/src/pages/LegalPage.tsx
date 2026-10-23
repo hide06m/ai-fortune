@@ -3,7 +3,9 @@ import { LEGAL } from './legalConfig';
 const box: React.CSSProperties = { maxWidth: 720, margin: '0 auto', padding: '32px 20px 64px', color: '#2b2230', textAlign: 'left', lineHeight: 1.9, fontSize: '0.98rem' };
 const h2: React.CSSProperties = { color: '#2b2230', fontSize: '1.15rem', margin: '2em 0 0.4em', borderLeft: '4px solid #8a6bbf', paddingLeft: 10 };
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+export const h2Style = h2;
+
+export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: '#faf7ff', minHeight: '100vh' }}>
       <div style={box}>
@@ -20,7 +22,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
           お問い合わせ：{LEGAL.contactEmail}
         </p>
         <p style={{ marginTop: 16 }}>
-          <a href="/privacy" style={{ color: '#6b4fa3' }}>プライバシーポリシー</a>　<a href="/terms" style={{ color: '#6b4fa3' }}>利用規約</a>
+          <a href="/guide" style={{ color: '#6b4fa3' }}>占いの森について</a>　<a href="/privacy" style={{ color: '#6b4fa3' }}>プライバシーポリシー</a>　<a href="/terms" style={{ color: '#6b4fa3' }}>利用規約</a>
         </p>
       </div>
     </div>

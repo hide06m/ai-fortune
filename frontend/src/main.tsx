@@ -6,6 +6,7 @@ import { PalmRelayCapturePage } from './pages/PalmRelayCapturePage.tsx'
 import { PalmLab } from './dev/PalmLab.tsx'
 import { PalmReport } from './dev/PalmReport.tsx'
 import { PrivacyPage, TermsPage } from './pages/LegalPage.tsx'
+import { GuidePage } from './pages/GuidePage.tsx'
 import { InvitePage } from './pages/InvitePage.tsx'
 import { ForestRun } from './components/ForestRun.tsx'
 import { MiniGameShell } from './minigames/MiniGameShell.tsx'
@@ -25,6 +26,8 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
     {window.location.pathname === '/privacy' ? (
       <PrivacyPage />
+    ) : window.location.pathname === '/guide' ? (
+      <GuidePage />
     ) : window.location.pathname === '/terms' ? (
       <TermsPage />
     ) : import.meta.env.DEV && window.location.pathname === '/palm-lab' ? (
