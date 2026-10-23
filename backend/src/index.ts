@@ -26,7 +26,7 @@ import { dailyLimiter } from './middleware/rateLimit.js'
 import { authMiddleware, requireAuth } from './middleware/auth.js'
 import { verifyGoogleToken } from './auth/googleAuth.js'
 import { generateToken, generateUserId } from './auth/jwt.js'
-import { getUserByGoogleId, createUser, initializeDatabase, testConnection, query } from './db/client.js'
+import { getUserByGoogleId, createUser, initializeDatabase, testConnection, query, withDbScope } from './db/client.js'
 import characterRoutes from './routes/character.js'
 import { initializeUserCharacterIntimacies, incrementCharacterIntimacy, unlockCharacter } from './db/character.js'
 import { INTIMACY_UNLOCKS, CharacterId, DIAGNOSIS_STONE_COST } from './types/character.js'
@@ -68,6 +68,8 @@ import { closeStaleJobs } from './db/jobs.js'
 import { llmConcurrencyState } from './llm/concurrency.js'
 
 const app = express()
+// Workers では、リクエストごとに DB 接続を作り、終わったら閉じる（Node では何もしない）
+app.use((req, res, next) => { void withDbScope(() => new Promise<void>((done) => { res.on('close', done); next() })) })
 const PORT = process.env.PORT || 3000
 
 // ✅ 1つのルート（例: TTSでVOICEVOX Engineが未起動の場合など）でサーバー全体が落ちないようにする
@@ -691,6 +693,7 @@ async function startServer() {
   })
 }
 
-startServer()
+// Cloudflare Workers では、worker.ts が起動を受け持つ（ここでは listen しない）
+if (!process.env.CF_WORKER) startServer()
 
 export default app

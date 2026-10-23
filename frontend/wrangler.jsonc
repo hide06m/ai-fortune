@@ -1,0 +1,11 @@
+// Cloudflare Workers への静的配信の設定（npm run deploy:cf）。
+// Render 無料枠の通信量（月5GB）を超えて停止したため、重い静的ファイルは Cloudflare から配信する
+{
+  "name": "ai-fortune-web",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // どのパスでも index.html を返す（/guide /privacy /invite/… /palm-capture/… など）
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -7,18 +7,20 @@
  */
 
 import rateLimit from 'express-rate-limit'
+import { PgRateLimitStore } from './pgRateLimitStore.js'
 
 const GUEST_DAILY_LIMIT = 1
 const AUTHENTICATED_DAILY_LIMIT = 20
 
 export const dailyLimiter = rateLimit({
+  store: new PgRateLimitStore('daily'),
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   max: (req: any) => (req.user?.userId ? AUTHENTICATED_DAILY_LIMIT : GUEST_DAILY_LIMIT),
   keyGenerator: (req: any) => {
     // ログイン済みはユーザー単位、未ログインはIP単位でカウント
     if (req.user?.userId) return `user:${req.user.userId}`
     // X-Forwarded-Forヘッダー優先(Render環境でのプロキシ対応)
-    return `ip:${(req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`
+    return `ip:${(req.headers['cf-connecting-ip'] as string) || (req.headers['cf-connecting-ip'] as string) || (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`
   },
   message: 'Too many fortune readings today. Please try again tomorrow.',
   statusCode: 429,
@@ -31,6 +33,7 @@ export const dailyLimiter = rateLimit({
 
 // 開発環境用: 制限なし
 export const noopLimiter = rateLimit({
+  store: new PgRateLimitStore('noop'),
   windowMs: 60 * 1000,
   max: 1000, // ほぼ無制限
   skip: () => process.env.NODE_ENV === 'development'

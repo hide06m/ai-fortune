@@ -1,0 +1,13 @@
+// Cloudflare Workers で API（Express）を動かす設定。Render をやめた後の本番。
+{
+  "name": "ai-fortune-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": { "CF_WORKER": "1", "NODE_ENV": "production" },
+  // 診断の裏処理（AIの生成は数分かかることがある）
+  "queues": {
+    "producers": [{ "queue": "ai-fortune-jobs", "binding": "JOB_QUEUE" }],
+    "consumers": [{ "queue": "ai-fortune-jobs", "max_batch_size": 1, "max_retries": 0 }]
+  }
+}

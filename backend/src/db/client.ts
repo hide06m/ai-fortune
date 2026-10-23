@@ -1,22 +1,93 @@
-import { Pool } from 'pg';
+import pg from 'pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
-// PostgreSQL コネクションプール
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/ai_fortune',
-  max: 20,
-  idleTimeoutMillis: 20000,
-  // 外部のDB（Render）は、しばらく使わないと接続が切れ、つなぎ直しに数秒かかることがある。2秒では短く、診断の結果の保存に失敗していた
-  connectionTimeoutMillis: 15000,
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
-  // Render のような外部 PostgreSQL は SSL が必須
-  ssl: process.env.DATABASE_URL?.includes('render.com') ? { rejectUnauthorized: false } : false,
-});
+const { Pool, Client } = pg;
+
+const CONNECTION_STRING = () => process.env.DATABASE_URL || 'postgresql://localhost/ai_fortune';
+const IS_WORKER = !!process.env.CF_WORKER;
+
+// 外部のDB（Neon・Render など）は SSL が必須。手元（localhost）は不要
+const sslFor = (url: string) => (/localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false });
+
+// ───── Cloudflare Workers 用：リクエストごとに接続を作る ─────
+// Workers では、ある通信（リクエスト）で作った接続を、別の通信で使い回せない。
+// そこで、1つのリクエストの中では1本の接続を使い回し（requestDb）、リクエストが終わったら閉じる
+const scope = new AsyncLocalStorage<{ client?: pg.Client; connecting?: Promise<pg.Client> }>();
+
+function newWorkerClient(): pg.Client {
+  const url = CONNECTION_STRING();
+  return new Client({ connectionString: url, ssl: sslFor(url), connectionTimeoutMillis: 15000 });
+}
+
+/** この関数の中の DB 呼び出しが、同じ接続を使うようにする（終わったら閉じる）。Node では、そのまま実行 */
+export async function withDbScope<T>(fn: () => Promise<T>): Promise<T> {
+  if (!IS_WORKER) return fn();
+  const store: { client?: pg.Client; connecting?: Promise<pg.Client> } = {};
+  try {
+    return await scope.run(store, fn);
+  } finally {
+    const c = store.client ?? (await store.connecting?.catch(() => undefined));
+    if (c) await c.end().catch(() => undefined);
+  }
+}
+
+async function scopedClient(): Promise<pg.Client> {
+  const store = scope.getStore();
+  if (!store) {
+    // スコープの外（想定外）：その場だけの接続で実行する
+    const c = newWorkerClient();
+    await c.connect();
+    return c;
+  }
+  if (store.client) return store.client;
+  store.connecting ??= (async () => {
+    const c = newWorkerClient();
+    await c.connect();
+    store.client = c;
+    return c;
+  })();
+  return store.connecting;
+}
+
+const workerPool = {
+  async query(sql: string, values?: any[]) {
+    const store = scope.getStore();
+    const c = await scopedClient();
+    try {
+      return await c.query(sql, values);
+    } finally {
+      if (!store) await c.end().catch(() => undefined);
+    }
+  },
+  /** トランザクション用：専用の接続を作って返す（release で閉じる） */
+  async connect() {
+    const c = newWorkerClient();
+    await c.connect();
+    (c as any).release = () => c.end().catch(() => undefined);
+    return c as pg.Client & { release: () => void };
+  },
+};
+
+// ───── Node 用：従来どおりの接続プール ─────
+const nodePool = IS_WORKER
+  ? null
+  : new Pool({
+      connectionString: CONNECTION_STRING(),
+      max: 20,
+      idleTimeoutMillis: 20000,
+      // 外部のDBは、しばらく使わないと接続が切れ、つなぎ直しに数秒かかることがある。2秒では短く、診断の結果の保存に失敗していた
+      connectionTimeoutMillis: 15000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+      ssl: sslFor(CONNECTION_STRING()),
+    });
 
 // 使われていない接続が、DB側から切られても、プログラム全体が、止まらないようにする
-pool.on('error', (err) => {
+nodePool?.on('error', (err) => {
   console.error('[db] pool error (ignored):', err.message);
 });
+
+const pool = (nodePool ?? workerPool) as unknown as pg.Pool;
 
 /**
  * DB クエリ実行（wrapper）
@@ -387,6 +458,27 @@ export async function initializeDatabase() {
         week DATE NOT NULL,
         mission_id VARCHAR(30) NOT NULL,
         PRIMARY KEY (user_id, week, mission_id)
+      )
+    `);
+
+    // 手相のPC↔スマホ連携の一時セッション（写真は、最長10分・診断の完了で消す）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS palm_sessions (
+        token VARCHAR(64) PRIMARY KEY,
+        status VARCHAR(12) NOT NULL DEFAULT 'pending',
+        image_base64 TEXT,
+        mime_type VARCHAR(64),
+        lines JSONB,
+        retake_message TEXT,
+        expires_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+    // 回数制限（1日の診断回数・招待ページの連打対策）の、カウンター（サーバーが複数ある Workers では、メモリでは数えられない）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key TEXT PRIMARY KEY,
+        hits INT NOT NULL,
+        reset_at TIMESTAMPTZ NOT NULL
       )
     `);
 

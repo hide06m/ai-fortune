@@ -2,128 +2,84 @@
  * 手相診断のPC↔スマホ連携用・一時セッションストア
  *
  * 設計方針：手のひらの写真は個人の身体が写る画像のため、診断に使ったら即破棄する。
- * 恒久的なテーブル・オブジェクトストレージは持たず、プロセスメモリ上の短命なMapで管理する
- * （サーバーが複数台に水平スケールする場合はRedis等の共有ストアに置き換える必要があるが、
- * 現状の単一インスタンス運用では問題ない）
+ * Cloudflare Workers では、リクエストごとに別のサーバーが動くため、メモリではなく DB の一時テーブル（palm_sessions）に置く。
+ * 写真は、アップロードから最長10分（期限切れ）、または診断の完了・撮り直しまでだけ保存し、その後は必ず消す。
  */
 
 import crypto from 'crypto'
+import { query } from '../db/client.js'
 
 export type PalmSessionStatus = 'pending' | 'uploaded' | 'consumed'
 
-interface PalmSession {
-  token: string
-  status: PalmSessionStatus
-  imageBase64: string | null
-  mimeType: string | null
-  /** 撮影側が検出できた線（未検証。使う前に sanitizeDetectedLines で検証する） */
-  lines: unknown
-  /** PC側の解析で撮り直しになったときの理由（スマホへ伝える） */
-  retakeMessage: string | null
-  createdAt: number
-  expiresAt: number
-}
-
 const SESSION_TTL_MS = 10 * 60 * 1000 // 10分
 
-const sessions = new Map<string, PalmSession>()
-
-function isExpired(session: PalmSession): boolean {
-  return Date.now() > session.expiresAt
+interface Row {
+  status: PalmSessionStatus
+  image_base64: string | null
+  mime_type: string | null
+  lines: unknown
+  retake_message: string | null
 }
 
-/** 期限切れセッションを掃除する（アクセスのたびに軽く走らせる） */
-function sweepExpired(): void {
-  for (const [token, session] of sessions) {
-    if (isExpired(session)) {
-      sessions.delete(token)
-    }
-  }
+/** 期限切れセッション（写真を含む）を、すべて消す。アクセスのたびに軽く走らせる */
+async function sweepExpired(): Promise<void> {
+  await query('DELETE FROM palm_sessions WHERE expires_at < NOW()').catch(() => undefined)
 }
 
-export function createPalmSession(): { token: string; expiresAt: number } {
-  sweepExpired()
+async function getLive(token: string): Promise<Row | null> {
+  const r = await query('SELECT status, image_base64, mime_type, lines, retake_message FROM palm_sessions WHERE token = $1 AND expires_at >= NOW()', [token])
+  return (r.rows[0] as Row | undefined) ?? null
+}
+
+export async function createPalmSession(): Promise<{ token: string; expiresAt: number }> {
+  await sweepExpired()
   const token = crypto.randomBytes(24).toString('base64url')
-  const now = Date.now()
-  const session: PalmSession = {
-    token,
-    status: 'pending',
-    imageBase64: null,
-    mimeType: null,
-    lines: null,
-    retakeMessage: null,
-    createdAt: now,
-    expiresAt: now + SESSION_TTL_MS,
-  }
-  sessions.set(token, session)
-  return { token, expiresAt: session.expiresAt }
+  const expiresAt = Date.now() + SESSION_TTL_MS
+  await query('INSERT INTO palm_sessions (token, status, expires_at) VALUES ($1, $2, $3)', [token, 'pending', new Date(expiresAt)])
+  return { token, expiresAt }
 }
 
-export function getPalmSessionStatus(token: string): { status: PalmSessionStatus; retakeMessage: string | null } | null {
-  const session = sessions.get(token)
-  if (!session || isExpired(session)) return null
-  return { status: session.status, retakeMessage: session.retakeMessage }
+export async function getPalmSessionStatus(token: string): Promise<{ status: PalmSessionStatus; retakeMessage: string | null } | null> {
+  const s = await getLive(token)
+  return s ? { status: s.status, retakeMessage: s.retake_message } : null
 }
 
 /** PC側が解析のために画像を見る（消費しない） */
-export function peekPalmSessionImage(token: string): { imageBase64: string; mimeType: string } | null {
-  const session = sessions.get(token)
-  if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) return null
-  return { imageBase64: session.imageBase64, mimeType: session.mimeType }
+export async function peekPalmSessionImage(token: string): Promise<{ imageBase64: string; mimeType: string } | null> {
+  const s = await getLive(token)
+  if (!s || s.status !== 'uploaded' || !s.image_base64 || !s.mime_type) return null
+  return { imageBase64: s.image_base64, mimeType: s.mime_type }
 }
 
 /** PC側の解析で撮り直しになった：画像を破棄して待機に戻し、理由をスマホへ伝える */
-export function requestPalmRetake(token: string, message: string): boolean {
-  const session = sessions.get(token)
-  if (!session || isExpired(session)) return false
-  session.status = 'pending'
-  session.imageBase64 = null
-  session.mimeType = null
-  session.lines = null
-  session.retakeMessage = message
-  return true
+export async function requestPalmRetake(token: string, message: string): Promise<boolean> {
+  const r = await query(
+    "UPDATE palm_sessions SET status = 'pending', image_base64 = NULL, mime_type = NULL, lines = NULL, retake_message = $2 WHERE token = $1 AND expires_at >= NOW()",
+    [token, message]
+  )
+  return (r.rowCount ?? 0) > 0
 }
 
 /** スマホ側から撮影画像をアップロードする */
-export function setPalmSessionImage(
-  token: string,
-  imageBase64: string,
-  mimeType: string,
-  extras?: { lines?: unknown }
-): boolean {
-  const session = sessions.get(token)
-  if (!session || isExpired(session)) return false
-  session.imageBase64 = imageBase64
-  session.mimeType = mimeType
-  session.lines = extras?.lines ?? null
-  session.status = 'uploaded'
-  session.retakeMessage = null
-  return true
+export async function setPalmSessionImage(token: string, imageBase64: string, mimeType: string, extras?: { lines?: unknown }): Promise<boolean> {
+  const r = await query(
+    "UPDATE palm_sessions SET status = 'uploaded', image_base64 = $2, mime_type = $3, lines = $4, retake_message = NULL WHERE token = $1 AND expires_at >= NOW()",
+    [token, imageBase64, mimeType, JSON.stringify(extras?.lines ?? null)]
+  )
+  return (r.rowCount ?? 0) > 0
 }
 
 /** 診断のために、画像と線を見る（消費しない）。AIの生成に失敗しても、同じ写真で、もう一度診断できるようにするため */
-export function peekPalmSession(token: string): { imageBase64: string; mimeType: string; lines: unknown } | null {
-  const session = sessions.get(token)
-  if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) return null
-  return { imageBase64: session.imageBase64, mimeType: session.mimeType, lines: session.lines }
+export async function peekPalmSession(token: string): Promise<{ imageBase64: string; mimeType: string; lines: unknown } | null> {
+  const s = await getLive(token)
+  if (!s || s.status !== 'uploaded' || !s.image_base64 || !s.mime_type) return null
+  return { imageBase64: s.image_base64, mimeType: s.mime_type, lines: s.lines }
 }
 
-/** PC側が診断のために画像を取得する。取得後はセッションを消費済みにして画像データを破棄する */
-export function consumePalmSessionImage(
-  token: string
-): { imageBase64: string; mimeType: string; lines: unknown } | null {
-  const session = sessions.get(token)
-  if (!session || isExpired(session) || session.status !== 'uploaded' || !session.imageBase64 || !session.mimeType) {
-    return null
-  }
-  const result = {
-    imageBase64: session.imageBase64,
-    mimeType: session.mimeType,
-    lines: session.lines,
-  }
-  session.status = 'consumed'
-  session.imageBase64 = null
-  session.mimeType = null
-  session.lines = null
-  return result
+/** 診断が終わったら、セッションを消費済みにして、画像データを破棄する */
+export async function consumePalmSessionImage(token: string): Promise<{ imageBase64: string; mimeType: string; lines: unknown } | null> {
+  const s = await getLive(token)
+  if (!s || s.status !== 'uploaded' || !s.image_base64 || !s.mime_type) return null
+  await query("UPDATE palm_sessions SET status = 'consumed', image_base64 = NULL, mime_type = NULL, lines = NULL WHERE token = $1", [token])
+  return { imageBase64: s.image_base64, mimeType: s.mime_type, lines: s.lines }
 }

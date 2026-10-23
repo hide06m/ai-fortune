@@ -68,7 +68,7 @@ router.post('/', asyncJob(() => 'palm'), captureLatestResult({
 
     if (typeof token === 'string' && token) {
       // まだ消費しない（AIの生成に失敗したとき、同じ写真で、やり直せるように）。成功したときに、消費する
-      const consumed = peekPalmSession(token)
+      const consumed = await peekPalmSession(token)
       sessionToken = token
       if (!consumed) {
         return res.status(404).json({ success: false, error: '画像がまだアップロードされていないか、セッションが期限切れです' })
@@ -183,7 +183,7 @@ router.post('/', asyncJob(() => 'palm'), captureLatestResult({
     // AIの生成に失敗したときは、成功の形で返さず、失敗として返す（石は、払い戻し済み）。写真は残すので、同じ写真で、もう一度診断できる
     if (res.locals.diagnosisFailed) return llmFailed(res, stoneBalance)
     // 成功したので、写真を、サーバーのセッションから破棄する（保存するのは、最新の結果としての1件だけ）
-    if (sessionToken) consumePalmSessionImage(sessionToken)
+    if (sessionToken) await consumePalmSessionImage(sessionToken)
 
     res.json({
       success: true,

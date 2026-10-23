@@ -19,6 +19,7 @@ import crypto from 'crypto'
 import { requireAuth } from '../middleware/auth.js'
 import { query } from '../db/client.js'
 import rateLimit from 'express-rate-limit'
+import { PgRateLimitStore } from '../middleware/pgRateLimitStore.js'
 import { getLatestLoveType64Result } from '../db/readings.js'
 import { calculateLoveType64, isValidLoveType64Code, buildLoveType64ResultFromType, LOVE_BASE_CHARACTERS, LOVE_SUB_TYPES, type LoveAnswer } from '../fortune/loveType64.js'
 import { compareLoveTypes, knownAxes, AXIS_ORDER } from '../fortune/peopleCompare.js'
@@ -230,9 +231,10 @@ export const inviteRouter = Router()
 // 総当たり・連打の対策：IPごとに、10分で30回まで
 inviteRouter.use(
   rateLimit({
+    store: new PgRateLimitStore('invite'),
     windowMs: 10 * 60 * 1000,
     max: 30,
-    keyGenerator: (req: any) => `ip:${(req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`,
+    keyGenerator: (req: any) => `ip:${(req.headers['cf-connecting-ip'] as string) || (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`,
     standardHeaders: false,
     legacyHeaders: false,
     message: { success: false, error: 'しばらくしてからもう一度お試しください' },

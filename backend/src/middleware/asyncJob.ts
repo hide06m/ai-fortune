@@ -15,12 +15,17 @@ import { Request, Response, NextFunction } from 'express'
 import { createJob, finishJob } from '../db/jobs.js'
 
 /** 自分自身への内部の呼び出しだと示す合図（外から偽装できないよう、起動のたびに作る） */
-export const INTERNAL_JOB_KEY = randomUUID()
+let localKey: string | null = null
+export function internalJobKey(): string {
+  // Workers では、複数のサーバーが同時に動くので、共通の秘密（JOB_INTERNAL_KEY）を使う。Node（開発）では、起動のたびに作る
+  if (process.env.JOB_INTERNAL_KEY) return process.env.JOB_INTERNAL_KEY
+  return (localKey ??= randomUUID())
+}
 
 export function asyncJob(kindOf: (req: Request) => string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const wanted = req.headers['x-async-job'] === '1'
-    const internal = req.headers['x-job-internal'] === INTERNAL_JOB_KEY
+    const internal = req.headers['x-job-internal'] === internalJobKey()
     if (!wanted || internal || !req.isAuthenticated || !req.user || req.body?.typeOnly === true) return next()
 
     let jobId: string
@@ -31,6 +36,18 @@ export function asyncJob(kindOf: (req: Request) => string) {
       return next()
     }
     res.status(202).json({ success: true, async: true, jobId })
+
+    // Cloudflare Workers：キュー（JOB_QUEUE）に、診断の依頼を入れる。worker.ts の queue() が、同じ経路を通して、最後まで進める
+    if (process.env.CF_WORKER) {
+      try {
+        const { env } = await import('cloudflare:workers')
+        await env.JOB_QUEUE.send({ jobId, userId: req.user!.userId, path: req.originalUrl, payload: JSON.stringify(req.body ?? {}), auth: req.headers.authorization ?? '' })
+      } catch (error) {
+        console.error('[asyncJob] enqueue failed:', error)
+        await finishJob(jobId, 503, { success: false, error: 'JOB_FAILED', message: '診断を続けられませんでした。もう一度お試しください。' }, req.user!.userId).catch(() => {})
+      }
+      return
+    }
 
     // 同じサーバーの、同じ経路を、もう一度通す（認証つき）。画面との通信が切れても、ここは最後まで進む
     const payload = JSON.stringify(req.body ?? {})
@@ -45,7 +62,7 @@ export function asyncJob(kindOf: (req: Request) => string) {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(payload),
           Authorization: req.headers.authorization ?? '',
-          'x-job-internal': INTERNAL_JOB_KEY,
+          'x-job-internal': internalJobKey(),
         },
         timeout: 0,
       },

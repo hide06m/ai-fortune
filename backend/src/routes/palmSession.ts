@@ -10,13 +10,13 @@ import { createPalmSession, getPalmSessionStatus, setPalmSessionImage, peekPalmS
 
 const router = Router()
 
-router.post('/', (req: Request, res: Response) => {
-  const { token, expiresAt } = createPalmSession()
+router.post('/', async (req: Request, res: Response) => {
+  const { token, expiresAt } = await createPalmSession()
   res.json({ success: true, token, expiresAt })
 })
 
-router.get('/:token', (req: Request, res: Response) => {
-  const status = getPalmSessionStatus(req.params.token)
+router.get('/:token', async (req: Request, res: Response) => {
+  const status = await getPalmSessionStatus(req.params.token)
   if (!status) {
     return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })
   }
@@ -24,8 +24,8 @@ router.get('/:token', (req: Request, res: Response) => {
 })
 
 // PC側：解析のために、アップロードされた画像を取得する（消費しない。診断の送信で初めて破棄される）
-router.get('/:token/image', (req: Request, res: Response) => {
-  const image = peekPalmSessionImage(req.params.token)
+router.get('/:token/image', async (req: Request, res: Response) => {
+  const image = await peekPalmSessionImage(req.params.token)
   if (!image) {
     return res.status(404).json({ success: false, error: '画像がありません' })
   }
@@ -33,15 +33,15 @@ router.get('/:token/image', (req: Request, res: Response) => {
 })
 
 // PC側：解析の結果、撮り直しが必要になったことをスマホへ伝える
-router.post('/:token/retake', (req: Request, res: Response) => {
+router.post('/:token/retake', async (req: Request, res: Response) => {
   const message = typeof req.body?.message === 'string' ? req.body.message.slice(0, 200) : '撮り直してください'
-  if (!requestPalmRetake(req.params.token, message)) {
+  if (!(await requestPalmRetake(req.params.token, message))) {
     return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })
   }
   res.json({ success: true })
 })
 
-router.post('/:token/upload', (req: Request, res: Response) => {
+router.post('/:token/upload', async (req: Request, res: Response) => {
   const { imageBase64, mimeType, lines } = req.body
 
   if (typeof imageBase64 !== 'string' || !imageBase64 || typeof mimeType !== 'string' || !mimeType.startsWith('image/')) {
@@ -49,7 +49,7 @@ router.post('/:token/upload', (req: Request, res: Response) => {
   }
 
   const extras = { lines: Array.isArray(lines) ? lines : null }
-  const ok = setPalmSessionImage(req.params.token, imageBase64, mimeType, extras)
+  const ok = await setPalmSessionImage(req.params.token, imageBase64, mimeType, extras)
   if (!ok) {
     return res.status(404).json({ success: false, error: 'セッションが見つからないか、期限切れです' })
   }

@@ -11,7 +11,7 @@ const running = new Set<string>()
 
 function keyOf(req: Request): string {
   if (req.user?.userId) return `user:${req.user.userId}`
-  return `ip:${(req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`
+  return `ip:${(req.headers['cf-connecting-ip'] as string) || (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'}`
 }
 
 export function inFlightGuard(req: Request, res: Response, next: NextFunction) {
