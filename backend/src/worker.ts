@@ -27,9 +27,10 @@ const WATCHDOG_MS = 330_000
 async function runJob(m: JobMessage, env: unknown, ctx: unknown): Promise<void> {
   const failure = (status: number, error: string, message: string) => finishJob(m.jobId, status, { success: false, error, message }, m.userId)
   try {
+    // Content-Length が無いと、Express は本文があると見なさず、読み取らない
     const req = new Request(`https://internal${m.path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: m.auth, 'x-job-internal': internalJobKey() },
+      headers: { 'Content-Type': 'application/json', 'Content-Length': String(new TextEncoder().encode(m.payload).length), Authorization: m.auth, 'x-job-internal': internalJobKey() },
       body: m.payload,
     })
     const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), WATCHDOG_MS))
