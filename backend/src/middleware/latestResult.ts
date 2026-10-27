@@ -23,24 +23,30 @@ export function captureLatestResult(spec: CaptureSpec) {
   return (req: Request, res: Response, next: NextFunction) => {
     const original = res.json.bind(res)
     res.json = (body: any) => {
+      const pending: Promise<unknown>[] = []
       try {
         if (req.isAuthenticated && req.user && body?.success === true && !body.duplicate && !res.locals.diagnosisFailed) {
           const kind = spec.kind(req, body)
           const payload = kind ? spec.payload(body) : null
           if (kind && payload) {
             const userId = req.user.userId
-            saveLatestResult(userId, kind, payload).catch((error) => {
+            pending.push(saveLatestResult(userId, kind, payload).catch((error) => {
               console.error(`[latest-result] 保存に失敗しました（${kind}）:`, error)
-            })
+            }))
             // 診断の回数（実績用）と、図鑑
-            incrementStat(userId, 'diagnoses').catch(() => {})
-            incrementStat(userId, `kind:${kind}`).catch(() => {})
+            pending.push(incrementStat(userId, 'diagnoses').catch(() => {}))
+            pending.push(incrementStat(userId, `kind:${kind}`).catch(() => {}))
             const c = spec.collect?.(body)
-            if (c && c.code) recordCollection(userId, c.kind, c.code).catch((error) => console.error('[collection] 記録に失敗しました:', error))
+            if (c && c.code) pending.push(recordCollection(userId, c.kind, c.code).catch((error) => console.error('[collection] 記録に失敗しました:', error)))
           }
         }
       } catch (error) {
         console.error('[latest-result] 保存の準備に失敗しました:', error)
+      }
+      // Workers：返事を返すと DB の接続が閉じられるので、保存が終わってから返す
+      if (process.env.CF_WORKER && pending.length) {
+        void Promise.allSettled(pending).then(() => original(body))
+        return res
       }
       return original(body)
     }
