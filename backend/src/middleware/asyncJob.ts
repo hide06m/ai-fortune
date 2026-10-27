@@ -35,19 +35,22 @@ export function asyncJob(kindOf: (req: Request) => string) {
       console.error('[asyncJob] failed to create job, falling back to sync:', error)
       return next()
     }
-    res.status(202).json({ success: true, async: true, jobId })
-
     // Cloudflare Workers：キュー（JOB_QUEUE）に、診断の依頼を入れる。worker.ts の queue() が、同じ経路を通して、最後まで進める
+    // Workers は、返事を返したあとの処理を打ち切るので、依頼は、返事より先に入れる
     if (process.env.CF_WORKER) {
       try {
         const { env } = await import('cloudflare:workers')
         await env.JOB_QUEUE.send({ jobId, userId: req.user!.userId, path: req.originalUrl, payload: JSON.stringify(req.body ?? {}), auth: req.headers.authorization ?? '' })
+        res.status(202).json({ success: true, async: true, jobId })
       } catch (error) {
         console.error('[asyncJob] enqueue failed:', error)
         await finishJob(jobId, 503, { success: false, error: 'JOB_FAILED', message: '診断を続けられませんでした。もう一度お試しください。' }, req.user!.userId).catch(() => {})
+        res.status(202).json({ success: true, async: true, jobId })
       }
       return
     }
+
+    res.status(202).json({ success: true, async: true, jobId })
 
     // 同じサーバーの、同じ経路を、もう一度通す（認証つき）。画面との通信が切れても、ここは最後まで進む
     const payload = JSON.stringify(req.body ?? {})
