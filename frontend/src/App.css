@@ -451,7 +451,7 @@ body {
   height: 100%;
   object-fit: cover;
   /* 縦長の画面でも、ドア（木）が、中央に来るように */
-  object-position: 52.5% 50%;
+  object-position: 52% 50%;
   animation: fadeIn 0.8s ease-in;
 }
 

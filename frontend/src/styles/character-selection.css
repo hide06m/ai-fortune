@@ -523,3 +523,16 @@
     font-size: 0.78rem;
   }
 }
+
+/* パソコン（幅が広い画面）：占い師の枠は、元の大きさ */
+@media (min-width: 641px) {
+  .character-selection {
+    --carousel-h: clamp(260px, 38vh, 470px);
+  }
+  .carousel-container {
+    flex: 0 0 auto;
+    height: var(--carousel-h);
+    min-height: 0;
+    padding-top: 0;
+  }
+}

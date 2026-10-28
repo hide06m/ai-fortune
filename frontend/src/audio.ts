@@ -83,6 +83,27 @@ if (typeof document !== 'undefined') {
   if (import.meta.env.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
   // ほかのタブ・アプリに移ったあいだは、鳴っていた音を一時停止する（Safari は、タブを移っても、鳴らし続ける）。戻ったら、同じ音を、続きから鳴らす
   // （ミュートではなく、停止と再生にする。スマホで、アプリを切りかえたあと、音が戻らなくなるのを防ぐため）
+  // 確認用：アドレスの最後に ?audiodebug=1 を付けると、音の状態を、画面の下に出す（iPhone の実機で、原因を調べるため）
+  const debugOn = new URLSearchParams(location.search).has('audiodebug')
+  const debugLines: string[] = []
+  const dlog = (m: string) => {
+    if (!debugOn) return
+    const c = (Howler as unknown as { ctx?: AudioContext }).ctx
+    debugLines.unshift(`${new Date().toISOString().slice(14, 23)} ${m} [${c ? c.state + ' t=' + c.currentTime.toFixed(1) : 'noctx'}]`)
+    debugLines.length = Math.min(debugLines.length, 8)
+  }
+  if (debugOn) {
+    const box = document.createElement('div')
+    box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.8);color:#9f9;font:11px/1.4 monospace;padding:4px;pointer-events:none;white-space:pre-wrap'
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(box))
+    if (document.body) document.body.appendChild(box)
+    window.setInterval(() => {
+      const c = (Howler as unknown as { ctx?: AudioContext; _howls?: Howl[] })
+      box.textContent = `ctx=${c.ctx?.state ?? '-'} t=${c.ctx?.currentTime.toFixed(1) ?? '-'} playing=${(c._howls ?? []).filter((h) => h.playing()).length}/${(c._howls ?? []).length}
+` + debugLines.join('
+')
+    }, 500)
+  }
   let pausedByHide: Howl[] = []
   // 戻ったあとに、鳴らしたい音。鳴っていなければ、画面にさわったときなどに、鳴らし直す
   let wanted: Howl[] = []
@@ -98,6 +119,7 @@ if (typeof document !== 'undefined') {
   let returnedPending = false
   let alive: boolean | undefined
   const onHide = () => {
+    dlog('hide')
     if (pausedByHide.length) return
     const all = (Howler as unknown as { _howls?: Howl[] })._howls ?? []
     pausedByHide = all.filter((h) => h.playing())
@@ -106,6 +128,7 @@ if (typeof document !== 'undefined') {
     pausedByHide.forEach((h) => h.pause())
   }
   const onShow = () => {
+    dlog('show')
     resumeAudioContext()
     if (pausedByHide.length) {
       wanted = pausedByHide
@@ -121,6 +144,7 @@ if (typeof document !== 'undefined') {
     window.setTimeout(() => {
       // 時計が進んでいれば、生きている。進んでいなければ、壊れている
       alive = !!ctx && ctx.state === 'running' && ctx.currentTime > t0 + 0.3
+      dlog('alive=' + alive)
       if (alive) ensureWanted()
     }, 700)
     window.setTimeout(ensureWanted, 1800)
@@ -145,12 +169,14 @@ if (typeof document !== 'undefined') {
     }
   }
   const onGesture = () => {
+    dlog(`tap pending=${returnedPending} alive=${alive}`)
     unlockNow()
     if (returnedPending) {
       returnedPending = false
       // 戻ったあとの最初のタップ：音の仕組みが生きていなければ、作り直す
       if (alive !== true) {
         wanted = []
+        dlog('rebuild')
         rebuildAudio()
         return
       }
