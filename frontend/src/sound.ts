@@ -95,6 +95,7 @@ export function holdGearSound(hold: boolean) {
 let mini: Howl | null = null;
 let miniName = '';
 let miniRate = 1;
+let miniPaused = false;
 
 function miniVolume() {
   return 0.5 * getBgmVolume();
@@ -115,9 +116,11 @@ export function startMiniBgm(name: string, rate = 1) {
   mini.play();
 }
 export function pauseMiniBgm() {
+  miniPaused = true;
   mini?.pause();
 }
 export function resumeMiniBgm() {
+  miniPaused = false;
   if (mini && !mini.playing()) {
     mini.rate(miniRate);
     mini.play();
@@ -172,4 +175,20 @@ export function useMiniGameBgm(bgm: string, rate: number, phase: string) {
     prev.current = phase;
   }, [bgm, rate, phase]);
   useEffect(() => () => stopMiniBgm(false), []);
+}
+
+// 音の仕組みを作り直したとき（iPhone で、アプリから戻ったあと）：ここで持っている音も、古くなるので、作り直す
+if (typeof window !== 'undefined') {
+  window.addEventListener('audio-reset', () => {
+    cache.clear();
+    gear = null;
+    gearId = undefined;
+    const name = miniName;
+    const rate = miniRate;
+    const wasPlaying = !!mini && !miniPaused;
+    mini = null;
+    miniName = '';
+    gearApply();
+    if (wasPlaying && name) startMiniBgm(name, rate);
+  });
 }

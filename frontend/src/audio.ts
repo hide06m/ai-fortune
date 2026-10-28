@@ -12,6 +12,12 @@ const BASE_VOLUME = {
   door: 0.35,
 } as const
 
+// 30秒無音で音の仕組みを止める既定の動きは、iPhone で、戻れなくなる原因になる。止めない
+Howler.autoSuspend = false
+
+// いま、鳴らしたい館の音（アプリから戻ったあと、音の仕組みを作り直すときに、同じ状態に戻すため）
+const want = { ambient: false, room: false, forest: false }
+
 // 利用者が決めた音量（0〜1）。localStorageに保存する
 let bgmVolume = 1
 let seVolume = 1
@@ -78,7 +84,7 @@ if (typeof document !== 'undefined') {
   // ほかのタブ・アプリに移ったあいだは、鳴っていた音を一時停止する（Safari は、タブを移っても、鳴らし続ける）。戻ったら、同じ音を、続きから鳴らす
   // （ミュートではなく、停止と再生にする。スマホで、アプリを切りかえたあと、音が戻らなくなるのを防ぐため）
   let pausedByHide: Howl[] = []
-  // 戻ったあとに、鳴らしたい音。鳴っていなければ、画面にさわったときなどに、何度でも鳴らし直す（スマホは、戻った直後の再生を、認めないことがある）
+  // 戻ったあとに、鳴らしたい音。鳴っていなければ、画面にさわったときなどに、鳴らし直す
   let wanted: Howl[] = []
   const ensureWanted = () => {
     wanted.forEach((h) => {
@@ -87,10 +93,15 @@ if (typeof document !== 'undefined') {
     // 鳴り始めたものは、もう追わない（あとで、画面の切りかえで止めた音を、鳴らし直さないように）
     wanted = wanted.filter((h) => !h.playing())
   }
+  // 戻ったあと、音の仕組みが、生きて動いているか（undefined＝まだ分からない）。動いていなければ、次のタップで、作り直す
+  let hadAudioAtHide = false
+  let returnedPending = false
+  let alive: boolean | undefined
   const onHide = () => {
     if (pausedByHide.length) return
     const all = (Howler as unknown as { _howls?: Howl[] })._howls ?? []
     pausedByHide = all.filter((h) => h.playing())
+    hadAudioAtHide = pausedByHide.length > 0
     wanted = []
     pausedByHide.forEach((h) => h.pause())
   }
@@ -100,11 +111,18 @@ if (typeof document !== 'undefined') {
       wanted = pausedByHide
       pausedByHide = []
     }
-    // 音の仕組みが再開してから、鳴らす（再開前に play すると、鳴らないことがある）
+    returnedPending = hadAudioAtHide
+    alive = undefined
     const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
+    const t0 = ctx?.currentTime ?? 0
+    // 音の仕組みが再開してから、鳴らす（再開前に play すると、鳴らないことがある）。resume が返ってこなくても、待ちつづけない
     if (ctx && ctx.state !== 'running') ctx.resume().then(ensureWanted, ensureWanted)
     else ensureWanted()
-    window.setTimeout(ensureWanted, 600)
+    window.setTimeout(() => {
+      // 時計が進んでいれば、生きている。進んでいなければ、壊れている
+      alive = !!ctx && ctx.state === 'running' && ctx.currentTime > t0 + 0.3
+      if (alive) ensureWanted()
+    }, 700)
     window.setTimeout(ensureWanted, 1800)
     window.setTimeout(() => (wanted = []), 30000)
   }
@@ -112,20 +130,40 @@ if (typeof document !== 'undefined') {
     if (document.visibilityState === 'visible') onShow()
     else onHide()
   }
+  // 画面にさわった、その場（同期）で、音の仕組みを起こす。await しない（ジェスチャが切れて、iPhone が拒否するため）
+  const unlockNow = () => {
+    const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
+    if (!ctx || ctx.state === 'closed') return
+    if (ctx.state !== 'running') void ctx.resume().catch(() => undefined)
+    try {
+      const src = ctx.createBufferSource()
+      src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
+      src.connect(ctx.destination)
+      src.start(0)
+    } catch {
+      /* 無音の再生が、できなくても続ける */
+    }
+  }
+  const onGesture = () => {
+    unlockNow()
+    if (returnedPending) {
+      returnedPending = false
+      // 戻ったあとの最初のタップ：音の仕組みが生きていなければ、作り直す
+      if (alive !== true) {
+        wanted = []
+        rebuildAudio()
+        return
+      }
+    }
+    ensureWanted()
+  }
   document.addEventListener('visibilitychange', onBack)
   window.addEventListener('pagehide', onHide)
   window.addEventListener('pageshow', onShow)
   window.addEventListener('focus', resumeAudioContext)
   // 戻ってすぐは、ブラウザが、再開を認めないことがある。次に画面にさわったとき（指・クリック・キー）に、再開する
   for (const ev of ['pointerdown', 'touchend', 'keydown']) {
-    window.addEventListener(
-      ev,
-      () => {
-        resumeAudioContext()
-        ensureWanted()
-      },
-      { passive: true, capture: true }
-    )
+    window.addEventListener(ev, onGesture, { passive: true, capture: true })
   }
 }
 
@@ -226,6 +264,39 @@ export function setSeMuted(muted: boolean) {
   notifyPrefs()
 }
 
+/**
+ * 音の仕組みを、作り直す。iPhone で、アプリから戻ったあと、音の仕組みが壊れて、何度再生しても鳴らないときの、最後の手段。
+ * 全部の音を捨てて、新しく作り、いま鳴らしたい館の音を、頭からフェードインで鳴らす（ミニゲームの音・効果音は sound.ts が、'audio-reset' を受けて作り直す）
+ */
+export function rebuildAudio() {
+  try {
+    Howler.unload()
+  } catch {
+    /* 捨てられなくても、作り直す */
+  }
+  treeswayLoop = birdLoop = bgmLoop = forestBgmLoop = null
+  knockSound = doorOpenSound1 = doorOpenSound2 = null
+  duckedHowls = []
+  initialized = false
+  initAudio()
+  window.dispatchEvent(new CustomEvent('audio-reset'))
+  const list: Howl[] = []
+  if (want.ambient) list.push(...([treeswayLoop, birdLoop].filter(Boolean) as Howl[]))
+  if (want.room && bgmLoop) list.push(bgmLoop)
+  if (want.forest && forestBgmLoop) list.push(forestBgmLoop)
+  if (duckCount > 0) {
+    // ミニゲームの間は、鳴らさず、閉じたときに鳴らす
+    duckedHowls = list
+    return
+  }
+  const target = (h: Howl) => (h === bgmLoop ? BASE_VOLUME.roomBgm : h === forestBgmLoop ? BASE_VOLUME.forestBgm : h === birdLoop ? BASE_VOLUME.bird : BASE_VOLUME.treesway)
+  list.forEach((h) => {
+    h.volume(0)
+    h.play()
+    h.fade(0, target(h) * bgmVolume, 800)
+  })
+}
+
 // 初期化
 export function initAudio() {
   if (initialized) return
@@ -289,6 +360,9 @@ export function initAudio() {
 
 // ランディングページの背景音を開始
 export function startAmbientLoop() {
+  want.ambient = true
+  want.room = false
+  want.forest = false
   // 館のBGMが鳴っているときは、止める（トップ画面に戻ったとき、環境音と館のBGMが、同時に鳴らないように）
   for (const h of [bgmLoop, forestBgmLoop]) {
     if (h && h.playing()) {
@@ -311,6 +385,7 @@ export function startAmbientLoop() {
 // ⚠️ Howler の fade(from, to, duration, id) の第4引数は完了コールバックではなく
 //   任意の sound id のため、フェード完了後の停止は setTimeout で行う
 export function stopAmbientLoop() {
+  want.ambient = false
   if (treeswayLoop && treeswayLoop.playing()) {
     treeswayLoop.fade(treeswayLoop.volume(), 0, 500)
     setTimeout(() => treeswayLoop?.stop(), 500)
@@ -347,6 +422,8 @@ export function playDoorOpen() {
 
 // BGM ループに切り替え（フェード）
 export function switchToRoomBGM() {
+  want.ambient = false
+  want.room = true
   // 環境音をフェードアウト
   if (treeswayLoop && treeswayLoop.playing()) {
     treeswayLoop.fade(treeswayLoop.volume(), 0, 500)
@@ -374,6 +451,7 @@ export function switchToRoomBGM() {
 
 // 会話パート用の森BGMを既存BGMに重ねて小さめに再生開始
 export function startForestBgmLayer() {
+  want.forest = true
   if (forestBgmLoop && !forestBgmLoop.playing()) {
     forestBgmLoop.volume(0)
     forestBgmLoop.play()
@@ -383,6 +461,7 @@ export function startForestBgmLayer() {
 
 // 森BGMレイヤーを停止
 export function stopForestBgmLayer() {
+  want.forest = false
   if (forestBgmLoop && forestBgmLoop.playing()) {
     forestBgmLoop.fade(forestBgmLoop.volume(), 0, 800)
     setTimeout(() => forestBgmLoop?.stop(), 800)
@@ -391,6 +470,7 @@ export function stopForestBgmLayer() {
 
 // すべての音を停止
 export function stopAllAudio() {
+  want.ambient = want.room = want.forest = false
   treeswayLoop?.stop()
   birdLoop?.stop()
   bgmLoop?.stop()
