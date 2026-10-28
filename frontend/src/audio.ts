@@ -17,6 +17,8 @@ Howler.autoSuspend = false
 
 // いま、鳴らしたい館の音（アプリから戻ったあと、音の仕組みを作り直すときに、同じ状態に戻すため）
 const want = { ambient: false, room: false, forest: false }
+// 確認用の記録（?audiodebug=1 のとき、画面の下に出す）
+let debugLog: (m: string) => void = () => undefined
 
 // 利用者が決めた音量（0〜1）。localStorageに保存する
 let bgmVolume = 1
@@ -92,6 +94,7 @@ if (typeof document !== 'undefined') {
     debugLines.unshift(`${new Date().toISOString().slice(14, 23)} ${m} [${c ? c.state + ' t=' + c.currentTime.toFixed(1) : 'noctx'}]`)
     debugLines.length = Math.min(debugLines.length, 8)
   }
+  debugLog = dlog
   if (debugOn) {
     const box = document.createElement('div')
     box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.8);color:#9f9;font:11px/1.4 monospace;padding:4px;pointer-events:none;white-space:pre-wrap'
@@ -151,20 +154,6 @@ if (typeof document !== 'undefined') {
   const onBack = () => {
     if (document.visibilityState === 'visible') onShow()
     else onHide()
-  }
-  // 画面にさわった、その場（同期）で、音の仕組みを起こす。await しない（ジェスチャが切れて、iPhone が拒否するため）
-  const unlockNow = () => {
-    const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
-    if (!ctx || ctx.state === 'closed') return
-    if (ctx.state !== 'running') void ctx.resume().catch(() => undefined)
-    try {
-      const src = ctx.createBufferSource()
-      src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
-      src.connect(ctx.destination)
-      src.start(0)
-    } catch {
-      /* 無音の再生が、できなくても続ける */
-    }
   }
   const onGesture = () => {
     dlog(`tap pending=${returnedPending} alive=${alive}`)
@@ -304,6 +293,9 @@ export function rebuildAudio() {
   initialized = false
   initAudio()
   window.dispatchEvent(new CustomEvent('audio-reset'))
+  // 作り直した新しい音の仕組みも、同じタップの中で、起こす（起こさないと、止まったまま）
+  unlockNow()
+  debugLog('rebuilt')
   const list: Howl[] = []
   if (want.ambient) list.push(...([treeswayLoop, birdLoop].filter(Boolean) as Howl[]))
   if (want.room && bgmLoop) list.push(bgmLoop)
@@ -321,6 +313,20 @@ export function rebuildAudio() {
   })
 }
 
+// 画面にさわった、その場（同期）で、いまの音の仕組みを起こす。await しない（ジェスチャが切れて、iPhone が拒否するため）
+function unlockNow() {
+  const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
+  if (!ctx || ctx.state === 'closed') return
+  if (ctx.state !== 'running') void ctx.resume().catch(() => undefined)
+  try {
+    const src = ctx.createBufferSource()
+    src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
+    src.connect(ctx.destination)
+    src.start(0)
+  } catch {
+    /* 無音の再生が、できなくても続ける */
+  }
+}
 // 初期化
 export function initAudio() {
   if (initialized) return
