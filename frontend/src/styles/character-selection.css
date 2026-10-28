@@ -526,8 +526,12 @@
 
 /* パソコン（幅が広い画面）：占い師の枠は、元の大きさ */
 @media (min-width: 641px) {
+  /* 上の占い師の枠は、ブラウザの高さの半分（50%）を使う。下のパネルは、そのぶん、少し低くする */
   .character-selection {
-    --carousel-h: clamp(260px, 38vh, 470px);
+    --carousel-h: clamp(300px, 50vh, 640px);
+  }
+  .selection-panel {
+    height: clamp(260px, 38vh, 400px);
   }
   .carousel-container {
     flex: 0 0 auto;
