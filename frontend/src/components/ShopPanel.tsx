@@ -83,7 +83,7 @@ export function ShopPanel({ onClose, onBalance, onChanged }: { onClose: () => vo
                 </button>
               ) : (
                 <button type="button" className="shop-buy" disabled={busy || (snap ? snap.balance < it.price : true)} onClick={() => buy(it)}>
-                  石 {it.price}
+                  石 <span className="stone-minus">−{it.price}</span>
                 </button>
               )}
             </li>

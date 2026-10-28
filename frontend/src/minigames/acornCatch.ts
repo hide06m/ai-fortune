@@ -3,6 +3,7 @@
  * 赤いキノコ（毒）に当たると、ハートが減る。時間内に、目標の数を集めたらクリア。
  */
 
+import { ACORN_CATCH_HOWTO } from '../components/MiniGameHowTo';
 import { dFull, boxes, opaqueBox, sizeAdj, drawLoopPlain } from './canvasUtil';
 import { playSe, preloadSe } from '../sound';
 import type { Difficulty, GameApi, Images, InputState, MiniGameSpec } from './MiniGameShell';
@@ -306,6 +307,7 @@ export const acornCatchSpec: MiniGameSpec<AcornState> = {
   lives: { easy: 4, normal: 3, hard: 2, extra: 1 },
   hint: '落ちてくる どんぐりを うけとめよう。キノコは さけてね',
   pcHint: 'ゆびを おいた方へ うごく ／ ← → キーでも うごく',
+  howTo: ACORN_CATCH_HOWTO,
   init,
   update,
   draw: (ctx, s, imgs, info) => draw(ctx, s, imgs, info),

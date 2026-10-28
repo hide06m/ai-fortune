@@ -156,10 +156,10 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                     <span className="daily-got">受け取り済み</span>
                   ) : m.done ? (
                     <button type="button" className="daily-btn" disabled={busy} onClick={() => claim(m.id)}>
-                      石 +{m.reward}
+                      石 <span className="stone-plus">＋{m.reward}</span>
                     </button>
                   ) : (
-                    <span className="daily-todo">石 +{m.reward}</span>
+                    <span className="daily-todo">石 <span className="stone-plus">＋{m.reward}</span></span>
                   )}
                 </li>
               ))}
@@ -172,10 +172,10 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                   <span className="daily-got">受け取り済み</span>
                 ) : snap.allBonus.ready ? (
                   <button type="button" className="daily-btn" disabled={busy} onClick={() => claim('all')}>
-                    石 +{snap.allBonus.reward}
+                    石 <span className="stone-plus">＋{snap.allBonus.reward}</span>
                   </button>
                 ) : (
-                  <span className="daily-todo">石 +{snap.allBonus.reward}</span>
+                  <span className="daily-todo">石 <span className="stone-plus">＋{snap.allBonus.reward}</span></span>
                 )}
               </li>
             </ul>
@@ -200,12 +200,12 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                     <span className="daily-got">受け取り済み</span>
                   ) : m.done ? (
                     <button type="button" className="daily-btn" disabled={busy} onClick={() => claimLong(m.id)}>
-                      石 +{m.reward.stones}
+                      石 <span className="stone-plus">＋{m.reward.stones}</span>
                       {m.reward.shards ? `・かけら +${m.reward.shards}` : ''}
                     </button>
                   ) : (
                     <span className="daily-todo">
-                      石 +{m.reward.stones}
+                      石 <span className="stone-plus">＋{m.reward.stones}</span>
                       {m.reward.shards ? `・かけら +${m.reward.shards}` : ''}
                     </span>
                   )}
@@ -232,10 +232,10 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
                     <span className="daily-got">受け取り済み</span>
                   ) : m.done ? (
                     <button type="button" className="daily-btn" disabled={busy} onClick={() => claimWeeklyMission(m.id)}>
-                      石 +{m.reward}
+                      石 <span className="stone-plus">＋{m.reward}</span>
                     </button>
                   ) : (
-                    <span className="daily-todo">石 +{m.reward}</span>
+                    <span className="daily-todo">石 <span className="stone-plus">＋{m.reward}</span></span>
                   )}
                 </li>
               ))}

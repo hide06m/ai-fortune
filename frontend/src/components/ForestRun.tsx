@@ -3,6 +3,7 @@
  * 画面は、縦長 9:16 の1つの遊び場（540×960）。スマホは画面いっぱい、PCは中央に縦長で表示する
  */
 
+import { MiniGameHowTo, FOREST_RUN_HOWTO } from './MiniGameHowTo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playSe, preloadSe, useMainBgmDuck, useMiniGameBgm } from '../sound';
 import { RES, boxes, dFull, dI, drawLoopPlain, heartPath, opaqueBox, sizeAdj } from '../minigames/canvasUtil';
@@ -300,6 +301,10 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
   const imagesRef = useRef<Images | null>(null);
   const phaseRef = useRef<Phase>('ready');
   const [phase, setPhase] = useState<Phase>('ready');
+  // スタートの前に、遊び方を、絵つきの一枚で見せる
+  const [showHowTo, setShowHowTo] = useState(true);
+  const howToRef = useRef(true);
+  howToRef.current = showHowTo;
   const [loaded, setLoaded] = useState(false);
   const [lives, setLives] = useState(DIFFS[loadDifficulty()].lives);
   const [difficulty, setDifficulty] = useState<Difficulty>(loadDifficulty);
@@ -398,6 +403,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
   const jump = useCallback(() => {
     const g = game.current;
     if (phaseRef.current === 'ready') {
+      if (howToRef.current) return; // 遊び方を見ている間は、始めない
       startCountdown();
       return;
     }
@@ -803,11 +809,14 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
 
         {!loaded && <div className="run-overlay">読み込んでいます…</div>}
 
-        {loaded && phase === 'ready' && (
+        {loaded && phase === 'ready' && showHowTo && <MiniGameHowTo content={FOREST_RUN_HOWTO} onClose={() => setShowHowTo(false)} />}
+
+        {loaded && phase === 'ready' && !showHowTo && (
           <div className="run-overlay run-overlay-ready">
             <div className="run-ready-top">
             <p>タップでジャンプ</p>
             <small>PC：スペースキー／難易度は ←→↑↓</small>
+            <button type="button" className="run-howto-again" onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowHowTo(true)}>遊び方を見る</button>
             {jobId && <small className="run-reward-hint">クリアでルーンストーン（1日1回・ふつう 1／むずかしい 2／エクストラ 5）</small>}
             <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
               {DIFF_ORDER.map((d) => (

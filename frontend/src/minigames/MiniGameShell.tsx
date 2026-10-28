@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { claimMinigameReward, type RewardResult } from '../api/minigame';
 import { isJobWaiting, subscribeWaiting } from '../api/asyncJob';
 import { StoneGift } from '../components/StoneGift';
+import { MiniGameHowTo, type HowToContent } from '../components/MiniGameHowTo';
 import { playSe, preloadSe, useMainBgmDuck, useMiniGameBgm } from '../sound';
 import { RES, dFull, heartPath, loadImageList, loadMusubiScale } from './canvasUtil';
 
@@ -59,6 +60,8 @@ export interface MiniGameSpec<S> {
   /** スタート前に出す、操作の案内 */
   hint: string;
   pcHint: string;
+  /** スタート前に見せる、絵つきの遊び方 */
+  howTo?: HowToContent;
   init(diff: Difficulty, images: Images): S;
   update(s: S, dt: number, api: GameApi, input: InputState, diff: Difficulty, images: Images): void;
   draw(ctx: CanvasRenderingContext2D, s: S, images: Images, info: { phase: Phase; time: number; lives: number; lostFlash: number }): void;
@@ -89,6 +92,10 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
   const stateRef = useRef<S | null>(null);
   const phaseRef = useRef<Phase>('ready');
   const [phase, setPhase] = useState<Phase>('ready');
+  // スタートの前に、遊び方を、絵つきの一枚で見せる
+  const [showHowTo, setShowHowTo] = useState(true);
+  const howToRef = useRef(true);
+  howToRef.current = showHowTo && !!spec.howTo;
   const [loaded, setLoaded] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>(() => loadDifficulty(spec.storageKey));
   const difficultyRef = useRef<Difficulty>(difficulty);
@@ -215,7 +222,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
       if (e.code === 'Space') {
         e.preventDefault();
         if (e.repeat) return;
-        if (phaseRef.current === 'ready') startCountdown();
+        if (phaseRef.current === 'ready' && !howToRef.current) startCountdown();
         else if (phaseRef.current === 'clear' || phaseRef.current === 'miss') restart();
       } else if (e.code === 'Escape') {
         onClose();
@@ -403,11 +410,18 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
 
         {!loaded && <div className="run-overlay">読み込んでいます…</div>}
 
-        {loaded && phase === 'ready' && (
+        {loaded && phase === 'ready' && showHowTo && spec.howTo && <MiniGameHowTo content={spec.howTo} onClose={() => setShowHowTo(false)} />}
+
+        {loaded && phase === 'ready' && !(showHowTo && spec.howTo) && (
           <div className="run-overlay run-overlay-ready">
             <div className="run-ready-top">
               <p>{spec.hint}</p>
               <small>{spec.pcHint}</small>
+              {spec.howTo && (
+                <button type="button" className="run-howto-again" onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowHowTo(true)}>
+                  遊び方を見る
+                </button>
+              )}
               {jobId && <small className="run-reward-hint">クリアで、ルーンストーン（1日1回・ふつう 1／むずかしい 2／エクストラ 5）</small>}
               <div className="run-difficulty" onPointerDown={(e) => e.stopPropagation()}>
                 {DIFF_ORDER.map((d) => (

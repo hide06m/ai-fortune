@@ -250,6 +250,13 @@ export function initAudio() {
 
 // ランディングページの背景音を開始
 export function startAmbientLoop() {
+  // 館のBGMが鳴っているときは、止める（トップ画面に戻ったとき、環境音と館のBGMが、同時に鳴らないように）
+  for (const h of [bgmLoop, forestBgmLoop]) {
+    if (h && h.playing()) {
+      h.fade(h.volume(), 0, 500)
+      setTimeout(() => h.stop(), 500)
+    }
+  }
   // フェードアウトで音量が0になったまま止まっていることがあるので、再生の前に、利用者の音量へ戻す
   if (treeswayLoop && !treeswayLoop.playing()) {
     treeswayLoop.volume(BASE_VOLUME.treesway * bgmVolume)
@@ -311,8 +318,13 @@ export function switchToRoomBGM() {
     setTimeout(() => birdLoop?.stop(), 500)
   }
 
-  // BGM をフェードイン
+  // BGM をフェードイン（ミニゲームの間は、戻るときに、鳴らす）
   setTimeout(() => {
+    // ミニゲームの間は、鳴らさず、閉じたときに鳴らす
+    if (duckCount > 0 && bgmLoop && !duckedHowls.includes(bgmLoop)) {
+      duckedHowls.push(bgmLoop)
+      return
+    }
     if (bgmLoop && !bgmLoop.playing()) {
       bgmLoop.volume(0)
       bgmLoop.play()
