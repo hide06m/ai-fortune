@@ -160,12 +160,17 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
             <p>{line.replace(/。/g, '　').trim()}</p>
           </div>
         )}
-        <div className="home-menu">
+        <div className="home-menu home-menu-main">
+          <button type="button" className="home-btn home-btn-daily" onClick={() => setPanel('daily')}>
+            <span>
+              🌟 運勢・
+              <br />
+              ミッション
+            </span>
+            {dailyBadge && <i className="home-badge" aria-label="新しいお知らせ" />}
+          </button>
           <button type="button" className="home-btn home-btn-main" onClick={onPlay}>
             🔮 占う
-          </button>
-          <button type="button" className="home-btn home-btn-daily" onClick={() => setPanel('daily')}>
-            🌟 運勢・ミッション{dailyBadge && <i className="home-badge" aria-label="新しいお知らせ" />}
           </button>
           <button type="button" className="home-btn" onClick={() => setPanel('menu')}>
             ☰ メニュー{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}

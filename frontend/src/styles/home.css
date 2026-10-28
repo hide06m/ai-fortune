@@ -144,7 +144,6 @@
 /* 運勢・ミッション */
 .home-btn-daily { position: relative; font-weight: 700; }
 /* 占うは1行ぜんぶ。運勢・ミッションとメニューは横ならび */
-.home-btn-main { grid-column: 1 / -1; }
 .home-btn-quiet { grid-column: 1 / -1; }
 .home-badge {
   position: absolute;
@@ -802,3 +801,8 @@ button.home-stone-chip:active { transform: translateY(1px); }
 .run-canvas {
   touch-action: none;
 }
+
+/* ホームの主なボタン：運勢・ミッション／占う（まんなか）／メニューの、3つ並び。どれも、上下の中央ぞろえ */
+.home-menu.home-menu-main { grid-template-columns: repeat(3, 1fr); }
+.home-menu.home-menu-main .home-btn { justify-content: center; align-items: center; text-align: center; }
+.home-menu.home-menu-main .home-btn-quiet { grid-column: 1 / -1; }

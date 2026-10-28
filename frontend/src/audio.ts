@@ -78,21 +78,35 @@ if (typeof document !== 'undefined') {
   // ほかのタブ・アプリに移ったあいだは、鳴っていた音を一時停止する（Safari は、タブを移っても、鳴らし続ける）。戻ったら、同じ音を、続きから鳴らす
   // （ミュートではなく、停止と再生にする。スマホで、アプリを切りかえたあと、音が戻らなくなるのを防ぐため）
   let pausedByHide: Howl[] = []
+  // 戻ったあとに、鳴らしたい音。鳴っていなければ、画面にさわったときなどに、何度でも鳴らし直す（スマホは、戻った直後の再生を、認めないことがある）
+  let wanted: Howl[] = []
+  const ensureWanted = () => {
+    wanted.forEach((h) => {
+      if (!h.playing()) h.play()
+    })
+    // 鳴り始めたものは、もう追わない（あとで、画面の切りかえで止めた音を、鳴らし直さないように）
+    wanted = wanted.filter((h) => !h.playing())
+  }
   const onHide = () => {
     if (pausedByHide.length) return
     const all = (Howler as unknown as { _howls?: Howl[] })._howls ?? []
     pausedByHide = all.filter((h) => h.playing())
+    wanted = []
     pausedByHide.forEach((h) => h.pause())
   }
   const onShow = () => {
     resumeAudioContext()
-    const list = pausedByHide
-    pausedByHide = []
+    if (pausedByHide.length) {
+      wanted = pausedByHide
+      pausedByHide = []
+    }
     // 音の仕組みが再開してから、鳴らす（再開前に play すると、鳴らないことがある）
-    const go = () => list.forEach((h) => h.play())
     const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
-    if (ctx && ctx.state !== 'running') ctx.resume().then(go, go)
-    else go()
+    if (ctx && ctx.state !== 'running') ctx.resume().then(ensureWanted, ensureWanted)
+    else ensureWanted()
+    window.setTimeout(ensureWanted, 600)
+    window.setTimeout(ensureWanted, 1800)
+    window.setTimeout(() => (wanted = []), 30000)
   }
   const onBack = () => {
     if (document.visibilityState === 'visible') onShow()
@@ -104,7 +118,14 @@ if (typeof document !== 'undefined') {
   window.addEventListener('focus', resumeAudioContext)
   // 戻ってすぐは、ブラウザが、再開を認めないことがある。次に画面にさわったとき（指・クリック・キー）に、再開する
   for (const ev of ['pointerdown', 'touchend', 'keydown']) {
-    window.addEventListener(ev, resumeAudioContext, { passive: true, capture: true })
+    window.addEventListener(
+      ev,
+      () => {
+        resumeAudioContext()
+        ensureWanted()
+      },
+      { passive: true, capture: true }
+    )
   }
 }
 

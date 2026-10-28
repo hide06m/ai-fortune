@@ -310,6 +310,14 @@ function AppContent() {
   const [birthTime, setBirthTime] = useState('')
   const [birthPlace, setBirthPlace] = useState('')
   const [concern, setConcern] = useState('')
+  // 「はっきり言ってほしい」（試験的な機能。ナツメの診断だけ）
+  const [strictTone, setStrictTone] = useState(() => {
+    try {
+      return localStorage.getItem('ff_strict_tone') === '1'
+    } catch {
+      return false
+    }
+  })
   // ツキの入力欄：ナツメで答えた内容を、入力済みにしておく（直せる）
   useEffect(() => {
     if (screen !== 'form' || selectedCharacterId !== 2 || birthDate) return
@@ -1001,7 +1009,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         birthPlace: values?.birthPlace ?? birthPlace,
         concern: values?.concern ?? concern,
         characterId: selectedCharacterId,
-        ...(values?.tone === 'strict' && selectedCharacterId === 1 ? { tone: 'strict' as const } : {})
+        ...((values ? values.tone === 'strict' : strictTone) && selectedCharacterId === 1 && mode !== 'guest' ? { tone: 'strict' as const } : {})
       }
 
       // ツキの入力で使うため、ナツメで答えた生年月日・出生時刻・出生地を、この端末に覚えておく
@@ -1687,6 +1695,24 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
               rows={4}
             />
           </div>
+
+          {selectedCharacterId === 1 && mode !== 'guest' && (
+            <label className="form-strict">
+              <input
+                type="checkbox"
+                checked={strictTone}
+                onChange={(e) => {
+                  setStrictTone(e.target.checked)
+                  try {
+                    localStorage.setItem('ff_strict_tone', e.target.checked ? '1' : '0')
+                  } catch {
+                    /* 保存できなくても続ける */
+                  }
+                }}
+              />
+              <span>はっきり言ってほしい（課題や弱みを遠慮なく指摘）</span>
+            </label>
+          )}
 
           {error && <div className="error">{error}</div>}
 

@@ -1729,7 +1729,8 @@ h1 {
     position: fixed;
     left: 12px;
     right: 12px;
-    bottom: 14px;
+    /* 下の利用規約などのリンクの上に出す（重ならないように） */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 44px);
     justify-content: center;
     margin: 0;
   }
@@ -1923,11 +1924,6 @@ html {
   .landing-user-email {
     display: none;
   }
-  .landing-header-actions {
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
   .landing-history-button,
   .landing-logout-button {
     padding: 6px 10px;
@@ -1942,3 +1938,7 @@ html {
     bottom: 48px;
   }
 }
+
+/* 「はっきり言ってほしい」の切り替え（フォーム画面・試験的） */
+.form-strict { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-size: 0.9rem; color: #fff; cursor: pointer; }
+.form-strict input { width: 18px; height: 18px; flex: none; }

@@ -461,18 +461,22 @@
 /* スマホ：上の占い師の枠が画面の上に切れないように、上から順に詰める。下のパネルは、情報は減らさず、余白・文字・ボタンを小さくして、コンパクトにする */
 @media (max-width: 640px) {
   .character-selection {
-    --carousel-h: clamp(210px, 32vh, 330px);
+    --carousel-h: clamp(230px, 40vh, 420px);
     justify-content: flex-start;
     gap: 0.4rem;
     padding: calc(env(safe-area-inset-top, 0px) + 0.6rem) 0.6rem 0.5rem;
   }
   @supports (height: 100dvh) {
     .character-selection {
-      --carousel-h: clamp(210px, 32dvh, 330px);
+      --carousel-h: clamp(230px, 40dvh, 420px);
     }
   }
+  /* 占い師の枠は、あまった高さの中央に置く（下に、むだな空きができないように） */
   .carousel-container {
-    margin-top: calc(var(--carousel-h) * 0.08);
+    flex: 1 1 auto;
+    height: auto;
+    min-height: calc(var(--carousel-h) * 1.1);
+    padding-top: calc(var(--carousel-h) * 0.04);
   }
   .selection-panel {
     height: auto;
