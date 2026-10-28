@@ -461,14 +461,14 @@
 /* スマホ：上の占い師の枠が画面の上に切れないように、上から順に詰める。下のパネルは、情報は減らさず、余白・文字・ボタンを小さくして、コンパクトにする */
 @media (max-width: 640px) {
   .character-selection {
-    --carousel-h: clamp(230px, 40vh, 420px);
+    --carousel-h: clamp(200px, 34vh, 360px);
     justify-content: flex-start;
     gap: 0.4rem;
     padding: calc(env(safe-area-inset-top, 0px) + 0.6rem) 0.6rem 0.5rem;
   }
   @supports (height: 100dvh) {
     .character-selection {
-      --carousel-h: clamp(230px, 40dvh, 420px);
+      --carousel-h: clamp(200px, 34dvh, 360px);
     }
   }
   /* 占い師の枠は、あまった高さの中央に置く（下に、むだな空きができないように） */
@@ -478,15 +478,16 @@
     min-height: calc(var(--carousel-h) * 1.1);
     padding-top: calc(var(--carousel-h) * 0.04);
   }
+  /* 占い師を切りかえても、枠の大きさは変えない（いちばん情報の多い占い師に合わせて、残りの高さいっぱいに固定。あふれたら中で動かせる） */
   .selection-panel {
-    height: auto;
-    max-height: calc(100vh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
+    height: calc(100vh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
+    max-height: none;
     padding: 0.6rem 0.8rem;
     border-radius: 14px;
   }
   @supports (height: 100dvh) {
     .selection-panel {
-      max-height: calc(100dvh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
+      height: calc(100dvh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
     }
   }
   .panel-content h2 {

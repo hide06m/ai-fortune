@@ -806,3 +806,12 @@ button.home-stone-chip:active { transform: translateY(1px); }
 .home-menu.home-menu-main { grid-template-columns: repeat(3, 1fr); }
 .home-menu.home-menu-main .home-btn { justify-content: center; align-items: center; text-align: center; }
 .home-menu.home-menu-main .home-btn-quiet { grid-column: 1 / -1; }
+
+/* 3つのボタンは、同じ大きさ・同じ高さで、横にそろえる（占うも、ほかの2つと同じサイズ） */
+.home-menu.home-menu-main { align-items: stretch; }
+.home-menu.home-menu-main .home-btn:not(.home-btn-quiet) {
+  min-height: 3.8rem;
+  padding: 0.5rem 0.2rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}

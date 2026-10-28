@@ -33,6 +33,7 @@ import {
   isSeMuted,
   setBgmMuted,
   setSeMuted,
+  resumeAudio,
   getBgmVolume,
   getSeVolume,
   setBgmVolume,
@@ -310,6 +311,8 @@ function AppContent() {
   const [birthTime, setBirthTime] = useState('')
   const [birthPlace, setBirthPlace] = useState('')
   const [concern, setConcern] = useState('')
+  // アクセスしたとき、はじめに、音のオン・オフを選んでもらう
+  const [soundGate, setSoundGate] = useState(true)
   // 「はっきり言ってほしい」（試験的な機能。ナツメの診断だけ）
   const [strictTone, setStrictTone] = useState(() => {
     try {
@@ -1218,6 +1221,36 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       }
     }
   }, [authenticated, screen, reading])
+
+  // ========== 入口：音が鳴ることの案内と、音のオン・オフの選択（このタップで、音も鳴らせるようになる） ==========
+  if (soundGate && screen === 'landing') {
+    const choose = (on: boolean) => {
+      setBgmMuted(!on)
+      setSeMuted(!on)
+      setSoundGate(false)
+      if (on) {
+        resumeAudio()
+        startAmbientLoop()
+      }
+    }
+    return (
+      <div className="sound-gate">
+        <img src="/assets/rogo001.png" alt="占いの森" className="sound-gate-logo" />
+        <p className="sound-gate-text">
+          このゲームは音が鳴ります
+          <br />
+          BGMと効果音があります
+        </p>
+        <button type="button" className="sound-gate-btn is-on" onClick={() => choose(true)}>
+          🔊 音を出して始める
+        </button>
+        <button type="button" className="sound-gate-btn" onClick={() => choose(false)}>
+          🔇 音なしで始める
+        </button>
+        <small className="sound-gate-note">音の設定は、あとから右上のボタンで変えられます</small>
+      </div>
+    )
+  }
 
   // ========== ランディングページ（森のイメージ） ==========
   if (screen === 'landing') {
