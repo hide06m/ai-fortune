@@ -382,6 +382,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
     <div className="run-backdrop">
       <div
         className="run-stage"
+        onContextMenu={(e) => e.preventDefault()}
         ref={stageRef}
         onClickCapture={(e) => {
           const b = (e.target as HTMLElement).closest('button');

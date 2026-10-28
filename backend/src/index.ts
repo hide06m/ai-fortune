@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'production' && process.env.DEV_LOGIN) {
 
 import { calculateBaZi, calculateLifePathNumber, calculateKyuseiSeisun, calculateWesternZodiac } from './fortune/index.js'
 import { generateFortuneAnalysis } from './llm/client.js'
-import { buildLLMPrompt } from './llm/prompt.js'
+import { buildLLMPrompt, STRICT_TONE_BLOCK } from './llm/prompt.js'
 import { buildWesternAstrologyPrompt } from './llm/westernAstrologyPrompt.js'
 import { fortuneCache } from './llm/cache.js'
 import { dailyLimiter } from './middleware/rateLimit.js'
@@ -385,7 +385,9 @@ app.post('/api/fortune', asyncJob((req) => (req.body?.characterId === 2 ? 'fortu
     const baziKey = `${baZi.yearPillar.stem}${baZi.yearPillar.branch}-${baZi.monthPillar.stem}${baZi.monthPillar.branch}-${baZi.dayPillar.stem}${baZi.dayPillar.branch}-${baZi.timePillar.stem}${baZi.timePillar.branch}`
     // 占術方式が違うと同じ生年月日でも診断内容が変わるため、キャッシュ／重複判定のキーを方式ごとに分ける
     // （四柱推命の baziKey 自体はツキの場合でも計算しているが、あくまで内部的なキャッシュキーの一部として流用しているだけ）
-    const diagnosisKey = isAstrology ? `astro:${baziKey}` : baziKey
+    // 「はっきり言ってほしい」（課題・弱みを遠慮なく指摘）の指定。通常の診断とは、別のキャッシュ・重複判定にする
+    const strictTone = req.body?.tone === 'strict'
+    const diagnosisKey = (isAstrology ? `astro:${baziKey}` : baziKey) + (strictTone ? ':strict' : '')
 
     // 重複診断のブロック（ログイン済み・悩み未入力の場合のみ）：
     // 過去の診断結果はいつでも見返せる仕組みのため、同じ命式・悩みなしで再度診断しようとした場合は
@@ -501,9 +503,10 @@ app.post('/api/fortune', asyncJob((req) => (req.body?.characterId === 2 ? 'fortu
     let llmSucceeded = false
 
     if (process.env.GEMINI_API_KEY) {
-      const prompt = isAstrology && westernZodiac
+      const basePrompt = isAstrology && westernZodiac
         ? buildWesternAstrologyPrompt(westernZodiac, concern, birthPlace)
         : buildLLMPrompt(baZi, numerology, kyuseiSeisun, concern, birthPlace)
+      const prompt = strictTone ? basePrompt + STRICT_TONE_BLOCK : basePrompt
       try {
         const llmResult = await generateFortuneAnalysis(prompt, concern)
         analysis = llmResult.analysis

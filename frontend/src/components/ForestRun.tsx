@@ -799,6 +799,7 @@ export function ForestRun({ onClose, jobId = null, onSwitchGame }: ForestRunProp
     <div className="run-backdrop">
       <div
         className="run-stage"
+        onContextMenu={(e) => e.preventDefault()}
         onClickCapture={(e) => {
           const b = (e.target as HTMLElement).closest('button');
           if (b && !b.hasAttribute('data-nosound')) playSe(b.closest('.run-difficulty') ? 'ui_difficulty' : 'ui_tap');

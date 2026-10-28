@@ -17,6 +17,8 @@ export interface CounselingValues {
   birthTime: string;
   birthPlace: string;
   concern: string;
+  /** 「はっきり言ってほしい」を選んだとき（課題・弱みを、遠慮なく指摘してもらう） */
+  tone?: 'strict';
   /** mode='name'（姓名判断）のときだけ */
   surname?: string;
   givenName?: string;
@@ -43,6 +45,8 @@ interface CounselingSceneProps {
   birthDateQuestion?: string;
   doneLine?: string;
   onCancel?: () => void;
+  /** 「はっきり言ってほしい」の切り替えを出す（試験的な機能） */
+  allowStrictTone?: boolean;
 }
 
 type StepId = 'name' | 'birthDate' | 'birthTime' | 'birthPlace' | 'concern' | 'done';
@@ -130,7 +134,14 @@ export function BirthDateSelects({ value, onChange }: { value: string; onChange:
   );
 }
 
-export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, birthDateQuestion, doneLine, onCancel }: CounselingSceneProps) {
+export function CounselingScene({ background, characterImage, speakerName, busy, error, onComplete, mode = 'full', concernQuestion, birthDateQuestion, doneLine, onCancel, allowStrictTone = false }: CounselingSceneProps) {
+  const [strict, setStrict] = useState(() => {
+    try {
+      return localStorage.getItem('ff_strict_tone') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [step, setStep] = useState<StepId>(mode === 'concern' ? 'concern' : mode === 'name' ? 'name' : 'birthDate');
   const [surname, setSurname] = useState('');
   const [givenName, setGivenName] = useState('');
@@ -168,7 +179,12 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
     const free = concernText.trim();
     const concern = [parts.length ? parts.join('、') : '', free].filter(Boolean).join('。');
     setStep('done');
-    onComplete({ birthDate, birthTime, birthPlace: birthPlace.trim(), concern, surname: surname.trim(), givenName: givenName.trim() });
+    try {
+      localStorage.setItem('ff_strict_tone', strict ? '1' : '0');
+    } catch {
+      /* 保存できなくても続ける */
+    }
+    onComplete({ birthDate, birthTime, birthPlace: birthPlace.trim(), concern, surname: surname.trim(), givenName: givenName.trim(), ...(allowStrictTone && strict ? { tone: 'strict' as const } : {}) });
   };
 
   const toggleConcern = (c: string) => {
@@ -338,6 +354,12 @@ export function CounselingScene({ background, characterImage, speakerName, busy,
                     value={concernText}
                     onChange={(e) => setConcernText(e.target.value)}
                   />
+                </label>
+              )}
+              {allowStrictTone && (
+                <label className="counsel-strict">
+                  <input type="checkbox" checked={strict} onChange={(e) => setStrict(e.target.checked)} />
+                  <span>はっきり言ってほしい（課題や弱みを遠慮なく指摘）</span>
                 </label>
               )}
               <div className="counsel-actions">

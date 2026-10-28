@@ -164,8 +164,8 @@ body {
   position: absolute;
   top: -10px;
   /* ロゴの中心を、大木のドアの中心に合わせる（ドアは背景画像の横 51.83% の位置。背景の拡大に合わせて、ずらす量も変わる） */
-  left: calc(50% + 0.0183 * max(100vw, calc(100vh * 2730 / 1536)));
-  left: calc(50% + 0.0183 * max(100cqw, calc(100cqh * 2730 / 1536)));
+  --stage-w: max(100cqw, calc(100cqh * 2730 / 1536));
+  left: calc(clamp(calc(100cqw - var(--stage-w)), calc(50cqw - var(--stage-w) * 0.5183), 0px) + var(--stage-w) * 0.5183);
   transform: translateX(-50%);
   text-align: center;
   color: white;
@@ -1902,10 +1902,41 @@ html {
     background-attachment: scroll;
   }
   .vn-character-bust-wrap {
-    --bust-w: min(40vw, 75vh);
+    --bust-w: min(48vw, 75vh);
   }
   .vn-dialogue-box {
     overflow-y: hidden;
     overscroll-behavior: contain;
+  }
+}
+
+/* スマホ：トップ画面のロゴを大きく（木の中央に合わせる）。ヘッダーのボタンは小さく・メールは出さず、下のリンクと重ならないようにする */
+@media (max-width: 640px) {
+  .landing-title {
+    --glow-w: min(80vw, 420px);
+  }
+  .landing-header {
+    padding: 10px 64px 10px 10px;
+  }
+  .landing-user-email {
+    display: none;
+  }
+  .landing-header-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .landing-history-button,
+  .landing-logout-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .legal-links {
+    gap: 12px;
+    font-size: 0.72rem;
+    bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .landing-guest {
+    bottom: 48px;
   }
 }

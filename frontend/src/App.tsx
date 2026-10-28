@@ -1000,7 +1000,8 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         birthTime: values?.birthTime ?? birthTime,
         birthPlace: values?.birthPlace ?? birthPlace,
         concern: values?.concern ?? concern,
-        characterId: selectedCharacterId
+        characterId: selectedCharacterId,
+        ...(values?.tone === 'strict' && selectedCharacterId === 1 ? { tone: 'strict' as const } : {})
       }
 
       // ツキの入力で使うため、ナツメで答えた生年月日・出生時刻・出生地を、この端末に覚えておく
@@ -1584,6 +1585,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
       <>
         {loading && <HamsterLoading noMiniGame={tutorialSegment === 'meeting'} message={loadingMessage} />}
         <CounselingScene
+          allowStrictTone={mode !== 'guest' && selectedCharacterId === 1}
           background={mode === 'guest' ? '/assets/index001.jpg' : '/assets/room001.jpg'}
           characterImage={mode === 'guest' ? '/assets/characters/0-musubi/ham003.webp' : '/assets/characters/0-musubi/ham002.webp'}
           speakerName={mode === 'guest' ? '???' : 'ムスビ'}

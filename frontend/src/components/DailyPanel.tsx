@@ -57,8 +57,26 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
   };
 
   const claim = async (id: string) => {
+    // 押した瞬間に「受け取り済み」と石の数を見せる（通信の結果を待たない）。失敗したときは、元に戻す
+    const before = snap;
+    if (before) {
+      const reward = id === 'all' ? before.allBonus.reward : (before.missions.find((m) => m.id === id)?.reward ?? 0);
+      const next: DailySnapshot = {
+        ...before,
+        balance: before.balance + reward,
+        missions: before.missions.map((m) => (m.id === id ? { ...m, claimed: true } : m)),
+        allBonus: id === 'all' ? { ...before.allBonus, claimed: true } : before.allBonus,
+      };
+      setSnap(next);
+      onBalance(next.balance);
+    }
     setBusy(true);
-    apply(await claimMission(id));
+    const result = await claimMission(id);
+    if (!result.success && before) {
+      setSnap(before);
+      onBalance(before.balance);
+    }
+    apply(result);
     setBusy(false);
   };
 
@@ -72,22 +90,27 @@ export function DailyPanel({ onClose, onBalance, onSnapshot }: DailyPanelProps) 
       .then((l) => l.success && setLong(l))
       .catch(() => undefined);
   }, []);
+  // 押した瞬間に「受け取り済み」と見せる（通信の結果を待たない）。失敗したときは元に戻す
   const claimLong = async (id: string) => {
+    const before = long;
+    if (before) setLong({ ...before, missions: before.missions.map((m) => (m.id === id ? { ...m, claimed: true } : m)) });
     setBusy(true);
     const l = await claimLongMission(id);
     if (l.success) {
       setLong(l);
       onBalance(l.balance);
-    }
+    } else if (before) setLong(before);
     setBusy(false);
   };
   const claimWeeklyMission = async (id: string) => {
+    const before = weekly;
+    if (before) setWeekly({ ...before, missions: before.missions.map((m) => (m.id === id ? { ...m, claimed: true } : m)) });
     setBusy(true);
     const w = await claimWeekly(id);
     if (w.success) {
       setWeekly(w);
       onBalance(w.balance);
-    }
+    } else if (before) setWeekly(before);
     setBusy(false);
   };
 

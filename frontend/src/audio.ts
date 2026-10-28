@@ -75,14 +75,32 @@ function resumeAudioContext() {
 }
 if (typeof document !== 'undefined') {
   if (import.meta.env.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
+  // ほかのタブ・アプリに移ったあいだは、鳴っていた音を一時停止する（Safari は、タブを移っても、鳴らし続ける）。戻ったら、同じ音を、続きから鳴らす
+  // （ミュートではなく、停止と再生にする。スマホで、アプリを切りかえたあと、音が戻らなくなるのを防ぐため）
+  let pausedByHide: Howl[] = []
+  const onHide = () => {
+    if (pausedByHide.length) return
+    const all = (Howler as unknown as { _howls?: Howl[] })._howls ?? []
+    pausedByHide = all.filter((h) => h.playing())
+    pausedByHide.forEach((h) => h.pause())
+  }
+  const onShow = () => {
+    resumeAudioContext()
+    const list = pausedByHide
+    pausedByHide = []
+    // 音の仕組みが再開してから、鳴らす（再開前に play すると、鳴らないことがある）
+    const go = () => list.forEach((h) => h.play())
+    const ctx = (Howler as unknown as { ctx?: AudioContext }).ctx
+    if (ctx && ctx.state !== 'running') ctx.resume().then(go, go)
+    else go()
+  }
   const onBack = () => {
-    // ほかのタブ・アプリに移ったあいだは、音を消す（Safari は、タブを移っても、鳴らし続ける）。戻ったら、元に戻す
-    Howler.mute(document.visibilityState !== 'visible')
-    if (document.visibilityState === 'visible') resumeAudioContext()
+    if (document.visibilityState === 'visible') onShow()
+    else onHide()
   }
   document.addEventListener('visibilitychange', onBack)
-  window.addEventListener('pagehide', () => Howler.mute(true))
-  window.addEventListener('pageshow', () => { Howler.mute(false); resumeAudioContext() })
+  window.addEventListener('pagehide', onHide)
+  window.addEventListener('pageshow', onShow)
   window.addEventListener('focus', resumeAudioContext)
   // 戻ってすぐは、ブラウザが、再開を認めないことがある。次に画面にさわったとき（指・クリック・キー）に、再開する
   for (const ev of ['pointerdown', 'touchend', 'keydown']) {

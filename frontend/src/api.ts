@@ -10,6 +10,8 @@ export interface FortuneRequest {
   birthPlace?: string
   concern: string
   characterId?: number
+  /** 「はっきり言ってほしい」（課題・弱みを遠慮なく指摘）。試験的な機能 */
+  tone?: 'strict'
 }
 
 export interface BaZiPillar {

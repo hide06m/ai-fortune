@@ -457,3 +457,64 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
+
+/* スマホ：上の占い師の枠が画面の上に切れないように、上から順に詰める。下のパネルは、情報は減らさず、余白・文字・ボタンを小さくして、コンパクトにする */
+@media (max-width: 640px) {
+  .character-selection {
+    --carousel-h: clamp(210px, 32vh, 330px);
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 0.6rem) 0.6rem 0.5rem;
+  }
+  @supports (height: 100dvh) {
+    .character-selection {
+      --carousel-h: clamp(210px, 32dvh, 330px);
+    }
+  }
+  .carousel-container {
+    margin-top: calc(var(--carousel-h) * 0.08);
+  }
+  .selection-panel {
+    height: auto;
+    max-height: calc(100vh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
+    padding: 0.6rem 0.8rem;
+    border-radius: 14px;
+  }
+  @supports (height: 100dvh) {
+    .selection-panel {
+      max-height: calc(100dvh - var(--carousel-h) * 1.1 - 2.4rem - env(safe-area-inset-top, 0px));
+    }
+  }
+  .panel-content h2 {
+    font-size: 1.4rem;
+    margin: 0 0 0.2rem;
+  }
+  .panel-content .role {
+    margin: 0.2rem 0 0.4rem;
+    font-size: 0.85rem;
+  }
+  .panel-content .personality {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0.3rem 0 0.5rem;
+  }
+  .character-greeting {
+    margin: 0 0 0.4rem;
+    font-size: 0.78rem;
+  }
+  .stone-cost-hint {
+    margin: 0 0 0.3rem;
+    font-size: 0.8rem;
+  }
+  .selection-panel .btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .panel-content .action-buttons {
+    gap: 0.4rem;
+  }
+  .latest-results {
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+  }
+}

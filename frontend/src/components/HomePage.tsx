@@ -157,7 +157,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
         {line && characterId !== null && (
           <div className="home-bubble">
             <span className="home-bubble-name">{CHARACTER_MASTER_DATA[characterId].name}</span>
-            <p>{line.replace(/。/g, '\n').trim()}</p>
+            <p>{line.replace(/。/g, '　').trim()}</p>
           </div>
         )}
         <div className="home-menu">
