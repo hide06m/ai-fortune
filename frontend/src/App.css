@@ -270,11 +270,13 @@ body {
    ドアのボタンはこの中に画像比率（2730x1536）の％で配置するので、どのブラウザ/画面比率でもドアに重なる */
 .landing-stage {
   position: absolute;
+  --stage-w: max(100cqw, calc(100cqh * 2730 / 1536));
   top: 50%;
-  left: 50%;
-  width: max(100cqw, calc(100cqh * 2730 / 1536));
+  /* 画面が縦長のとき、背景が左右に切れる。切れる幅を、中央ぞろえではなく、ドア（木）の位置（画像の51.83%）が画面の中央に来るようにずらす（切れ目が見えない範囲で） */
+  left: clamp(calc(100cqw - var(--stage-w)), calc(50cqw - var(--stage-w) * 0.5183), 0px);
+  width: var(--stage-w);
   aspect-ratio: 2730 / 1536;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
   z-index: 10;
   pointer-events: none;
 }
@@ -446,6 +448,8 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 縦長の画面でも、ドア（木）が、中央に来るように */
+  object-position: 52.5% 50%;
   animation: fadeIn 0.8s ease-in;
 }
 
@@ -1012,12 +1016,19 @@ body {
   border-color: var(--accent);
 }
 
-.birthdate-native-picker {
+.birthdate-calendar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.birthdate-input-group .birthdate-native-picker {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 /* ✅ date input のカレンダー機能（黒色） */
@@ -1850,3 +1861,51 @@ h1 {
 .name-input-row button { flex: none; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(255, 224, 150, 0.7); background: linear-gradient(180deg, #8a6a2f, #5d4520); color: #fff3d0; font-weight: 700; font: inherit; cursor: pointer; }
 .name-input-row button:disabled { opacity: 0.45; cursor: default; }
 .name-input-error { margin: 8px 0 0; color: #ffb0a0; font-size: 0.88rem; }
+
+
+/* スマホ：入力欄は16px（それより小さいと、iPhone が、入力のたびに、画面を拡大して、そのままになる）。ヘッダーの文字が縦に割れないようにする */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+@media (max-width: 640px) {
+  .form-group input,
+  .form-group textarea,
+  .birthdate-input-group input {
+    font-size: 16px;
+  }
+  .form-group input[type="time"] {
+    width: auto;
+    max-width: 9em;
+    min-height: 0;
+    padding: 8px 10px;
+  }
+  .form-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+  .form-header h1 {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 22px;
+  }
+}
+
+/* スマホ：キャラクターは、画面の横幅の5分の2。セリフは、枠からあふれないように、少し小さくして、枠の高さに余裕を持たせる
+   （あふれると、枠の中が動いて、文字が増えるたびに、飾りや名前が一緒に動いて見えるため） */
+@media (max-width: 640px) {
+  .vn-scene {
+    --vn-text: 0.95rem;
+    --vn-box-h: clamp(190px, 30vh, 280px);
+    /* iPhone の Safari で、背景を固定にすると、画面が動くたびに、ちらつく */
+    background-attachment: scroll;
+  }
+  .vn-character-bust-wrap {
+    --bust-w: min(40vw, 75vh);
+  }
+  .vn-dialogue-box {
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+  }
+}

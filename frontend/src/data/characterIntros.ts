@@ -96,13 +96,27 @@ const INTROS: Record<CharacterId, IntroVariant[]> = {
     [
       { text: 'わあ、来てくれてありがとう！', image: 'kuri003' },
       { text: '正解なんてないから、思ったままに答えてね', image: 'kuri001' },
-      { text: 'わたしも、どきどきしてきた。いくよ！', image: 'kuri002' },
+      { text: 'オイラも、どきどきしてきた。いくよ！', image: 'kuri002' },
     ],
   ],
 }
 
-export function pickCharacterIntro(characterId: CharacterId): IntroLine[] {
-  const variants = INTROS[characterId]
+/** コクウの姓名判断の入り（手相の「左手をこちらに」ではなく、名前を聞く） */
+const KOKUU_SEIMEI_INTROS: IntroLine[][] = [
+  [
+    { text: 'ほう、来たか。まあ、座るがいい', image: 'kokuu001' },
+    { text: '名は、親が最初に贈る言葉だ。画数には、その重みが宿る', image: 'kokuu002' },
+    { text: 'さて、そなたの名を、聞かせてもらおう', image: 'kokuu003' },
+  ],
+  [
+    { text: '……よく来たな。名というものは、一生ついて回る', image: 'kokuu002' },
+    { text: '一文字ずつ数えていけば、見えてくるものもある', image: 'kokuu001' },
+    { text: 'では、そなたの姓と名を、ここに書いてくれ', image: 'kokuu003' },
+  ],
+]
+
+export function pickCharacterIntro(characterId: CharacterId, mode?: string): IntroLine[] {
+  const variants = characterId === 3 && mode === 'seimei' ? KOKUU_SEIMEI_INTROS : INTROS[characterId]
   return variants[Math.floor(Math.random() * variants.length)]
 }
 

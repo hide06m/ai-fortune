@@ -310,6 +310,19 @@ function AppContent() {
   const [birthTime, setBirthTime] = useState('')
   const [birthPlace, setBirthPlace] = useState('')
   const [concern, setConcern] = useState('')
+  // ツキの入力欄：ナツメで答えた内容を、入力済みにしておく（直せる）
+  useEffect(() => {
+    if (screen !== 'form' || selectedCharacterId !== 2 || birthDate) return
+    try {
+      const saved = JSON.parse(localStorage.getItem('ff_birth_profile') ?? 'null') as { birthDate?: string; birthTime?: string; birthPlace?: string } | null
+      if (saved?.birthDate) {
+        setBirthDate(saved.birthDate)
+        setBirthTime(saved.birthTime ?? '')
+        setBirthPlace(saved.birthPlace ?? '')
+      }
+    } catch { /* 読めなければ、空のまま */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, selectedCharacterId])
 
   // Result state
   const [reading, setReading] = useState<any>(null)
@@ -988,6 +1001,13 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
         birthPlace: values?.birthPlace ?? birthPlace,
         concern: values?.concern ?? concern,
         characterId: selectedCharacterId
+      }
+
+      // ツキの入力で使うため、ナツメで答えた生年月日・出生時刻・出生地を、この端末に覚えておく
+      if (request.birthDate) {
+        try {
+          localStorage.setItem('ff_birth_profile', JSON.stringify({ birthDate: request.birthDate, birthTime: request.birthTime, birthPlace: request.birthPlace }))
+        } catch { /* 保存できなくても、診断はそのまま */ }
       }
 
       const response = await callFortuneAPI(request)
@@ -2087,7 +2107,7 @@ ${DAILY_BONUS_LINES[Math.floor(Math.random() * DAILY_BONUS_LINES.length)]}`
             setSelectedCharacterId(characterId)
             // いきなり入力に入らず、まず、選んだ占い師との短い会話を挟む
             setIntroTarget({ characterId, kuriMode, mode: 'diagnosis' })
-            setIntroLines(pickCharacterIntro(characterId))
+            setIntroLines(pickCharacterIntro(characterId, kuriMode))
             setIntroStep(0)
             setScreen('character-intro')
           }}

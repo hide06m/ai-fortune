@@ -200,6 +200,9 @@ export function PalmCameraCapture({ onCapture, analyzeOnDevice = true, initialMe
     const canvas = shotRef.current;
     if (!canvas || analyzing) return;
     setReviewing(false);
+    // 重い処理の前に、待ち表示を先に出す（出さないと、数秒、画面が固まって見える）
+    setAnalyzing(true);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     note('処理開始');
     try {
       // 明るさ・ピントの警告は、ライブ表示で出している。ここでは止めずに進める（手の検出が最終的に判断する）
@@ -211,12 +214,12 @@ export function PalmCameraCapture({ onCapture, analyzeOnDevice = true, initialMe
       if (!analyzeOnDevice) {
         // 解析はPC側で行う。写真をすぐ渡して、送信へ進む
         note('送信へ');
+        setAnalyzing(false);
         onCapture(base64, 'image/jpeg');
         return;
       }
 
       // 手相の線を検出する。手が違う・見つからないときは撮り直し。解析自体が失敗しても診断は続ける（線の表示がなくなるだけ）
-      setAnalyzing(true);
       const analysis = await analyzePalmImage(canvas);
       setAnalyzing(false);
       note('解析結果: ' + analysis.status + (analysis.status === 'ok' ? '（線' + analysis.lines.length + '本）' : ''));

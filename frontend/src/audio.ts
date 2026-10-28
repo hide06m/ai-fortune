@@ -49,7 +49,14 @@ export function duckMainBgm(on: boolean) {
       duckedHowls.forEach((h) => h.pause())
     }
   } else if (duckCount > 0 && --duckCount === 0) {
-    duckedHowls.forEach((h) => h.play())
+    // 途中からいきなり鳴らさず、頭から、フェードインで戻す
+    duckedHowls.forEach((h) => {
+      const target = h === bgmLoop ? BASE_VOLUME.roomBgm : h === forestBgmLoop ? BASE_VOLUME.forestBgm : h === birdLoop ? BASE_VOLUME.bird : BASE_VOLUME.treesway
+      h.seek(0)
+      h.volume(0)
+      h.play()
+      h.fade(0, target * bgmVolume, 800)
+    })
     duckedHowls = []
   }
 }
@@ -69,10 +76,13 @@ function resumeAudioContext() {
 if (typeof document !== 'undefined') {
   if (import.meta.env.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
   const onBack = () => {
+    // ほかのタブ・アプリに移ったあいだは、音を消す（Safari は、タブを移っても、鳴らし続ける）。戻ったら、元に戻す
+    Howler.mute(document.visibilityState !== 'visible')
     if (document.visibilityState === 'visible') resumeAudioContext()
   }
   document.addEventListener('visibilitychange', onBack)
-  window.addEventListener('pageshow', resumeAudioContext)
+  window.addEventListener('pagehide', () => Howler.mute(true))
+  window.addEventListener('pageshow', () => { Howler.mute(false); resumeAudioContext() })
   window.addEventListener('focus', resumeAudioContext)
   // 戻ってすぐは、ブラウザが、再開を認めないことがある。次に画面にさわったとき（指・クリック・キー）に、再開する
   for (const ev of ['pointerdown', 'touchend', 'keydown']) {

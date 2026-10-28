@@ -52,7 +52,7 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
   // 決まるまでは、立ち絵を出さない（別の占い師の絵が、一瞬、映るのを防ぐ）
   const [characterId, setCharacterId] = useState<CharacterId | null>(null);
   const [line, setLine] = useState('');
-  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone' | 'inbox' | 'shop' | 'gacha'>(null);
+  const [panel, setPanel] = useState<null | 'latest' | 'daily' | 'zukan' | 'people' | 'stone' | 'inbox' | 'shop' | 'gacha' | 'menu'>(null);
   // 赤い印：今日の運勢をまだ見ていない／受け取れる報酬がある
   const [dailyBadge, setDailyBadge] = useState(false);
   const updateBadge = (s: DailySnapshot) => {
@@ -167,32 +167,55 @@ export function HomePage({ stoneBalance, email, onPlay, onHistory, onOpenLatest,
           <button type="button" className="home-btn home-btn-daily" onClick={() => setPanel('daily')}>
             🌟 運勢・ミッション{dailyBadge && <i className="home-badge" aria-label="新しいお知らせ" />}
           </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('zukan')}>
-            📖 図鑑・実績
-          </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('people')}>
-            🧵 縁帳
-          </button>
-          <button type="button" className="home-btn" onClick={openLatestPanel}>
-            📜 診断の記録
-          </button>
-          <button type="button" className="home-btn" onClick={() => window.dispatchEvent(new CustomEvent('open-minigame'))}>
-            🎮 ミニゲーム<small>森ラン・どんぐりキャッチ</small>
-          </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('inbox')}>
-            📬 受信箱{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}
-          </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('shop')}>
-            🛍 交換所
-          </button>
-          <button type="button" className="home-btn" onClick={() => setPanel('gacha')}>
-            {gachaLocked ? '🔒' : '🌲'} 森での出会い
+          <button type="button" className="home-btn" onClick={() => setPanel('menu')}>
+            ☰ メニュー{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}
           </button>
           <button type="button" className="home-btn home-btn-quiet" onClick={onLogout}>
             ログアウト
           </button>
         </div>
       </div>
+
+      {panel === 'menu' && (
+        <div className="home-panel-backdrop" onClick={() => setPanel(null)}>
+          <div className="home-panel" onClick={(e) => e.stopPropagation()}>
+            <h3>メニュー</h3>
+            <div className="home-menu home-menu-list">
+              <button type="button" className="home-btn" onClick={() => setPanel('zukan')}>
+                📖 図鑑・実績
+              </button>
+              <button type="button" className="home-btn" onClick={() => setPanel('people')}>
+                🧵 縁帳
+              </button>
+              <button type="button" className="home-btn" onClick={openLatestPanel}>
+                📜 診断の記録
+              </button>
+              <button
+                type="button"
+                className="home-btn"
+                onClick={() => {
+                  setPanel(null);
+                  window.dispatchEvent(new CustomEvent('open-minigame'));
+                }}
+              >
+                🎮 ミニゲーム<small>森ラン・どんぐりキャッチ</small>
+              </button>
+              <button type="button" className="home-btn" onClick={() => setPanel('inbox')}>
+                📬 受信箱{inboxBadge > 0 && <i className="home-badge" aria-label="新しいお知らせ" />}
+              </button>
+              <button type="button" className="home-btn" onClick={() => setPanel('shop')}>
+                🛍 交換所
+              </button>
+              <button type="button" className="home-btn" onClick={() => setPanel('gacha')}>
+                {gachaLocked ? '🔒' : '🌲'} 森での出会い
+              </button>
+            </div>
+            <button type="button" className="home-panel-close" onClick={() => setPanel(null)}>
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
 
       {panel === 'daily' && (
         <DailyPanel onClose={() => setPanel(null)} onBalance={(b) => onStoneBalance?.(b)} onSnapshot={updateBadge} />

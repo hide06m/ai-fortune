@@ -18,6 +18,18 @@ export function BirthDateInput({
   const dayRef = useRef<HTMLInputElement>(null)
   const nativeDateRef = useRef<HTMLInputElement>(null)
 
+  // 外から値が入れられたとき（ナツメで答えた内容を、入力済みにするとき）に、欄へ反映する
+  useEffect(() => {
+    if (!value) return
+    const [y, m, d] = value.split('-')
+    if (y !== year || m !== month.padStart(2, '0') || d !== day.padStart(2, '0')) {
+      setYear(y ?? '')
+      setMonth(m ?? '')
+      setDay(d ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
   useEffect(() => {
     if (year.length === 4 && month.length > 0 && day.length > 0) {
       onChange(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`)
@@ -72,27 +84,21 @@ export function BirthDateInput({
         }}
         className="birthdate-day"
       />
-      <button
-        type="button"
-        className="birthdate-calendar-button"
-        aria-label="カレンダーから選択"
-        onClick={() => {
-          const el = nativeDateRef.current as (HTMLInputElement & { showPicker?: () => void }) | null
-          el?.showPicker ? el.showPicker() : el?.focus()
-        }}
-      >
-        📅
-      </button>
-      <input
-        ref={nativeDateRef}
-        type="date"
-        className="birthdate-native-picker"
-        tabIndex={-1}
-        // 年の一覧が、ありえない範囲（0001〜275760年）まで、続くと、スクロールが、重くなる。生まれた年として、ありうる範囲に、しぼる
-        min="1900-01-01"
-        max={new Date().toISOString().slice(0, 10)}
-        // 未入力のときは、1990年のあたりで、カレンダーが開く（今年から、遠くまで、さかのぼらなくてよいように）
-        value={year.length === 4 && month.length > 0 && day.length > 0 ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : '1990-01-01'}
+      {/* 📅 の上に、透明な日付入力を重ねる。指でふれると、そのまま、端末のカレンダーが開く（スマホで確実に開く方法） */}
+      <span className="birthdate-calendar-wrap">
+        <span className="birthdate-calendar-button" aria-hidden="true">
+          📅
+        </span>
+        <input
+          ref={nativeDateRef}
+          type="date"
+          className="birthdate-native-picker"
+          aria-label="カレンダーから選択"
+          // 年の一覧が、ありえない範囲（0001〜275760年）まで、続くと、スクロールが、重くなる。生まれた年として、ありうる範囲に、しぼる
+          min="1900-01-01"
+          max={new Date().toISOString().slice(0, 10)}
+          // 未入力のときは、1990年のあたりで、カレンダーが開く（今年から、遠くまで、さかのぼらなくてよいように）
+          value={year.length === 4 && month.length > 0 && day.length > 0 ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : '1990-01-01'}
         onChange={(e) => {
           const [y, m, d] = e.target.value.split('-')
           if (y && m && d) {
@@ -101,7 +107,8 @@ export function BirthDateInput({
             setDay(d)
           }
         }}
-      />
+        />
+      </span>
     </div>
   )
 }

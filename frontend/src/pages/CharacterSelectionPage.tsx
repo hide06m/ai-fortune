@@ -48,10 +48,11 @@ interface IntimacyState {
   points: number;
 }
 
-function getCharacterImage(characterId: CharacterId): string {
+function getCharacterImage(characterId: CharacterId, unlocked = true): string {
   const { folder, prefix } = CHARACTER_VISUAL[characterId];
   // ナツメの 001 は、フードで顔が隠れた初対面用の絵。選択画面では、顔の見える絵（002）を使う
-  const number = characterId === 1 ? '002' : '001';
+  // ムスビも、解放されたら、顔の見える絵（002）。解放前は、フードで顔を隠した絵（001）
+  const number = characterId === 1 || (characterId === 0 && unlocked) ? '002' : '001';
   return `/assets/characters/${folder}/${prefix}${number}.webp`;
 }
 
@@ -279,8 +280,8 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
               >
                 {/* キャラクター画像（背景透過ビジュアル） */}
                 <img
-                  src={getCharacterImage(charId as CharacterId)}
-                  alt={character.name}
+                  src={getCharacterImage(charId as CharacterId, unlockedCharacters.has(charId))}
+                  alt={charId === 0 && !unlockedCharacters.has(0) ? '？？？' : character.name}
                   className="character-image"
                 />
 
@@ -291,7 +292,7 @@ export function CharacterSelectionPage({ onCharacterSelected, onGreeting, onView
 
                 {/* キャラクター情報 */}
                 <div className="character-info">
-                  <h3>{character.name}</h3>
+                  <h3>{charId === 0 && !unlockedCharacters.has(0) ? '？？？' : character.name}</h3>
                   <p className="character-role">{character.role}</p>
                   {(unlockedCharacters.has(charId) || charId === 0) && <IntimacyHeart intimacy={cardIntimacy} />}
                 </div>
