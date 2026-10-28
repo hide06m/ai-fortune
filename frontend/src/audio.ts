@@ -99,9 +99,7 @@ if (typeof document !== 'undefined') {
     if (document.body) document.body.appendChild(box)
     window.setInterval(() => {
       const c = (Howler as unknown as { ctx?: AudioContext; _howls?: Howl[] })
-      box.textContent = `ctx=${c.ctx?.state ?? '-'} t=${c.ctx?.currentTime.toFixed(1) ?? '-'} playing=${(c._howls ?? []).filter((h) => h.playing()).length}/${(c._howls ?? []).length}
-` + debugLines.join('
-')
+      box.textContent = `ctx=${c.ctx?.state ?? '-'} t=${c.ctx?.currentTime.toFixed(1) ?? '-'} playing=${(c._howls ?? []).filter((h) => h.playing()).length}/${(c._howls ?? []).length}` + '\n' + debugLines.join('\n')
     }, 500)
   }
   let pausedByHide: Howl[] = []
