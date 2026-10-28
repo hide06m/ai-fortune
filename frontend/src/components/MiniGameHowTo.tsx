@@ -34,6 +34,15 @@ export const ACORN_CATCH_HOWTO: HowToContent = {
   ],
 };
 
+export const ACORN_STACK_HOWTO: HowToContent = {
+  title: 'どんぐり積み　遊び方',
+  steps: [
+    { images: ['ui_hand_tap_1', 'acorn'], title: 'タップで落とす', text: '左右にゆれるどんぐりを、よいところでタップして落とそう　PCはクリックかスペースキー' },
+    { images: ['run_stump_l', 'acorn_gold'], title: '切り株の上に積む', text: 'ぴったり重ねるほど安定するよ　目標の数まで積んだらクリア' },
+    { images: ['musubi_sad_front'], title: 'ずれすぎると落ちる', text: '落ちるとハートが1つ減る　ハートがなくなるとミス' },
+  ],
+};
+
 export function MiniGameHowTo({ content, onClose }: { content: HowToContent; onClose: () => void }) {
   return (
     <div className="run-overlay run-howto" onPointerDown={(e) => e.stopPropagation()}>

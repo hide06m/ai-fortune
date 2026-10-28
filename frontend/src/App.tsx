@@ -67,6 +67,7 @@ import { getWaitingJobId, startBackgroundJobWatcher, subscribeDetach } from './a
 import { JobToast } from './components/JobToast'
 import { MiniGameShell } from './minigames/MiniGameShell'
 import { acornCatchSpec } from './minigames/acornCatch'
+import { acornStackSpec } from './minigames/acornStack'
 import { ForestRun } from './components/ForestRun'
 import { StoneGift } from './components/StoneGift'
 import { HelpPanel } from './components/HelpPanel'
@@ -2589,10 +2590,11 @@ function SettingsButton() {
 }
 
 /** 診断を待っている間の、ミニゲーム。読み込み画面のボタンから開く。診断ができても、遊びおえるまで、閉じない */
-type MiniGameId = 'forest_run' | 'acorn_catch'
+type MiniGameId = 'forest_run' | 'acorn_catch' | 'acorn_stack'
 const MINIGAMES: { id: MiniGameId; name: string; desc: string }[] = [
   { id: 'forest_run', name: '森ラン', desc: 'ジャンプで 障害物を よけて ゴールへ' },
   { id: 'acorn_catch', name: 'どんぐりキャッチ', desc: '落ちてくる どんぐりを うけとめよう' },
+  { id: 'acorn_stack', name: 'どんぐり積み', desc: 'ゆれる どんぐりを タップで つみあげよう' },
 ]
 
 function MiniGameHost() {
@@ -2621,9 +2623,10 @@ function MiniGameHost() {
     setGame(null)
   }
   // 診断を待っている間は、次のゲームへ（ほかのゲームが、1つなら、そのまま）
-  const other = (g: MiniGameId): MiniGameId => (g === 'forest_run' ? 'acorn_catch' : 'forest_run')
+  const other = (g: MiniGameId): MiniGameId => MINIGAMES[(MINIGAMES.findIndex((m) => m.id === g) + 1) % MINIGAMES.length].id
   if (game === 'forest_run') return <ForestRun key="fr" jobId={jobId} onClose={close} onSwitchGame={() => setGame(other('forest_run'))} />
   if (game === 'acorn_catch') return <MiniGameShell key="ac" spec={acornCatchSpec} jobId={jobId} onClose={close} onSwitchGame={() => setGame(other('acorn_catch'))} />
+  if (game === 'acorn_stack') return <MiniGameShell key="as" spec={acornStackSpec} jobId={jobId} onClose={close} onSwitchGame={() => setGame(other('acorn_stack'))} />
   return (
     <div className="run-backdrop">
       <div className="run-stage">

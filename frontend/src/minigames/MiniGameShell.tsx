@@ -44,6 +44,8 @@ export interface InputState {
   pointerX: number | null;
   left: boolean;
   right: boolean;
+  /** 遊んでいる間の、タップ（クリック・スペースキー）の回数。使うゲームが、読んだら 0 に戻す */
+  taps: number;
 }
 
 export interface MiniGameSpec<S> {
@@ -102,7 +104,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
   const [count, setCount] = useState<number | null>(null);
   const countTimers = useRef<number[]>([]);
   const pausedFrom = useRef<'ready' | 'playing'>('playing');
-  const input = useRef<InputState>({ pointerX: null, left: false, right: false });
+  const input = useRef<InputState>({ pointerX: null, left: false, right: false, taps: 0 });
 
   // ハート・知らせ・進み具合（描画のために、毎コマ、読む）
   const meta = useRef({ lives: spec.lives[difficulty], maxLives: spec.lives[difficulty], flash: 0, lostIndex: -1, progress: 0, time: 0, outcome: null as null | 'clear' | 'miss' });
@@ -224,6 +226,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
         if (e.repeat) return;
         if (phaseRef.current === 'ready' && !howToRef.current) startCountdown();
         else if (phaseRef.current === 'clear' || phaseRef.current === 'miss') restart();
+        else if (phaseRef.current === 'playing') input.current.taps += 1;
       } else if (e.code === 'Escape') {
         onClose();
       } else if (phaseRef.current === 'ready' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
@@ -398,6 +401,7 @@ export function MiniGameShell<S>({ spec, onClose, jobId = null, onSwitchGame }: 
           }
           updatePointer(e);
           if (phaseRef.current === 'ready') startCountdown();
+          else if (phaseRef.current === 'playing') input.current.taps += 1;
         }}
         onPointerMove={(e) => {
           if (pressed.current) updatePointer(e);
