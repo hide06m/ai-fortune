@@ -524,19 +524,70 @@
   }
 }
 
-/* パソコン（幅が広い画面）：占い師の枠は、元の大きさ */
+/* パソコン（幅が広い画面）：上の占い師の枠は、ブラウザの高さの半分（50%）。
+   枠は、奥行きの効果（perspective）で、約1.3倍に大きく見えるので、見切れないよう、置く場所の高さを、そのぶん広くとる。
+   下のパネルは、スクロールをなくし、中身を左右2列に並べて、すべて収める */
 @media (min-width: 641px) {
-  /* 上の占い師の枠は、ブラウザの高さの半分（50%）を使う。下のパネルは、そのぶん、少し低くする */
   .character-selection {
     --carousel-h: clamp(300px, 50vh, 640px);
-  }
-  .selection-panel {
-    height: clamp(260px, 38vh, 400px);
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding: 0.5rem 2rem 0.4rem;
   }
   .carousel-container {
     flex: 0 0 auto;
-    height: var(--carousel-h);
+    height: calc(var(--carousel-h) * 1.25);
     min-height: 0;
     padding-top: 0;
+  }
+  .selection-panel {
+    height: auto;
+    max-width: 940px;
+    overflow: visible;
+    padding: 0.7rem 1.4rem;
+    border-radius: 16px;
+  }
+  .panel-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    column-gap: 1.6rem;
+    row-gap: 0.25rem;
+    align-items: center;
+    text-align: left;
+  }
+  .panel-content .personality {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .panel-content .stone-cost-hint {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: flex-start;
+    margin: 0;
+  }
+  .panel-content .gift-message {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0;
+  }
+  .panel-content .action-buttons {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+  }
+  .panel-content .action-buttons .btn {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    font-size: 0.92rem;
+  }
+  .panel-content .latest-results {
+    grid-column: 1 / -1;
+    margin-top: 0.2rem;
+    justify-content: flex-start;
   }
 }
