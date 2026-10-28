@@ -398,7 +398,9 @@ body {
 .landing-guest {
   position: absolute;
   bottom: 40px;
-  left: calc(50% + 25px);
+  /* ドア（木）の中央に合わせる */
+  --stage-w: max(100cqw, calc(100cqh * 2730 / 1536));
+  left: calc(clamp(calc(100cqw - var(--stage-w)), calc(50cqw - var(--stage-w) * 0.5183), 0px) + var(--stage-w) * 0.5183);
   transform: translateX(-50%);
   z-index: 10;
 }
