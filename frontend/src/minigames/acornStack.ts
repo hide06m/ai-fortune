@@ -28,7 +28,7 @@ interface Conf {
 const CONF: Record<Difficulty, Conf> = {
   easy: { target: 8, tol: 74, omega: 2.0 },
   normal: { target: 12, tol: 62, omega: 2.5 },
-  hard: { target: 15, tol: 54, omega: 3.0 },
+  hard: { target: 15, tol: 58, omega: 3.0 },
   extra: { target: 18, tol: 46, omega: 3.5 },
 };
 

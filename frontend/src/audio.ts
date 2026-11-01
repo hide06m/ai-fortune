@@ -82,7 +82,7 @@ function resumeAudioContext() {
   }
 }
 if (typeof document !== 'undefined') {
-  if (import.meta.env.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
+  if (import.meta.env?.DEV) (window as unknown as { __howler?: unknown }).__howler = Howler // 開発用：音の再開の確認
   // ほかのタブ・アプリに移ったあいだは、鳴っていた音を一時停止する（Safari は、タブを移っても、鳴らし続ける）。戻ったら、同じ音を、続きから鳴らす
   // （ミュートではなく、停止と再生にする。スマホで、アプリを切りかえたあと、音が戻らなくなるのを防ぐため）
   // 確認用：アドレスの最後に ?audiodebug=1 を付けると、音の状態を、画面の下に出す（iPhone の実機で、原因を調べるため）
